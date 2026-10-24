@@ -477,6 +477,8 @@ function estrategiasTP(E) {
   el.hidden = false
 }
 if (!AMIGO) { api('resultado').then(resultado, () => {}); setInterval(() => { if (!pausado) api('resultado').then(resultado, () => {}) }, 60e3) }
+// o amigo vê o placar das estratégias, sem a barra dos € dele
+if (AMIGO) { const pl = () => api('placar').then(r => placarTP(r.placar), () => {}); pl(); setInterval(pl, 120e3) }
 $('resultado').addEventListener('mouseenter', () => {
   const d = $('resultadoDica'), b = $('resultado').getBoundingClientRect()
   if (!d.innerHTML) return

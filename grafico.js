@@ -123,7 +123,7 @@ export function criarGrafico(el) {
     layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8f959c', fontSize: 11, attributionLogo: false,
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },
-    rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 } },
+    rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: 1.2 },   // mais preços na escala (24/10)
     timeScale: { borderColor: '#23272c', timeVisible: true, secondsVisible: false, rightOffset: 8, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: (t, tipo) => tipo <= 2 ? data(rot(t)) : hora(t) },
     localization: { locale: 'pt-PT', timeFormatter: t => tfAtual === '1d' ? data(rot(t)) : data(t) + ' ' + hora(t) },
     crosshair: { vertLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' }, horzLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' } }
@@ -277,7 +277,7 @@ export function criarGrafico(el) {
     const alvos = camadas.alvos ? d.alvos?.lista || [] : [], mAlvos = [], grupos = []
     for (const p of alvos) { const g = grupos.at(-1), u = g?.at(-1); if (u && u.lado === p.lado && p.time - u.time <= 3600) g.push(p); else grupos.push([p]) }
     const fim = alvos.at(-1), rep = grupos.at(-1)?.[0], solto = fim && !fim.fim && rep !== fim && rep.fim ? fim : null, ultimo = solto || rep
-    const juntaL = o => { const c = new Linhas(o); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas === 2 ? 1 : casas)
+    const juntaL = o => { const c = new Linhas(o); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas)   // 24/10 («às vezes estou em 4445,00 e é 4445,10»): com as duas casas
     const precos = p => [{ preco: p.sl, cor: '#cc9390', texto: 'stop ' + fp(p.sl) }, { preco: p.entrada, cor: '#d6c39f', texto: 'entrada ' + fp(p.entrada) },
       ...p.tps.map((preco, k) => ({ preco, cor: '#9cb894', texto: 'TP' + (k + 1) + ' ' + fp(preco) + (p.hits[k] ? ' ✓' : '') }))]
     const caixa = (p, de, ate) => {

@@ -143,7 +143,7 @@ export function criarGrafico(el) {
     }
     return linhasLT.get(k)
   }
-  const marcadores = L.createSeriesMarkers(velas, []), marcasVelas = L.createSeriesMarkers(velas, []), marcasAlvos = L.createSeriesMarkers(velas, [])
+  const marcadores = L.createSeriesMarkers(velas, []), marcasVelas = L.createSeriesMarkers(velas, []), marcasAlvos = L.createSeriesMarkers(velas, []), marcasEstr = L.createSeriesMarkers(velas, [])
   // o quadro dos alvos (como o do ULTRA_V1.2 da imagem dele): quantos sinais chegaram a cada TP e quantos ao stop, e o
   // acerto. À direita tapava as velas de agora: fica à esquerda, no canto (de cima ou de baixo) com menos velas
   const quadro = document.createElement('div')
@@ -318,6 +318,10 @@ export function criarGrafico(el) {
     porTempo = new Map()
     if (camadas.sinais) for (const s of d.sinais) porTempo.set(s.time, [...(porTempo.get(s.time) || []), s])
     marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time) : [])
+    // as entradas das estratégias (camada Estratégias): seta do lado, nome curto e ✓ se chegou a um TP, ✗ se foi ao stop
+    const ver = camadas.estrVer || [], EL = camadas.estrategias ? (d.estrategias?.lista || []).filter(x => !ver.length || ver.includes(x.id)) : []
+    marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
+      color: x.lado === 'venda' ? '#cc9390' : '#9cb894', size: 0.8, text: x.curto + (x.fim === 'stop' ? ' ✗' : /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0) ? ' ✓' : '') })).sort((a, b) => a.time - b.time))
     velaPorTempo = new Map()
     const pads = camadas.velas ? d.padroes || [] : []
     for (const v of pads) velaPorTempo.set(v.time, [...(velaPorTempo.get(v.time) || []), v])

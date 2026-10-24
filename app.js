@@ -29,7 +29,7 @@ async function post(c, corpo) {
 const est = Object.assign({ simbolo: 'XAUUSD', tf: '15m', conversa: [] }, JSON.parse(localStorage.getItem('jarvis') || '{}'))
 // o gráfico limpo de base (velas, SV3, níveis, a posição e o estocástico); o resto liga-se em cima. A versão 2 repõe isto
 // uma vez em quem já tinha tudo ligado.
-const LIMPO = { sv3: true, ema: false, niveis: true, diario: false, asia: false, fibo: false, linhas: false, velas: false, sinais: false, alvos: true, plano: true, posicoes: true, estoc: true }
+const LIMPO = { sv3: true, ema: false, niveis: true, diario: false, asia: false, fibo: false, linhas: false, velas: false, sinais: false, alvos: true, plano: true, posicoes: true, estoc: true, estrategias: false }
 if (est.v !== 2) { est.camadas = { ...LIMPO }; est.v = 2; localStorage.setItem('jarvis', JSON.stringify(est)) }
 est.camadas = { ...LIMPO, ...(est.camadas || {}) }
 const guardar = () => localStorage.setItem('jarvis', JSON.stringify(est))
@@ -304,9 +304,28 @@ function marcar() {
   $('legEma').textContent = 'EMA 200 ' + (est.tf === '1d' ? 'do diário' : 'de ' + TFN[est.tf])
   for (const s of $('tfs').children) { const on = s.dataset.tf === est.tf; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on) }
   for (const s of $('camadas').children) { const on = !!est.camadas[s.dataset.c]; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on) }
+  escolhaEstr()
 }
+// 24/10 («faltam adicionares as estratégias aqui, não?»): com a camada Estratégias ligada, uma fila por baixo para escolher
+// quais aparecem no gráfico (nenhuma escolhida = todas). Cada entrada é uma seta com o nome curto e como acabou
+function escolhaEstr() {
+  const el = $('estrEscolha'), ids = ultimoGrafico?.estrategias?.ids || []
+  el.hidden = !est.camadas.estrategias || !ids.length
+  if (el.hidden) return
+  const ver = est.estrVer || [], n = id => (ultimoGrafico.estrategias.lista || []).filter(x => x.id === id).length
+  el.innerHTML = '<button type="button" data-e="" class="' + (ver.length ? '' : 'on') + '" aria-pressed="' + !ver.length + '">Todas</button>'
+    + ids.map(x => '<button type="button" data-e="' + x.id + '" class="' + (ver.includes(x.id) ? 'on' : '') + '" aria-pressed="' + ver.includes(x.id) + '">' + esc(x.curto) + ' <span class="suave">' + n(x.id) + '</span></button>').join('')
+}
+$('estrEscolha').addEventListener('click', e => {
+  const b = e.target.closest('[data-e]')
+  if (!b) return
+  const id = b.dataset.e, ver = new Set(est.estrVer || [])
+  if (!id) ver.clear(); else ver.has(id) ? ver.delete(id) : ver.add(id)
+  est.estrVer = [...ver]; guardar(); escolhaEstr()
+  if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer })
+})
 $('tfs').addEventListener('click', e => { const t = e.target.dataset.tf; if (!t || t === est.tf) return; est.tf = t; guardar(); marcar(); carregarGrafico() })
-$('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (!c) return; est.camadas[c] = !est.camadas[c]; guardar(); marcar(); if (ultimoGrafico) grafico.mostrar(ultimoGrafico, est.camadas); grafico.plano(est.camadas.plano ? ultimoPlano : null) })
+$('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (!c) return; est.camadas[c] = !est.camadas[c]; guardar(); marcar(); if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer }); grafico.plano(est.camadas.plano ? ultimoPlano : null) })
 
 // o relógio da vela (22/10, «preciso do timer lá em cima de mudança de candle»): quanto falta para a vela do tempo escolhido
 // fechar, a contar do início da última vela do gráfico (as de 4 h e do dia começam às 17:00 de Nova Iorque, como no MT5).
@@ -376,7 +395,7 @@ async function carregarGrafico() {
   try {
     const s = est.simbolo, tf = est.tf, d = await api('grafico?s=' + s + '&tf=' + tf)
     if (s !== est.simbolo || tf !== est.tf) return
-    ultimoGrafico = d; grafico.mostrar(d, est.camadas); graficoEm = Date.now()
+    ultimoGrafico = d; grafico.mostrar(d, { ...est.camadas, estrVer: est.estrVer }); escolhaEstr(); graficoEm = Date.now()
     fimVela = d.velas.length ? { inicio: d.velas.at(-1).time, tf: d.tf } : null
   } catch (e) { console.warn('gráfico', e) }
 }

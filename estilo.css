@@ -409,3 +409,54 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .estrTP .placarDuas { gap:0 }
 .estrTP .placarDuas .placar + .placar { border-left:1px solid #3d434a; padding-left:16px; margin-left:16px; width:calc(100% - 16px) }
 .estrTP .placarDuas .placar:first-child { width:calc(100% - 16px) }
+
+/* 24/10 («mete isto para mobile, de forma a que dê para analisar o gráfico e as estratégias»; «pode ser mobile tipo
+   horizontal»): no telemóvel, uma coluna só e a página corre para baixo. Primeiro o gráfico, com a altura do ecrã quase
+   toda (no telemóvel deitado, o ecrã inteiro), depois as estratégias, a ordem e as abas, e no fim as notícias */
+@media (max-width: 1000px), (max-height: 520px) {
+  body { overflow:auto }
+  #app { height:auto; min-height:100%; padding:6px max(8px, env(safe-area-inset-right)) 12px max(8px, env(safe-area-inset-left)) }
+  .topo { padding:4px 10px; margin-bottom:6px; gap:12px }
+  .topo #sessoes, .topo #proxima, .topo .relogio span { display:none }
+  .marca { letter-spacing:.2em; font-size:12px }
+  .grelha { display:flex; flex-direction:column; gap:10px }
+  .col { display:contents }
+  .col.centro > .card.cresce { order:1; height:calc(100dvh - 52px); min-height:300px; flex:none }
+  #estrTP { order:2 }
+  .col.dir > * { order:3 }
+  .col.esq > * { order:4 }
+  .col.esq .noticias { max-height:70dvh }
+  .col.dir .abas { min-height:420px }
+  .cab { padding:8px 10px 4px; gap:10px }
+  .camadas { flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; scrollbar-width:none; padding-bottom:2px }
+  .camadas::-webkit-scrollbar { display:none }
+  .camadas > * { flex:none }
+  #grafico { min-height:0; margin:0 4px }
+  .alvos { display:none !important }
+  .legenda { display:none }
+}
+/* estreito (telemóvel de pé ou janela pequena): o placar volta a uma coluna e larga a coluna do TP2 */
+@media (max-width: 760px) {
+  .estrTP .placarDuas { grid-template-columns:minmax(0,1fr) }
+  .estrTP .placarDuas .placar + .placar { border-left:0; padding-left:0; margin-left:0; width:100%; margin-top:6px }
+  .estrTP .placarDuas .placar:first-child { width:100% }
+  .estrTP .placarDuas .placar + .placar thead { display:none }
+  .estrTP .placar th:nth-child(4), .estrTP .placar td:nth-child(4) { display:none }
+  .estrTP .tit span + span { display:none }
+}
+/* no telemóvel deitado o placar também fica numa coluna (em duas os nomes partiam em quatro linhas) */
+@media (max-width: 1000px), (max-height: 520px) {
+  .estrTP .placarDuas { grid-template-columns:minmax(0,1fr) }
+  .estrTP .placarDuas .placar + .placar { border-left:0; padding-left:0; margin-left:0; width:100%; margin-top:2px }
+  .estrTP .placarDuas .placar:first-child { width:100% }
+  .estrTP .placarDuas .placar + .placar thead { display:none }
+  .estrTP .placarDuas .placar td:first-child { white-space:nowrap }
+}
+@media (max-width: 1000px), (max-height: 520px) {
+  .estrTP .placarDuas .placar { table-layout:fixed }
+  .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:118px }
+  .estrTP .placarDuas .placar th:nth-child(n+3), .estrTP .placarDuas .placar td:nth-child(n+3) { width:52px }
+  .estrTP .placarDuas .placar th:last-child, .estrTP .placarDuas .placar td:last-child { width:62px }
+  .estrTP .placarDuas .placar td:first-child { overflow:hidden; text-overflow:ellipsis }
+}
+@media (max-width: 600px) { .topo { flex-wrap:wrap; row-gap:2px } .topo .dir { margin-left:0 } }

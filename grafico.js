@@ -319,7 +319,7 @@ export function criarGrafico(el) {
     if (camadas.sinais) for (const s of d.sinais) porTempo.set(s.time, [...(porTempo.get(s.time) || []), s])
     marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time) : [])
     // as entradas das estratégias (camada Estratégias): seta do lado, nome curto e ✓ se chegou a um TP, ✗ se foi ao stop
-    const ver = camadas.estrVer || [], EL = camadas.estrategias ? (d.estrategias?.lista || []).filter(x => !ver.length || ver.includes(x.id)) : []
+    const ver = camadas.estrVer || [], EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
     marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
       color: x.lado === 'venda' ? '#cc9390' : '#9cb894', size: 0.8, text: x.curto + (x.fim === 'stop' ? ' ✗' : /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0) ? ' ✓' : '') })).sort((a, b) => a.time - b.time))
     velaPorTempo = new Map()

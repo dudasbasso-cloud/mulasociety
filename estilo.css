@@ -393,8 +393,8 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .estrTP .placar th { padding:3px 8px }
 /* 24/10 («como meteste o BOT mas EDNEY a laranja»): as estratégias do Edney com o mesmo brilho, em laranja suave */
 .estrTP .placar .ouro.laranja { background-image:linear-gradient(100deg, #c9875a 0%, #c9875a 40%, #f2c9a4 50%, #c9875a 60%, #c9875a 100%) }
-/* a fila das estratégias por baixo das camadas (24/10) */
-.estrEscolha { order:10; flex-basis:100%; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; margin-top:4px }
-.estrEscolha button { font:inherit; font-size:11px; color:var(--suave); background:transparent; border:1px solid var(--borda); border-radius:6px; padding:2px 7px; cursor:pointer }
-.estrEscolha button.on { color:var(--texto); border-color:#4a4f55; background:rgba(255,255,255,.04) }
-.estrEscolha .suave { color:var(--fraco) }
+/* a escolha da estratégia no gráfico, na barra das camadas (24/10) */
+.camadas .estrSel select { font:inherit; color:var(--fraco); background:transparent; border:none; padding:0; cursor:pointer; outline-offset:2px }
+.camadas .estrSel select.on { color:var(--texto) }
+.camadas .estrSel option { background:#16191d; color:var(--texto) }
+.sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0) }

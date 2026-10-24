@@ -12,9 +12,24 @@ const NOMES = { teto: 'venda no teto', sv3: 'SV3', pico: 'venda depois do pico',
 // 24/10 («ainda está feio»): as cores do gráfico vêm de uma paleta. No escuro, as nossas (rosa velho, verde salva, areia);
 // no claro, as clássicas do TradingView (vermelho e verde-água, laranja nas médias), todas da mesma família das velas,
 // com os textos um pouco mais fundos para se lerem no branco
+// 24/10 («mete mais opções tipo de cor»): cinco cores para o gráfico. Cada uma traz o fundo da escala, a grelha, as
+// velas e a família das linhas, caixas e marcas (r vermelho, g verde, a laranja/areia, c cinzento; rt/gt/at/ct os textos)
 const CORES = {
-  escuro: { r: '204,147,144', g: '156,184,148', a: '214,195,159', c: '139,144,150', rt: '#cc9390', gt: '#9cb894', at: '#d6c39f', ct: '#8f959c', vs: '#9cb894', vd: '#cc9390', rotulo: 'rgba(15,17,19,0.86)', hr: '#2a2f35' },
-  claro: { r: '239,83,80', g: '38,166,154', a: '242,153,74', c: '120,123,134', rt: '#d9443f', gt: '#15897d', at: '#d9822b', ct: '#787b86', vs: '#26a69a', vd: '#ef5350', rotulo: 'rgba(255,255,255,0.92)', hr: '#e0e3eb' }
+  escuro: { r: '204,147,144', g: '156,184,148', a: '214,195,159', c: '139,144,150', rt: '#cc9390', gt: '#9cb894', at: '#d6c39f', ct: '#8f959c',
+    vs: '#9cb894', vd: '#cc9390', pu: 'rgba(156,184,148,.7)', pd: 'rgba(204,147,144,.7)', rotulo: 'rgba(15,17,19,0.86)', hr: '#2a2f35',
+    texto: '#8f959c', grelha: 'rgba(255,255,255,0.035)', borda: '#23272c', mira: '#3a4047', etiqueta: '#2a2f35', linhaPreco: '#6f757c' },
+  noite: { r: '239,83,80', g: '38,166,154', a: '255,152,0', c: '120,123,134', rt: '#ef5350', gt: '#26a69a', at: '#ff9800', ct: '#868993',
+    vs: '#26a69a', vd: '#ef5350', pu: '#26a69a', pd: '#ef5350', rotulo: 'rgba(19,23,34,0.88)', hr: '#2a2e39',
+    texto: '#b2b5be', grelha: 'rgba(42,46,57,0.55)', borda: '#2a2e39', mira: '#758696', etiqueta: '#363a45', linhaPreco: '#758696' },
+  preto: { r: '204,147,144', g: '156,184,148', a: '214,195,159', c: '150,150,150', rt: '#d9a19e', gt: '#a9c4a1', at: '#dccaa6', ct: '#9a9a9a',
+    vs: '#ececec', vd: '#6b6b6b', pu: '#ececec', pd: '#6b6b6b', rotulo: 'rgba(0,0,0,0.86)', hr: '#262626',
+    texto: '#9a9a9a', grelha: 'rgba(255,255,255,0.05)', borda: '#222222', mira: '#4a4a4a', etiqueta: '#2a2a2a', linhaPreco: '#7a7a7a' },
+  branco: { r: '239,83,80', g: '38,166,154', a: '242,153,74', c: '120,123,134', rt: '#d9443f', gt: '#15897d', at: '#d9822b', ct: '#787b86',
+    vs: '#26a69a', vd: '#ef5350', pu: '#26a69a', pd: '#ef5350', rotulo: 'rgba(255,255,255,0.92)', hr: '#e0e3eb',
+    texto: '#131722', grelha: '#f0f3fa', borda: '#e0e3eb', mira: '#9598a1', etiqueta: '#131722', linhaPreco: '#9598a1' },
+  papel: { r: '178,98,92', g: '93,138,85', a: '176,130,60', c: '130,124,114', rt: '#a65752', gt: '#4f7d4b', at: '#9a7238', ct: '#7a7368',
+    vs: '#5d8a55', vd: '#b2625c', pu: '#5d8a55', pd: '#b2625c', rotulo: 'rgba(247,243,234,0.94)', hr: '#e2dac9',
+    texto: '#5a544b', grelha: 'rgba(60,45,25,0.06)', borda: '#e2dac9', mira: '#b9b0a0', etiqueta: '#4a443b', linhaPreco: '#b9b0a0' }
 }
 let P = CORES.escuro
 const R = a => 'rgba(' + P.r + ',' + a + ')', G = a => 'rgba(' + P.g + ',' + a + ')', A = a => 'rgba(' + P.a + ',' + a + ')', C = a => 'rgba(' + P.c + ',' + a + ')'
@@ -375,13 +390,12 @@ export function criarGrafico(el) {
       linhasPlano.push(velas.createPriceLine({ price: preco, color: cor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: titulo }))
   }
     // 24/10 (modo claro): troca a paleta, pinta de novo o que já está no gráfico e redesenha as caixas e as marcas
-  function tema(claro) {
-    P = claro ? CORES.claro : CORES.escuro
-    const borda = claro ? '#e0e3eb' : '#23272c', linha = claro ? '#9598a1' : '#3a4047', etiqueta = claro ? '#131722' : '#2a2f35', grelha = claro ? '#f0f3fa' : 'rgba(255,255,255,0.035)'
-    chart.applyOptions({ layout: { textColor: claro ? '#131722' : '#8f959c', panes: { separatorColor: borda } }, grid: { vertLines: { color: grelha }, horzLines: { color: grelha } },
-      rightPriceScale: { borderColor: borda }, timeScale: { borderColor: borda },
-      crosshair: { vertLine: { color: linha, labelBackgroundColor: etiqueta }, horzLine: { color: linha, labelBackgroundColor: etiqueta } } })
-    velas.applyOptions({ upColor: P.vs, downColor: P.vd, borderUpColor: P.vs, borderDownColor: P.vd, wickUpColor: claro ? P.vs : G(.7), wickDownColor: claro ? P.vd : R(.7), priceLineColor: claro ? '#9598a1' : '#6f757c' })
+  function tema(nome) {
+    P = CORES[nome === true ? 'branco' : nome] || CORES.escuro
+    chart.applyOptions({ layout: { textColor: P.texto, panes: { separatorColor: P.borda } }, grid: { vertLines: { color: P.grelha }, horzLines: { color: P.grelha } },
+      rightPriceScale: { borderColor: P.borda }, timeScale: { borderColor: P.borda },
+      crosshair: { vertLine: { color: P.mira, labelBackgroundColor: P.etiqueta }, horzLine: { color: P.mira, labelBackgroundColor: P.etiqueta } } })
+    velas.applyOptions({ upColor: P.vs, downColor: P.vd, borderUpColor: P.vs, borderDownColor: P.vd, wickUpColor: P.pu, wickDownColor: P.pd, priceLineColor: P.linhaPreco })
     verm.applyOptions({ color: R(.9) }); cinza.applyOptions({ color: C(.8) }); verde.applyOptions({ color: G(.9) }); ema.applyOptions({ color: A(.7) }); ema80.applyOptions({ color: A(.5) })
     for (const [k, sr] of linhasLT) sr.applyOptions({ color: k.endsWith('subida') ? G(.85) : R(.85) })
     if (estK) { estK.applyOptions({ color: P.at }); estD.applyOptions({ color: C(.8) }); for (const [l, f] of estLinhas) l.applyOptions({ color: f(.5) }) }

@@ -568,6 +568,7 @@ async function carregarMacro() {
 }
 setInterval(() => { if (est.aba === 'macro') carregarMacro() }, 60e3)
 
+let abrirFolha = () => {}
 // 24/10 («vê como é o TradingView na app mobile»): no telemóvel é como a app deles. Cada painel ocupa o ecrã e muda-se nos
 // separadores de baixo; no gráfico, uma barra fina de botões (tempo, camadas, estratégia) que abrem uma folha a subir de
 // baixo, e a legenda por cima das velas. Os botões da folha carregam nos de sempre, por isso guardam e redesenham igual
@@ -597,7 +598,8 @@ function mAtualizar() {
   const barra = document.createElement('div'); barra.className = 'mBarra'; barra.id = 'mBarra'
   barra.innerHTML = '<button type="button" class="tf" aria-label="Tempo das velas">' + SVG('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>') + '<span class="sub"></span></button><span class="div"></span>'
     + '<button type="button" class="cam" aria-label="Camadas">' + SVG('<path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/>') + 'Camadas</button><span class="div"></span>'
-    + '<button type="button" class="estr" aria-label="Estratégia no gráfico">' + SVG('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>') + '<span class="sub"></span></button>'
+    + '<button type="button" class="estr" aria-label="Estratégia no gráfico">' + SVG('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>') + '<span class="sub"></span></button><span class="div"></span>'
+    + '<button type="button" class="cor" aria-label="Cor do gráfico">' + SVG('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>') + 'Cor</button>'
   $('grafico').closest('.card').prepend(barra)
   const leg = document.createElement('div'); leg.className = 'mLeg'; leg.id = 'mLeg'; $('grafico').append(leg)
 
@@ -611,10 +613,10 @@ function mAtualizar() {
   let acao = null, multi = false, itens = () => []
   const desenhar = () => {
     folha.querySelector('.mLista').innerHTML = itens().map((x, k) => x.grupo != null ? '<div class="grupo">' + x.grupo + '</div>'
-      : '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '"><span class="esq"><span>' + esc(x.nome) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span>' + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span>'
+      : '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '">' + (x.amostra ? '<span class="amostra" style="background:' + x.amostra.bg + '"><i style="background:' + x.amostra.sobe + '"></i><i style="background:' + x.amostra.desce + '"></i></span>' : '') + '<span class="esq"><span>' + esc(x.nome) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span>' + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span>'
       + '<span class="dir">' + (x.p != null ? '<span class="p' + (x.p >= 0.5 ? ' sobe' : x.p <= -0.5 ? ' desce' : '') + '">' + (x.p < 0 ? '-' : '+') + fmt(Math.abs(x.p), 1) + ' pips</span>' : '') + '<span class="' + (multi ? 'int' : 'marca-on') + '"></span></span></button>').join('')
   }
-  const abrir = (tit, f, fn, m, ancora) => {
+  const abrir = abrirFolha = (tit, f, fn, m, ancora) => {
     if (ancora) { const r = ancora.getBoundingClientRect(); folha.style.setProperty('--x', Math.min(r.left, innerWidth - 410) + 'px'); folha.style.setProperty('--y', r.bottom + 6 + 'px') }
     folha.querySelector('.mTit').textContent = tit; itens = f; acao = fn; multi = m; desenhar(); folha.classList.add('aberta') }
   folha.querySelector('.mLista').addEventListener('click', e => {
@@ -658,21 +660,34 @@ function mAtualizar() {
   new ResizeObserver(ver).observe(c.parentElement); ver()
 }
 
-// 24/10 («caga no modo claro, mete só a opção do gráfico ser branco»): o botão da barra de cima põe só o gráfico em
-// branco (o resto fica escuro) e fica guardado. Na troca as transições desligam-se um instante, para mudar de uma vez
+// 24/10 («caga no modo claro, mete só a opção do gráfico ser branco»; «mete mais opções tipo de cor»): o botão da barra
+// de cima (e o «Cor» no telemóvel) escolhe a cor do gráfico entre cinco; só o cartão do gráfico muda, o resto do Jarvis
+// fica escuro. Fica guardada. Na troca as transições desligam-se um instante, para mudar de uma vez
+const TEMAS = [
+  { id: 'escuro', nome: 'Escuro', sub: 'o de sempre, com as cores suaves', bg: '#16191c', sobe: '#9cb894', desce: '#cc9390' },
+  { id: 'noite', nome: 'Noite', sub: 'o escuro do TradingView', bg: '#131722', sobe: '#26a69a', desce: '#ef5350' },
+  { id: 'preto', nome: 'Preto e branco', sub: 'fundo preto, velas brancas e cinzentas', bg: '#000000', sobe: '#ececec', desce: '#6b6b6b' },
+  { id: 'branco', nome: 'Branco', sub: 'o claro do TradingView', bg: '#ffffff', sobe: '#26a69a', desce: '#ef5350' },
+  { id: 'papel', nome: 'Papel', sub: 'fundo creme, com as cores suaves', bg: '#f7f3ea', sobe: '#5d8a55', desce: '#b2625c' }
+]
 {
   const b = $('temaBtn'), html = document.documentElement
   try { localStorage.removeItem('jarvis-tema') } catch {}
-  const aplicar = branco => {
-    html.classList.toggle('grafBranco', branco); b.textContent = branco ? 'Gráfico escuro' : 'Gráfico branco'; b.setAttribute('aria-pressed', branco)
-    grafico.tema(branco)
+  const aplicar = id => {
+    const t = TEMAS.find(x => x.id === id) || TEMAS[0]
+    if (t.id === 'escuro') delete html.dataset.graf; else html.dataset.graf = t.id
+    b.innerHTML = 'Gráfico <b>' + esc(t.nome) + '</b>' + SVG('<path d="m7 10 5 5 5-5"/>')
+    grafico.tema(t.id)
   }
-  b.addEventListener('click', () => {
-    const branco = !html.classList.contains('grafBranco')
+  const escolher = x => {
     const st = document.createElement('style'); st.textContent = '*,*::before,*::after{transition:none !important}'; document.head.append(st)
-    aplicar(branco); try { localStorage.setItem('jarvis-grafico', branco ? 'branco' : 'escuro') } catch {}
+    aplicar(x.id); try { localStorage.setItem('jarvis-grafico', x.id) } catch {}
     getComputedStyle(document.body).opacity; requestAnimationFrame(() => st.remove())
-  })
-  aplicar(html.classList.contains('grafBranco'))
+  }
+  const lista = () => TEMAS.map(t => ({ id: t.id, nome: t.nome, sub: t.sub, on: (html.dataset.graf || 'escuro') === t.id, amostra: t }))
+  b.addEventListener('click', e => abrirFolha('Cor do gráfico', lista, escolher, false, e.currentTarget))
+  $('mBarra')?.querySelector('.cor')?.addEventListener('click', () => abrirFolha('Cor do gráfico', lista, escolher, false))
+  let guardado = 'escuro'; try { guardado = localStorage.getItem('jarvis-grafico') || 'escuro' } catch {}
+  aplicar(guardado)
 }
 

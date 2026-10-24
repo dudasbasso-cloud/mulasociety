@@ -410,59 +410,57 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .estrTP .placarDuas .placar + .placar { border-left:1px solid #3d434a; padding-left:16px; margin-left:16px; width:calc(100% - 16px) }
 .estrTP .placarDuas .placar:first-child { width:calc(100% - 16px) }
 
-/* 24/10 («mete isto para mobile, de forma a que dê para analisar o gráfico e as estratégias»; «pode ser mobile tipo
-   horizontal»): no telemóvel, uma coluna só e a página corre para baixo. Primeiro o gráfico, com a altura do ecrã quase
-   toda (no telemóvel deitado, o ecrã inteiro), depois as estratégias, a ordem e as abas, e no fim as notícias */
+/* 24/10 («faz algo do género do TradingView para mobile»): no telemóvel (de pé ou deitado) a página não corre. Um painel de
+   cada vez, a ecrã inteiro entre a barra de cima e os separadores de baixo; o gráfico tem o dedo todo para ele */
+.mNav { display:none }
 @media (max-width: 1000px), (max-height: 520px) {
-  body { overflow:auto }
-  #app { height:auto; min-height:100%; padding:6px max(8px, env(safe-area-inset-right)) 12px max(8px, env(safe-area-inset-left)) }
-  .topo { padding:4px 10px; margin-bottom:6px; gap:12px }
-  .topo #sessoes, .topo #proxima, .topo .relogio span { display:none }
-  .marca { letter-spacing:.2em; font-size:12px }
-  .grelha { display:flex; flex-direction:column; gap:10px }
+  #app { height:100dvh; padding:4px max(6px, env(safe-area-inset-right)) 0 max(6px, env(safe-area-inset-left)) }
+  .topo { padding:3px 10px; margin-bottom:4px; gap:12px; flex-wrap:nowrap; overflow:hidden }
+  .topo #sessoes, .topo #proxima, .topo .relogio span, .topo #resultado, .topo #topoConta { display:none }
+  .marca { letter-spacing:.2em; font-size:11.5px }
+  .relogio b { font-size:14px }
+  .grelha { display:block; position:relative; flex:1; min-height:0 }
   .col { display:contents }
-  .col.centro > .card.cresce { order:1; height:calc(100dvh - 52px); min-height:300px; flex:none }
-  #estrTP { order:2 }
-  .col.dir > * { order:3 }
-  .col.esq > * { order:4 }
-  .col.esq .noticias { max-height:70dvh }
-  .col.dir .abas { min-height:420px }
-  .cab { padding:8px 10px 4px; gap:10px }
-  .camadas { flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; scrollbar-width:none; padding-bottom:2px }
+  [data-painel], .col > .card:not([data-painel]) { display:none !important }
+  body[data-m="grafico"] [data-painel="grafico"], body[data-m="estrategias"] [data-painel="estrategias"], body[data-m="ordem"] [data-painel="ordem"],
+  body[data-m="noticias"] [data-painel="noticias"] { display:flex !important; flex-direction:column; position:absolute; inset:0; overflow:auto; max-height:none }
+  body[data-m="analise"] [data-painel="analise"] { display:flex !important; flex-direction:column; overflow:auto }
+  body[data-m="analise"] .card.abas { position:absolute; inset:0 0 46% 0 } body[data-m="analise"] [data-painel="analise"]:not(.abas) { position:absolute; inset:calc(54% + 8px) 0 0 0 }
+  body[data-m="estrategias"] #estrTP { display:block !important }
+  .cab { padding:6px 10px 2px; gap:4px 10px; flex-wrap:wrap }
+  .cab > :not(.camadas) { flex:none }
+  .camadas { flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; scrollbar-width:none; padding:0 0 2px; flex-basis:100%; min-width:0 }
+  .camadas .estrSel { order:-1; padding-right:6px; border-right:1px solid var(--borda) }
+  .camadas .estrSel select { min-height:28px; color:var(--texto) }
   .camadas::-webkit-scrollbar { display:none }
   .camadas > * { flex:none }
-  #grafico { min-height:0; margin:0 4px }
-  .alvos { display:none !important }
-  .legenda { display:none }
-}
-/* estreito (telemóvel de pé ou janela pequena): o placar volta a uma coluna e larga a coluna do TP2 */
-@media (max-width: 760px) {
-  .estrTP .placarDuas { grid-template-columns:minmax(0,1fr) }
-  .estrTP .placarDuas .placar + .placar { border-left:0; padding-left:0; margin-left:0; width:100%; margin-top:6px }
-  .estrTP .placarDuas .placar:first-child { width:100% }
-  .estrTP .placarDuas .placar + .placar thead { display:none }
-  .estrTP .placar th:nth-child(4), .estrTP .placar td:nth-child(4) { display:none }
-  .estrTP .tit span + span { display:none }
-}
-/* no telemóvel deitado o placar também fica numa coluna (em duas os nomes partiam em quatro linhas) */
-@media (max-width: 1000px), (max-height: 520px) {
+  #grafico { min-height:0; margin:0 2px; touch-action:none }
+  .alvos, .legenda { display:none !important }
+  .mNav { display:flex; flex:none; gap:2px; padding:4px 0 max(4px, env(safe-area-inset-bottom)); border-top:1px solid var(--borda); margin-top:4px }
+  .mNav button { flex:1; text-align:center; font-size:12px; color:var(--suave); padding:7px 0; border-radius:8px; min-height:34px }
+  .mNav button.on { color:var(--texto); background:rgba(255,255,255,.06) }
+  /* o placar numa coluna, com as colunas alinhadas */
   .estrTP .placarDuas { grid-template-columns:minmax(0,1fr) }
   .estrTP .placarDuas .placar + .placar { border-left:0; padding-left:0; margin-left:0; width:100%; margin-top:2px }
   .estrTP .placarDuas .placar:first-child { width:100% }
   .estrTP .placarDuas .placar + .placar thead { display:none }
-  .estrTP .placarDuas .placar td:first-child { white-space:nowrap }
-}
-@media (max-width: 1000px), (max-height: 520px) {
   .estrTP .placarDuas .placar { table-layout:fixed }
+  .estrTP .placarDuas .placar td:first-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:118px }
   .estrTP .placarDuas .placar th:nth-child(n+3), .estrTP .placarDuas .placar td:nth-child(n+3) { width:52px }
   .estrTP .placarDuas .placar th:last-child, .estrTP .placarDuas .placar td:last-child { width:62px }
-  .estrTP .placarDuas .placar td:first-child { overflow:hidden; text-overflow:ellipsis }
 }
-@media (max-width: 600px) { .topo { flex-wrap:wrap; row-gap:2px } .topo .dir { margin-left:0 } }
-/* 24/10: no telemóvel deitado o gráfico deixa ver um bocado da página por baixo, para se perceber que há mais e se poder
-   arrastar a página por fora dele */
-@media (max-width: 1000px), (max-height: 520px) {
-  .col.centro > .card.cresce { height:calc(100dvh - 96px) }
-  #grafico { touch-action:pan-y pinch-zoom }
+@media (max-width: 760px) {
+  .estrTP .placar th:nth-child(4), .estrTP .placar td:nth-child(4) { display:none }
+  .estrTP .tit span + span { display:none }
+  .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:86px }
 }
+
+/* telemóvel deitado: cabeçalho do gráfico numa só linha, o gráfico fica com a altura (24/10) */
+@media (max-height:520px) {
+  .cab { flex-wrap:nowrap }
+  .cab #gTimer { display:none }
+  .camadas { flex:1 1 0; flex-basis:0 }
+  .camadas .estrSel select { max-width:170px }
+}
+

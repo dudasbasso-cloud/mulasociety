@@ -564,3 +564,17 @@ async function carregarMacro() {
     + '<div class="mc-nota">O dólar a descer costuma empurrar o ouro para cima; o petróleo a subir costuma ir com ele. Direção pela EMA 50 de 15 min.</div>'
 }
 setInterval(() => { if (est.aba === 'macro') carregarMacro() }, 60e3)
+
+// 24/10 («faz algo do género do TradingView para mobile»): no telemóvel cada painel ocupa o ecrã e muda-se nos separadores
+// de baixo; o gráfico fica com o dedo todo para ele (arrastar, dois dedos para o zoom), sem a página a fugir
+{
+  const P = { grafico: [$('grafico').closest('.card')], estrategias: [$('estrTP')], ordem: [$('plano').closest('.card')],
+    analise: [document.querySelector('.card.abas'), $('calendario')?.closest('.card')], noticias: [document.querySelector('.card.noticias')] }
+  for (const [k, l] of Object.entries(P)) for (const e of l) if (e) e.dataset.painel = k
+  const mostrar = m => {
+    document.body.dataset.m = m
+    for (const b of $('mNav').children) { const on = b.dataset.m === m; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false') }
+  }
+  $('mNav').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) { mostrar(b.dataset.m); est.mPainel = b.dataset.m; guardar() } })
+  mostrar(est.mPainel || 'grafico')
+}

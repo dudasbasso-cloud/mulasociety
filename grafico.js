@@ -118,13 +118,9 @@ function dicaDe(s, casas) {
 export function criarGrafico(el) {
   let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), tfAtual = '15m', estK = null, estD = null
   const rot = t => tfAtual === '1d' ? t + 43200 : t   // a vela do dia começa às 17:00 de NY da véspera: mostra-se a data do dia
-  // 24/10 («no mobile está difícil mexer no gráfico e dar scroll na página»): com o dedo, arrastar para o lado mexe no
-  // gráfico e arrastar para cima ou para baixo corre a página; o zoom é com dois dedos
-  const toque = matchMedia('(pointer: coarse)').matches
   const chart = L.createChart(el, {
     autoSize: true,
-    ...(toque ? { handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false }, handleScale: { pinch: true, mouseWheel: false, axisPressedMouseMove: { time: true, price: false } },
-      kineticScroll: { touch: true } } : {}),
+    kineticScroll: { touch: true, mouse: false },
     layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8f959c', fontSize: 11, attributionLogo: false,
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },

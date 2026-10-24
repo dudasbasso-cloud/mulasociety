@@ -586,3 +586,8 @@ html[data-graf="papel"] .cardGraf #dica, html[data-graf="papel"] .cardGraf .alvo
 html[data-graf="papel"] .cardGraf .alvos .barra { background:rgba(60,45,25,.08) }
 html[data-graf="papel"] .cardGraf .mBarra button:active { background:rgba(60,45,25,.06) }
 html[data-graf] .cardGraf .timer b { color:var(--texto) }
+/* 24/10 («mete mesmo EDNEY todas juntas»): na lista das estratégias a linha das três juntas diz o nome todo, com o EDNEY a
+   laranja como na tabela; o botão da estratégia cabe o nome inteiro */
+.mLista button .laranja { color:#d9a47c; font-weight:600 }
+@media (min-width: 1001px) and (min-height: 521px) { .estrBtn { max-width:290px } }
+

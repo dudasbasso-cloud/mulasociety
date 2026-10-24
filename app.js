@@ -314,7 +314,7 @@ function escolhaEstr() {
   const el = $('estrSel'), ids = ultimoGrafico?.estrategias?.ids || []
   if (!ids.length) return
   const juntas = { edney: ['liquidez', 'choch', 'orderblock'] }, n = id => (ultimoGrafico.estrategias.lista || []).filter(x => (juntas[id] || [id]).includes(x.id)).length
-  const html = '<option value="">Estratégia: nenhuma</option>' + ids.flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'EDNEY: todas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
+  const html = '<option value="">Estratégia: nenhuma</option>' + ids.flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'EDNEY: todas juntas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
   el.value = est.estrVer?.[0] || ''
   el.classList.toggle('on', !!el.value)
@@ -579,7 +579,7 @@ function mAtualizar() {
   const sel = $('estrSel'), op = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text.replace(/\s*\(\d+\)$/, '') : 'Estratégia'
   $('camBtnV').textContent = [...$('camadas').querySelectorAll('[data-c]')].filter(x => est.camadas[x.dataset.c]).length + ' ligadas'
   $('estrBtnV').textContent = sel.selectedIndex > 0 ? op.replace(/\s*\(.*\)$/, '') : 'nenhuma'; $('estrBtn').classList.toggle('on', sel.selectedIndex > 0)
-  b.querySelector('.estr .sub').textContent = op; b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
+  b.querySelector('.estr .sub').textContent = op.replace(/\s*\(.*\)$/, ''); b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
   $('mLeg').innerHTML = '<b>' + esc($('gNome').textContent) + '</b> · ' + esc(TFN[est.tf] || est.tf) + ' &nbsp;<b class="num">' + esc($('gPx').textContent) + '</b> <span class="num ' + ($('gVar').className.includes('sobe') ? 'sobe' : 'desce') + '">' + esc($('gVar').textContent.replace(' em 24 h', '')) + '</span>'
     + ($('gTimer').textContent ? '<br><span class="estado">' + esc($('gTimer').textContent) + '</span>' : '')
 }
@@ -613,7 +613,7 @@ function mAtualizar() {
   let acao = null, multi = false, itens = () => []
   const desenhar = () => {
     folha.querySelector('.mLista').innerHTML = itens().map((x, k) => x.grupo != null ? '<div class="grupo">' + x.grupo + '</div>'
-      : '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '">' + (x.amostra ? '<span class="amostra" style="background:' + x.amostra.bg + '"><i style="background:' + x.amostra.sobe + '"></i><i style="background:' + x.amostra.desce + '"></i></span>' : '') + '<span class="esq"><span>' + esc(x.nome) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span>' + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span>'
+      : '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '">' + (x.amostra ? '<span class="amostra" style="background:' + x.amostra.bg + '"><i style="background:' + x.amostra.sobe + '"></i><i style="background:' + x.amostra.desce + '"></i></span>' : '') + '<span class="esq"><span>' + (x.nomeHtml || esc(x.nome)) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span>' + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span>'
       + '<span class="dir">' + (x.p != null ? '<span class="p' + (x.p >= 0.5 ? ' sobe' : x.p <= -0.5 ? ' desce' : '') + '">' + (x.p < 0 ? '-' : '+') + fmt(Math.abs(x.p), 1) + ' pips</span>' : '') + '<span class="' + (multi ? 'int' : 'marca-on') + '"></span></span></button>').join('')
   }
   const abrir = abrirFolha = (tit, f, fn, m, ancora) => {
@@ -637,8 +637,8 @@ function mAtualizar() {
   // a lista das estratégias por grupos, cada uma com o que fez desde 21/10 (o placar), as que mais deram primeiro
   const listaEstr = () => {
     const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value)
-    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^EDNEY: /, '').replace(/^todas \(.*\)$/, 'Todas juntas')
-      return { nome, v: o.value, on: $('estrSel').value === o.value, p: e?.n ? e.pips : null,
+    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^EDNEY: /, '')
+      return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">EDNEY</span>: todas juntas' : null, v: o.value, on: $('estrSel').value === o.value, p: e?.n ? e.pips : null,
         sub: e ? (e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' : 'sem entradas desde 21/10') : '',
         ordem: o.value === 'edney' ? 1e9 : e?.n ? e.pips : -1e9 } }
     const ed = ['edney', 'liquidez', 'choch', 'orderblock'], por = l => l.sort((a, b) => b.ordem - a.ordem)

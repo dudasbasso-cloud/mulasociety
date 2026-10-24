@@ -405,3 +405,7 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .estrTP .placarDuas .placar td:first-child { white-space:nowrap }
 .estrTP .placarDuas { grid-template-columns:minmax(0,1fr) minmax(0,1fr) }
 .estrTP .placarDuas .placar td:first-child { white-space:normal; text-wrap:pretty }
+/* uma linha vertical a separar as duas tabelas (24/10, «uma cena no meio para se perceber que são duas») */
+.estrTP .placarDuas { gap:0 }
+.estrTP .placarDuas .placar + .placar { border-left:1px solid #3d434a; padding-left:16px; margin-left:16px; width:calc(100% - 16px) }
+.estrTP .placarDuas .placar:first-child { width:calc(100% - 16px) }

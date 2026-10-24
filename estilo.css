@@ -391,3 +391,5 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 /* e as linhas do placar mais juntas, para a altura que sobra ir para o gráfico */
 .estrTP .placar td { padding:3px 8px; line-height:1.3 }
 .estrTP .placar th { padding:3px 8px }
+/* 24/10 («como meteste o BOT mas EDNEY a laranja»): as estratégias do Edney com o mesmo brilho, em laranja suave */
+.estrTP .placar .ouro.laranja { background-image:linear-gradient(100deg, #c9875a 0%, #c9875a 40%, #f2c9a4 50%, #c9875a 60%, #c9875a 100%) }

@@ -458,7 +458,7 @@ function placarTP(L) {
   const cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
   el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 21/10 às 18:00, até 24 h cada</span></div>'
     + '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>'
-    + L.map(e => '<tr><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>') + '</b> <span class="suave">' + esc(e.autor) + '</span></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
+    + L.map(e => '<tr><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^EDNEY/, '<span class="ouro laranja">EDNEY</span>') + '</b> <span class="suave">' + esc(e.autor) + '</span></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
       + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
       + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>').join('') + '</tbody></table>'
   el.hidden = false

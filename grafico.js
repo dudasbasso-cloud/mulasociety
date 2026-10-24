@@ -369,7 +369,7 @@ export function criarGrafico(el) {
     chart.applyOptions({ layout: { textColor: claro ? '#131722' : '#8f959c', panes: { separatorColor: borda } }, grid: { vertLines: { color: grelha }, horzLines: { color: grelha } },
       rightPriceScale: { borderColor: borda }, timeScale: { borderColor: borda },
       crosshair: { vertLine: { color: linha, labelBackgroundColor: etiqueta }, horzLine: { color: linha, labelBackgroundColor: etiqueta } } })
-    const sobe = claro ? '#089981' : '#9cb894', desce = claro ? '#f23645' : '#cc9390'
+    const sobe = claro ? '#26a69a' : '#9cb894', desce = claro ? '#ef5350' : '#cc9390'
     velas.applyOptions({ upColor: sobe, downColor: desce, borderUpColor: sobe, borderDownColor: desce, wickUpColor: sobe, wickDownColor: desce })
   }
   return { mostrar, plano, tema }

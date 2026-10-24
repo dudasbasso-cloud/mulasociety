@@ -118,8 +118,13 @@ function dicaDe(s, casas) {
 export function criarGrafico(el) {
   let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), tfAtual = '15m', estK = null, estD = null
   const rot = t => tfAtual === '1d' ? t + 43200 : t   // a vela do dia começa às 17:00 de NY da véspera: mostra-se a data do dia
+  // 24/10 («no mobile está difícil mexer no gráfico e dar scroll na página»): com o dedo, arrastar para o lado mexe no
+  // gráfico e arrastar para cima ou para baixo corre a página; o zoom é com dois dedos
+  const toque = matchMedia('(pointer: coarse)').matches
   const chart = L.createChart(el, {
     autoSize: true,
+    ...(toque ? { handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false }, handleScale: { pinch: true, mouseWheel: false, axisPressedMouseMove: { time: true, price: false } },
+      kineticScroll: { touch: true } } : {}),
     layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8f959c', fontSize: 11, attributionLogo: false,
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },
@@ -320,7 +325,8 @@ export function criarGrafico(el) {
     if (camadas.sinais) for (const s of d.sinais) porTempo.set(s.time, [...(porTempo.get(s.time) || []), s])
     marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time) : [])
     // as entradas das estratégias (camada Estratégias): seta do lado, nome curto e ✓ se chegou a um TP, ✗ se foi ao stop
-    const ver = camadas.estrVer || [], EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
+    // «EDNEY: todas» junta as três dele (liquidez, CHoCH e order block)
+    const ver = (camadas.estrVer || []).flatMap(v => v === 'edney' ? ['liquidez', 'choch', 'orderblock'] : [v]), EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
     marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
       color: x.lado === 'venda' ? '#cc9390' : '#9cb894', size: 0.8, text: x.curto + (x.fim === 'stop' ? ' ✗' : /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0) ? ' ✓' : '') })).sort((a, b) => a.time - b.time))
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até

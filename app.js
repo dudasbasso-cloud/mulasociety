@@ -311,8 +311,8 @@ function marcar() {
 function escolhaEstr() {
   const el = $('estrSel'), ids = ultimoGrafico?.estrategias?.ids || []
   if (!ids.length) return
-  const n = id => (ultimoGrafico.estrategias.lista || []).filter(x => x.id === id).length
-  const html = '<option value="">Estratégia: nenhuma</option>' + ids.map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
+  const juntas = { edney: ['liquidez', 'choch', 'orderblock'] }, n = id => (ultimoGrafico.estrategias.lista || []).filter(x => (juntas[id] || [id]).includes(x.id)).length
+  const html = '<option value="">Estratégia: nenhuma</option>' + ids.flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'EDNEY: todas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
   el.value = est.estrVer?.[0] || ''
   el.classList.toggle('on', !!el.value)

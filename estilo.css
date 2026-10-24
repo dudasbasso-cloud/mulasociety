@@ -460,3 +460,9 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .estrTP .placarDuas .placar td:first-child { overflow:hidden; text-overflow:ellipsis }
 }
 @media (max-width: 600px) { .topo { flex-wrap:wrap; row-gap:2px } .topo .dir { margin-left:0 } }
+/* 24/10: no telemóvel deitado o gráfico deixa ver um bocado da página por baixo, para se perceber que há mais e se poder
+   arrastar a página por fora dele */
+@media (max-width: 1000px), (max-height: 520px) {
+  .col.centro > .card.cresce { height:calc(100dvh - 96px) }
+  #grafico { touch-action:pan-y pinch-zoom }
+}

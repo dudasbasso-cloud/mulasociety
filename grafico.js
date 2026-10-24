@@ -274,7 +274,8 @@ export function criarGrafico(el) {
     // 1 h depois do anterior) fazem uma caixa só, com «Venda ×3»; o quadro continua a contar cada aviso. Quando chega outro
     // aviso com a caixa ainda aberta, ela acaba na vela antes do novo, e o que fez depois fica escrito no nome («· TP3»).
     // Se o último aviso ainda está aberto e a caixa do grupo dele já fechou, ganha a sua caixa na vela dele.
-    const alvos = camadas.alvos ? d.alvos?.lista || [] : [], mAlvos = [], grupos = []
+    // com uma estratégia escolhida, só as caixas dela
+    const alvos = camadas.alvos && !(camadas.estrVer || []).length ? d.alvos?.lista || [] : [], mAlvos = [], grupos = []
     for (const p of alvos) { const g = grupos.at(-1), u = g?.at(-1); if (u && u.lado === p.lado && p.time - u.time <= 3600) g.push(p); else grupos.push([p]) }
     const fim = alvos.at(-1), rep = grupos.at(-1)?.[0], solto = fim && !fim.fim && rep !== fim && rep.fim ? fim : null, ultimo = solto || rep
     const juntaL = o => { const c = new Linhas(o); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas)   // 24/10 («às vezes estou em 4445,00 e é 4445,10»): com as duas casas
@@ -322,6 +323,9 @@ export function criarGrafico(el) {
     const ver = camadas.estrVer || [], EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
     marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
       color: x.lado === 'venda' ? '#cc9390' : '#9cb894', size: 0.8, text: x.curto + (x.fim === 'stop' ? ' ✗' : /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0) ? ' ✓' : '') })).sort((a, b) => a.time - b.time))
+    // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
+    // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte
+    EL.forEach((x, i) => { const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate; caixa(x, x.time, ate) })
     velaPorTempo = new Map()
     const pads = camadas.velas ? d.padroes || [] : []
     for (const v of pads) velaPorTempo.set(v.time, [...(velaPorTempo.get(v.time) || []), v])

@@ -7,7 +7,7 @@
 <title>MULASOCIETY ORG.</title>
 <script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'</script>
 <link rel="stylesheet" href="estilo.css">
-<script>try{if(localStorage.getItem('jarvis-tema')==='claro')document.documentElement.classList.add('claro')}catch(e){}</script>
+<script>try{if(localStorage.getItem('jarvis-grafico')==='branco')document.documentElement.classList.add('grafBranco')}catch(e){}</script>
 <link rel="icon" href="favicon.png">
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -21,7 +21,7 @@
     <div class="it" id="resultado"></div>
     <div class="dir">
       <div class="it" id="topoRobo" hidden></div>
-      <button type="button" class="temaBtn" id="temaBtn" aria-pressed="false">Modo claro</button>
+      <button type="button" class="temaBtn" id="temaBtn" aria-pressed="false">Gráfico branco</button>
       <div class="it" id="topoConta"></div>
       <div class="it" id="ligacao"><span class="ponto"></span>a ligar</div>
     </div>
@@ -37,7 +37,7 @@
       <div class="card" hidden><div class="tit"><span>Força das divisas</span><span>24 h · 5 dias</span></div><div class="forca" id="forca"><div class="vazio">A medir pelos 28 pares.</div></div></div>
     </section>
     <section class="col centro">
-      <div class="card cresce">
+      <div class="card cresce cardGraf">
         <div class="cab">
           <span class="sim" id="gNome">Ouro</span><span class="px num" id="gPx"></span><span class="num" id="gVar"></span>
           <div class="seg" id="tfs"><button type="button" data-tf="15m">15 min</button><button type="button" data-tf="1h">1 h</button><button type="button" data-tf="4h">4 h</button><button type="button" data-tf="1d">dia</button></div>

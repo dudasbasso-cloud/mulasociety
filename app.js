@@ -658,20 +658,21 @@ function mAtualizar() {
   new ResizeObserver(ver).observe(c.parentElement); ver()
 }
 
-// 24/10 («aqui ao lado mete white mode opção»): o botão na barra de cima troca entre escuro e claro e fica guardado.
-// Na troca as transições desligam-se um instante, para tudo mudar de uma vez
+// 24/10 («caga no modo claro, mete só a opção do gráfico ser branco»): o botão da barra de cima põe só o gráfico em
+// branco (o resto fica escuro) e fica guardado. Na troca as transições desligam-se um instante, para mudar de uma vez
 {
   const b = $('temaBtn'), html = document.documentElement
-  const aplicar = claro => {
-    html.classList.toggle('claro', claro); b.textContent = claro ? 'Modo escuro' : 'Modo claro'; b.setAttribute('aria-pressed', claro)
-    grafico.tema(claro)
+  try { localStorage.removeItem('jarvis-tema') } catch {}
+  const aplicar = branco => {
+    html.classList.toggle('grafBranco', branco); b.textContent = branco ? 'Gráfico escuro' : 'Gráfico branco'; b.setAttribute('aria-pressed', branco)
+    grafico.tema(branco)
   }
   b.addEventListener('click', () => {
-    const claro = !html.classList.contains('claro')
+    const branco = !html.classList.contains('grafBranco')
     const st = document.createElement('style'); st.textContent = '*,*::before,*::after{transition:none !important}'; document.head.append(st)
-    aplicar(claro); try { localStorage.setItem('jarvis-tema', claro ? 'claro' : 'escuro') } catch {}
+    aplicar(branco); try { localStorage.setItem('jarvis-grafico', branco ? 'branco' : 'escuro') } catch {}
     getComputedStyle(document.body).opacity; requestAnimationFrame(() => st.remove())
   })
-  aplicar(html.classList.contains('claro'))
+  aplicar(html.classList.contains('grafBranco'))
 }
 

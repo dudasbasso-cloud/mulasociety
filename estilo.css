@@ -539,69 +539,20 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .camadas.sozinha { flex-basis:100%; margin-left:0; justify-content:flex-start }
 }
 
-/* 24/10 («mete white mode opção»): o modo claro. As mesmas cores suaves, em papel quente: fundo areia muito clara,
-   cartões quase brancos, texto castanho escuro; a areia, o verde e o rosa um pouco mais fundos para se lerem no claro */
+/* 24/10 («caga no modo claro, mete só a opção do gráfico ser branco»): o resto do Jarvis fica escuro; só o cartão do
+   gráfico passa a branco, como o TradingView claro. As cores do cartão mudam pelas variáveis, só dentro dele; o que tinha
+   cor fixa leva a versão clara aqui. As velas, as linhas e as caixas mudam no grafico.js (paleta CORES.claro) */
 .temaBtn { font:inherit; font-size:12.5px; color:var(--suave); padding:4px 10px; border:1px solid var(--borda); border-radius:7px; cursor:pointer; background:transparent }
 .temaBtn:hover { color:var(--texto) }
-/* 24/10 («no modo claro mete mesmo o estilo das cores do TradingView»): as cores do tema claro do TradingView */
-/* («o white mode não precisa ser levado ao extremo, aplica normal»): os fundos claros do TradingView ficam, mas as cores
-   de destaque voltam às nossas (areia, verde e rosa), só um pouco mais fundas para se lerem no branco; nada de azul */
-html.claro { --bg:#eef0f4; --painel:#ffffff; --painel2:#f7f8fa; --borda:#e0e3eb; --texto:#131722; --suave:#6a6d78; --fraco:#8b8e99;
-  --areia:#b07a1a; --salva:#1d8a7a; --rosa:#d0504c; color-scheme:light }
-html.claro body { background:#eef0f4 }
-html.claro .col.esq .card, html.claro .col.dir .card { background:var(--painel) }
-html.claro .seg, html.claro .estrBtn { background:#f0f3fa }
-html.claro .seg > .on { background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08) }
-html.claro .estrBtn:hover, html.claro .par:hover { background:#e9edf7 }
-html.claro .quad, html.claro .mc-ouro, html.claro .maq { background:var(--painel2) }
-html.claro #dica, html.claro .alvos, html.claro .mCaixa { background:#fffefb; box-shadow:0 10px 28px rgba(19,23,34,.14) }
-html.claro .mFundo { background:rgba(19,23,34,.3) }
-html.claro .sw { background:#d1d4dc } html.claro .sw::after { background:#fff } html.claro .sw.on { background:#26a69a }
-html.claro .par .barra, html.claro .risco, html.claro .forca .b { background:#e0e3eb }
-html.claro .par .barra i, html.claro .risco i, html.claro .forca .b i { background:#9598a1 }
-html.claro .alvos .barra { background:rgba(0,0,0,.07) }
-html.claro .timer b, html.claro .plano .deg.ag b, html.claro .plano .deg.ag .n { color:var(--texto) }
-html.claro .plano .deg.ag i { background:#fff; border-color:var(--texto) }
-html.claro .plano .nota b, html.claro .obs .info > span:last-child { color:#434651 }
-html.claro .msg.eu { background:#eef1f8 } html.claro .msg.jv { background:#f8f9fd }
-html.claro .entrada button, html.claro .carregar:hover { background:#e9edf7 }
-html.claro .carregar { border-color:#d1d4dc }
-html.claro .placar { border-left-color:#d1d4dc }
-html.claro .plano .acaoBloco.pausa, html.claro .plano .ordemParada { background:rgba(0,0,0,.025) }
-html.claro .mLista button { border-top-color:var(--borda) } html.claro .mLista .marca-on { border-color:#b2b5be }
-html.claro .mLista button.on .marca-on { box-shadow:inset 0 0 0 4px #fffefb }
-html.claro .mLista .int { background:#d1d4dc }
-html.claro .mPega { background:#d1d4dc }
-html.claro .camadas .estrSel option { background:#fff }
-html.claro ::-webkit-scrollbar-thumb { background:#d1d4dc }
-html.claro .estrTP .placar .ouro { background:none; -webkit-text-fill-color:#b07a1a; color:#b07a1a }
-html.claro .estrTP .placar .ouro.laranja, html.claro .mLista .grupo .laranja { -webkit-text-fill-color:#cf6a2c; color:#cf6a2c }
-html.claro .mLeg { text-shadow:0 0 6px var(--bg) }
-/* 24/10 («ainda está bué feio»): no claro os títulos grandes ficam escuros (o dourado só em detalhes pequenos), todos os
-   cartões no mesmo branco, e o bloco da ordem parada num cinzento muito leve */
-html.claro .card { background:var(--painel) }
-html.claro .ordemParada.fechado .op-est, html.claro .mf-est { color:var(--texto) }
-html.claro .plano .ordemParada, html.claro .plano .acaoBloco.pausa { background:var(--painel2) }
-html.claro .ag-atencao { background:var(--painel2) }
-
-/* 24/10 («melhora um pouco mais as sombras, está bué sem vida»): no claro os cartões ganham relevo com sombras suaves em
-   camadas no lugar da borda, e o fundo fica um pouco mais fundo para eles se destacarem. Os botões ficam com volume, os
-   interruptores com a bolinha em relevo, e os blocos de dentro com um tom leve da cor deles (areia, verde ou rosa) */
-html.claro { --bg:#e8ebf0 }
-html.claro body { background:linear-gradient(180deg, #eef1f5 0%, #e5e8ee 100%) fixed }
-@media (min-width: 1001px) and (min-height: 521px) {
-  html.claro .card, html.claro .topo { border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.05), 0 2px 4px rgba(19,23,34,.04), 0 12px 28px -10px rgba(19,23,34,.16) }
-}
-html.claro .seg { background:#eef0f4; border-color:transparent; box-shadow:inset 0 1px 2px rgba(19,23,34,.07) }
-html.claro .seg > .on { background:#fff; color:var(--texto); box-shadow:0 1px 2px rgba(19,23,34,.12), 0 0 0 1px rgba(19,23,34,.04) }
-html.claro .estrBtn, html.claro .temaBtn { background:#fff; border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.09), 0 1px 2px rgba(19,23,34,.07) }
-html.claro .estrBtn:hover, html.claro .temaBtn:hover { background:#f7f8fa }
-html.claro .estrBtn.on { box-shadow:0 0 0 1px rgba(176,122,26,.35), 0 1px 2px rgba(19,23,34,.07) }
-html.claro .sw::after { box-shadow:0 1px 3px rgba(19,23,34,.28), 0 0 0 .5px rgba(19,23,34,.06) }
-html.claro .plano .ordemParada { box-shadow:inset 0 0 0 1px rgba(19,23,34,.04) }
-html.claro .plano .ordemParada.fechado { background:linear-gradient(180deg, rgba(176,122,26,.06) 0%, rgba(176,122,26,.025) 100%) }
-html.claro .mc-ouro { box-shadow:inset 0 0 0 1px rgba(19,23,34,.04) }
-html.claro .mc-ouro.compra { background:linear-gradient(180deg, rgba(29,138,122,.07) 0%, rgba(29,138,122,.025) 100%) }
-html.claro .mc-ouro.venda { background:linear-gradient(180deg, rgba(208,80,76,.07) 0%, rgba(208,80,76,.025) 100%) }
-html.claro .estrTP .placar tbody tr:hover td { background:#f6f7f9 }
-html.claro .alvos { border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.06), 0 10px 28px -6px rgba(19,23,34,.18) }
+.temaBtn[aria-pressed="true"] { color:var(--texto); border-color:#3a4047 }
+html.grafBranco .cardGraf { --bg:#ffffff; --painel:#ffffff; --painel2:#f7f8fa; --borda:#e0e3eb; --texto:#131722; --suave:#6a6d78; --fraco:#8b8e99;
+  --areia:#b07a1a; --salva:#1d8a7a; --rosa:#d0504c; background:#fff; border-color:#e0e3eb; color:var(--texto); color-scheme:light }
+html.grafBranco .cardGraf .seg { background:#f0f3fa; border-color:transparent; box-shadow:inset 0 1px 2px rgba(19,23,34,.07) }
+html.grafBranco .cardGraf .seg > .on { background:#fff; color:var(--texto); box-shadow:0 1px 2px rgba(19,23,34,.12), 0 0 0 1px rgba(19,23,34,.04) }
+html.grafBranco .cardGraf .estrBtn { background:#fff; border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.09), 0 1px 2px rgba(19,23,34,.07) }
+html.grafBranco .cardGraf .estrBtn:hover { background:#f7f8fa }
+html.grafBranco .cardGraf .estrBtn.on { box-shadow:0 0 0 1px rgba(176,122,26,.4), 0 1px 2px rgba(19,23,34,.07) }
+html.grafBranco .cardGraf .timer b { color:var(--texto) }
+html.grafBranco .cardGraf #dica, html.grafBranco .cardGraf .alvos { background:rgba(255,255,255,.96); border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.07), 0 10px 28px -6px rgba(19,23,34,.18) }
+html.grafBranco .cardGraf .alvos .barra { background:rgba(19,23,34,.07) }
+html.grafBranco .cardGraf .mBarra button:active { background:rgba(19,23,34,.05) }

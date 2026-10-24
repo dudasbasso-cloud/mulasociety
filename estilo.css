@@ -515,8 +515,14 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .mFolha .mCaixa { left:var(--x, 0); top:var(--y, 0); right:auto; bottom:auto; width:400px; max-height:min(70vh, 640px); border:1px solid var(--borda); border-radius:10px; box-shadow:0 14px 34px rgba(0,0,0,.5); padding:4px 0 6px }
   .mFolha .mPega { display:none }
   .mFolha .mTit { padding:8px 18px 4px }
-  .mLista button { min-height:44px; font-size:13.5px; cursor:pointer }
+  .mLista button { min-height:40px; font-size:13.5px; cursor:pointer }
+  .mFolha .mCaixa { max-height:calc(100vh - var(--y, 0px) - 16px) }
   .mLista button:hover { background:rgba(255,255,255,.04) }
 }
 
 .mLista .grupo .laranja { color:#d9a47c; -webkit-text-fill-color:#d9a47c; background:none }
+/* 24/10: a linha das camadas sai; ficam no botão «Camadas» ao lado da estratégia, e o gráfico ganha essa altura */
+.camadas { display:none !important }
+.camBtn { margin-left:-6px }
+.camBtn b { font-weight:500; color:var(--suave) }
+

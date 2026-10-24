@@ -576,6 +576,7 @@ function mAtualizar() {
   const b = $('mBarra'); if (!b) return
   b.querySelector('.tf .sub').textContent = TFN[est.tf] || est.tf
   const sel = $('estrSel'), op = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text.replace(/\s*\(\d+\)$/, '') : 'Estratégia'
+  $('camBtnV').textContent = [...$('camadas').querySelectorAll('[data-c]')].filter(x => est.camadas[x.dataset.c]).length + ' ligadas'
   $('estrBtnV').textContent = sel.selectedIndex > 0 ? op : 'nenhuma'; $('estrBtn').classList.toggle('on', sel.selectedIndex > 0)
   b.querySelector('.estr .sub').textContent = op; b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
   $('mLeg').innerHTML = '<b>' + esc($('gNome').textContent) + '</b> · ' + esc(TFN[est.tf] || est.tf) + ' &nbsp;<b class="num">' + esc($('gPx').textContent) + '</b> <span class="num ' + ($('gVar').className.includes('sobe') ? 'sobe' : 'desce') + '">' + esc($('gVar').textContent.replace(' em 24 h', '')) + '</span>'
@@ -623,8 +624,14 @@ function mAtualizar() {
   })
   barra.querySelector('.tf').addEventListener('click', () => abrir('Tempo das velas',
     () => [...$('tfs').children].map(b => ({ nome: b.textContent, on: b.dataset.tf === est.tf, b })), x => x.b.click(), false))
-  barra.querySelector('.cam').addEventListener('click', () => abrir('Camadas no gráfico',
-    () => [...$('camadas').querySelectorAll('[data-c]')].map(b => ({ nome: b.title || b.textContent, on: !!est.camadas[b.dataset.c], b })), x => x.b.click(), true))
+  // 24/10 («sinto que estas podiam estar melhores»): as camadas num menu como o da estratégia, por grupos e com o que é cada uma
+  const CAM = [['Linhas e médias', { sv3: 'as três linhas: vermelha, cinzenta e verde', ema: 'EMA 200 e EMA 80', linhas: 'tendência, 4 h grossa e 1 h fina', fibo: 'Fibonacci de 4 h' }],
+    ['Zonas', { niveis: 'suportes e resistências', diario: 'zonas do diário', asia: 'a caixa da sessão asiática' }],
+    ['Entradas', { sinais: 'setas dos sinais do robô', velas: 'velas de confirmação', alvos: 'caixas até ao TP3 e ao stop', plano: 'entrada, stop e TP da ordem', posicoes: 'as posições abertas' }],
+    ['Por baixo', { estoc: 'Estocástico 5,3,3' }]]
+  const listaCam = () => CAM.flatMap(([g, d]) => [{ grupo: g }, ...Object.entries(d).map(([c, sub]) => { const b = $('camadas').querySelector('[data-c="' + c + '"]'); return b && { nome: b.textContent, sub, on: !!est.camadas[c], b } }).filter(Boolean)])
+  barra.querySelector('.cam').addEventListener('click', () => abrir('Camadas no gráfico', listaCam, x => x.b.click(), true))
+  $('camBtn').addEventListener('click', e => abrir('Camadas no gráfico', listaCam, x => x.b.click(), true, e.currentTarget))
   // a lista das estratégias por grupos, cada uma com o que fez desde 21/10 (o placar), as que mais deram primeiro
   const listaEstr = () => {
     const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value)

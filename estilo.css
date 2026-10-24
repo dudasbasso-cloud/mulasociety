@@ -528,6 +528,6 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
    chega-se à de cima */
 @media (min-width: 1001px) and (min-height: 521px) {
   .cab #gTimer { display:none }
-  .cab { row-gap:0; padding-bottom:2px }
-  .camadas { margin-top:-2px }
+  .cab { row-gap:8px }
+  .estrBtn { max-width:240px }
 }

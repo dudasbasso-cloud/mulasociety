@@ -577,7 +577,7 @@ function mAtualizar() {
   b.querySelector('.tf .sub').textContent = TFN[est.tf] || est.tf
   const sel = $('estrSel'), op = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text.replace(/\s*\(\d+\)$/, '') : 'Estratégia'
   $('camBtnV').textContent = [...$('camadas').querySelectorAll('[data-c]')].filter(x => est.camadas[x.dataset.c]).length + ' ligadas'
-  $('estrBtnV').textContent = sel.selectedIndex > 0 ? op : 'nenhuma'; $('estrBtn').classList.toggle('on', sel.selectedIndex > 0)
+  $('estrBtnV').textContent = sel.selectedIndex > 0 ? op.replace(/\s*\(.*\)$/, '') : 'nenhuma'; $('estrBtn').classList.toggle('on', sel.selectedIndex > 0)
   b.querySelector('.estr .sub').textContent = op; b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
   $('mLeg').innerHTML = '<b>' + esc($('gNome').textContent) + '</b> · ' + esc(TFN[est.tf] || est.tf) + ' &nbsp;<b class="num">' + esc($('gPx').textContent) + '</b> <span class="num ' + ($('gVar').className.includes('sobe') ? 'sobe' : 'desce') + '">' + esc($('gVar').textContent.replace(' em 24 h', '')) + '</span>'
     + ($('gTimer').textContent ? '<br><span class="estado">' + esc($('gTimer').textContent) + '</span>' : '')

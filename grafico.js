@@ -363,5 +363,14 @@ export function criarGrafico(el) {
     for (const [preco, cor, titulo] of [[p.entrada, '#d6c39f', 'entrada'], [p.sl, '#cc9390', 'stop'], [p.tp1, '#9cb894', 'alvo 1'], [p.tp2, '#9cb894', 'alvo 2']])
       linhasPlano.push(velas.createPriceLine({ price: preco, color: cor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: titulo }))
   }
-  return { mostrar, plano }
+  // 24/10 («mete white mode opção»): as cores do gráfico para o modo claro e de volta para o escuro
+  function tema(claro) {
+    const borda = claro ? '#e0e3eb' : '#23272c', linha = claro ? '#9598a1' : '#3a4047', etiqueta = claro ? '#131722' : '#2a2f35', grelha = claro ? '#f0f3fa' : 'rgba(255,255,255,0.035)'
+    chart.applyOptions({ layout: { textColor: claro ? '#131722' : '#8f959c', panes: { separatorColor: borda } }, grid: { vertLines: { color: grelha }, horzLines: { color: grelha } },
+      rightPriceScale: { borderColor: borda }, timeScale: { borderColor: borda },
+      crosshair: { vertLine: { color: linha, labelBackgroundColor: etiqueta }, horzLine: { color: linha, labelBackgroundColor: etiqueta } } })
+    const sobe = claro ? '#089981' : '#9cb894', desce = claro ? '#f23645' : '#cc9390'
+    velas.applyOptions({ upColor: sobe, downColor: desce, borderUpColor: sobe, borderDownColor: desce, wickUpColor: sobe, wickDownColor: desce })
+  }
+  return { mostrar, plano, tema }
 }

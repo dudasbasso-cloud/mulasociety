@@ -7,6 +7,7 @@
 <title>MULASOCIETY ORG.</title>
 <script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'</script>
 <link rel="stylesheet" href="estilo.css">
+<script>try{if(localStorage.getItem('jarvis-tema')==='claro')document.documentElement.classList.add('claro')}catch(e){}</script>
 <link rel="icon" href="favicon.png">
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -20,6 +21,7 @@
     <div class="it" id="resultado"></div>
     <div class="dir">
       <div class="it" id="topoRobo" hidden></div>
+      <button type="button" class="temaBtn" id="temaBtn" aria-pressed="false">Modo claro</button>
       <div class="it" id="topoConta"></div>
       <div class="it" id="ligacao"><span class="ponto"></span>a ligar</div>
     </div>

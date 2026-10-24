@@ -531,3 +531,48 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .cab { row-gap:8px }
   .estrBtn { max-width:240px }
 }
+/* 24/10 («está desalinhado»): as camadas ficam na mesma linha do tempo e da estratégia, à direita, quando cabem; quando
+   não cabem descem para a linha de baixo alinhadas à esquerda, por baixo do «Ouro» (o app.js marca .sozinha) */
+@media (min-width: 1001px) and (min-height: 521px) {
+  .cab { align-items:center }
+  .camadas { flex:0 1 auto; flex-basis:auto; margin-left:auto; align-self:center }
+  .camadas.sozinha { flex-basis:100%; margin-left:0; justify-content:flex-start }
+}
+
+/* 24/10 («mete white mode opção»): o modo claro. As mesmas cores suaves, em papel quente: fundo areia muito clara,
+   cartões quase brancos, texto castanho escuro; a areia, o verde e o rosa um pouco mais fundos para se lerem no claro */
+.temaBtn { font:inherit; font-size:12.5px; color:var(--suave); padding:4px 10px; border:1px solid var(--borda); border-radius:7px; cursor:pointer; background:transparent }
+.temaBtn:hover { color:var(--texto) }
+/* 24/10 («no modo claro mete mesmo o estilo das cores do TradingView»): as cores do tema claro do TradingView */
+html.claro { --bg:#f0f3fa; --painel:#ffffff; --painel2:#f8f9fd; --borda:#e0e3eb; --texto:#131722; --suave:#787b86; --fraco:#9598a1;
+  --areia:#2962ff; --salva:#089981; --rosa:#f23645; color-scheme:light }
+html.claro body { background:#f0f3fa }
+html.claro .col.esq .card, html.claro .col.dir .card { background:var(--painel) }
+html.claro .seg, html.claro .estrBtn { background:#f0f3fa }
+html.claro .seg > .on { background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08) }
+html.claro .estrBtn:hover, html.claro .par:hover { background:#e9edf7 }
+html.claro .col.dir .card, html.claro .quad, html.claro .mc-ouro, html.claro .maq { background:var(--painel2) }
+html.claro #dica, html.claro .alvos, html.claro .mCaixa { background:#fffefb; box-shadow:0 10px 28px rgba(19,23,34,.14) }
+html.claro .mFundo { background:rgba(19,23,34,.3) }
+html.claro .sw { background:#d1d4dc } html.claro .sw::after { background:#fff } html.claro .sw.on { background:#2962ff }
+html.claro .par .barra, html.claro .risco, html.claro .forca .b { background:#e0e3eb }
+html.claro .par .barra i, html.claro .risco i, html.claro .forca .b i { background:#9598a1 }
+html.claro .alvos .barra { background:rgba(0,0,0,.07) }
+html.claro .timer b, html.claro .plano .deg.ag b, html.claro .plano .deg.ag .n { color:var(--texto) }
+html.claro .plano .deg.ag i { background:#fff; border-color:var(--texto) }
+html.claro .plano .nota b, html.claro .obs .info > span:last-child { color:#434651 }
+html.claro .msg.eu { background:#eef1f8 } html.claro .msg.jv { background:#f8f9fd }
+html.claro .entrada button, html.claro .carregar:hover { background:#e9edf7 }
+html.claro .carregar { border-color:#d1d4dc }
+html.claro .placar { border-left-color:#d1d4dc }
+html.claro .plano .acaoBloco.pausa, html.claro .plano .ordemParada { background:rgba(0,0,0,.025) }
+html.claro .mLista button { border-top-color:var(--borda) } html.claro .mLista .marca-on { border-color:#b2b5be }
+html.claro .mLista button.on .marca-on { box-shadow:inset 0 0 0 4px #fffefb }
+html.claro .mLista .int { background:#d1d4dc }
+html.claro .mPega { background:#d1d4dc }
+html.claro .camadas .estrSel option { background:#fff }
+html.claro ::-webkit-scrollbar-thumb { background:#d1d4dc }
+html.claro .estrTP .placar .ouro { background:none; -webkit-text-fill-color:#2962ff; color:#2962ff }
+html.claro .estrTP .placar .ouro.laranja, html.claro .mLista .grupo .laranja { -webkit-text-fill-color:#f57c00; color:#f57c00 }
+html.claro .mLeg { text-shadow:0 0 6px var(--bg) }
+

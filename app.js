@@ -650,3 +650,28 @@ function mAtualizar() {
   new MutationObserver(mAtualizar).observe($('gTimer'), { childList: true, characterData: true, subtree: true })
   mostrar(est.mPainel || 'grafico'); mAtualizar()
 }
+
+// 24/10 («está desalinhado»): se as camadas não cabem na linha de cima, descem e alinham à esquerda
+{
+  const c = $('camadas'), t = $('tfs')
+  const ver = () => { c.classList.remove('sozinha'); if (c.getBoundingClientRect().top >= t.getBoundingClientRect().bottom) c.classList.add('sozinha') }
+  new ResizeObserver(ver).observe(c.parentElement); ver()
+}
+
+// 24/10 («aqui ao lado mete white mode opção»): o botão na barra de cima troca entre escuro e claro e fica guardado.
+// Na troca as transições desligam-se um instante, para tudo mudar de uma vez
+{
+  const b = $('temaBtn'), html = document.documentElement
+  const aplicar = claro => {
+    html.classList.toggle('claro', claro); b.textContent = claro ? 'Modo escuro' : 'Modo claro'; b.setAttribute('aria-pressed', claro)
+    grafico.tema(claro)
+  }
+  b.addEventListener('click', () => {
+    const claro = !html.classList.contains('claro')
+    const st = document.createElement('style'); st.textContent = '*,*::before,*::after{transition:none !important}'; document.head.append(st)
+    aplicar(claro); try { localStorage.setItem('jarvis-tema', claro ? 'claro' : 'escuro') } catch {}
+    getComputedStyle(document.body).opacity; requestAnimationFrame(() => st.remove())
+  })
+  aplicar(html.classList.contains('claro'))
+}
+

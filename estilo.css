@@ -448,22 +448,6 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .mLeg b { color:var(--texto); font-weight:600 } .mLeg .sobe { color:var(--salva) } .mLeg .desce { color:var(--rosa) }
   .mLeg .estado { color:var(--fraco) }
 
-  /* a folha que sobe de baixo */
-  .mFolha { position:fixed; inset:0; z-index:50 }
-  .mFolha.aberta { display:block }
-  .mFundo { position:absolute; inset:0; background:rgba(0,0,0,.5) }
-  .mCaixa { position:absolute; left:0; right:0; bottom:0; max-height:72dvh; overflow:auto; background:#1a1d21; border-radius:14px 14px 0 0; padding:6px 0 max(10px, env(safe-area-inset-bottom)); overscroll-behavior:contain }
-  .mPega { width:36px; height:4px; border-radius:2px; background:#3d434a; margin:4px auto 8px }
-  .mTit { font-size:13px; color:var(--suave); padding:2px 18px 8px }
-  .mLista button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:48px; padding:0 18px; font-size:15px; color:var(--texto); text-align:left; border-top:1px solid #23272c }
-  .mLista button:active { background:rgba(255,255,255,.04) }
-  .mLista button .n { color:var(--fraco); font-size:13px }
-  .mLista .marca-on { width:20px; height:20px; flex:none; border-radius:50%; border:1.5px solid #4a5058 }
-  .mLista button.on .marca-on { border-color:var(--areia); box-shadow:inset 0 0 0 4px #1a1d21; background:var(--areia) }
-  .mLista .int { width:40px; height:24px; flex:none; border-radius:12px; background:#3a3f45; position:relative }
-  .mLista .int::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#e7e2d9; transition:transform .15s }
-  .mLista button.on .int { background:var(--salva) } .mLista button.on .int::after { transform:translateX(16px) }
-
   /* os separadores de baixo, com ícone */
   .mNav { display:flex; flex:none; padding:2px 0 max(2px, env(safe-area-inset-bottom)); border-top:1px solid var(--borda); background:var(--bg) }
   .mNav button { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; color:var(--fraco); padding:6px 0 4px; min-height:48px }
@@ -492,3 +476,47 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .mNav button { flex-direction:row; justify-content:center; gap:6px; min-height:38px; padding:0; font-size:11.5px }
   .mNav button svg { width:19px; height:19px }
 }
+
+/* 24/10 («isto poderia estar com outra disposição, mais relevância das estratégias»): a estratégia sai do fim da linha
+   das camadas e ganha um botão próprio na linha de cima, ao lado do tempo. Abre uma lista arrumada por grupos (BOT,
+   EDNEY, outras), cada uma com os pips e o acerto desde 21/10, as que mais deram primeiro */
+.estrBtn { display:flex; align-items:center; gap:7px; height:28px; padding:0 8px 0 11px; border:1px solid var(--borda); border-radius:7px; background:#121518; color:var(--texto); font-size:12.5px; cursor:pointer; max-width:340px }
+.estrBtn .r { color:var(--suave) }
+.estrBtn b { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.estrBtn.on { border-color:rgba(214,195,159,.55) } .estrBtn.on b { color:var(--areia) }
+.estrBtn svg { width:15px; height:15px; flex:none; fill:none; stroke:var(--suave); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round }
+.estrBtn:hover { background:#181c20 }
+/* a folha que sobe de baixo */
+.mFolha { position:fixed; inset:0; z-index:50 }
+.mFolha.aberta { display:block !important }
+.mFundo { position:absolute; inset:0; background:rgba(0,0,0,.5) }
+.mCaixa { position:absolute; left:0; right:0; bottom:0; max-height:72dvh; overflow:auto; background:#1a1d21; border-radius:14px 14px 0 0; padding:6px 0 max(10px, env(safe-area-inset-bottom)); overscroll-behavior:contain }
+.mPega { width:36px; height:4px; border-radius:2px; background:#3d434a; margin:4px auto 8px }
+.mTit { font-size:13px; color:var(--suave); padding:2px 18px 8px }
+.mLista button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:48px; padding:0 18px; font-size:15px; color:var(--texto); text-align:left; border-top:1px solid #23272c }
+.mLista button:active { background:rgba(255,255,255,.04) }
+.mLista button .n { color:var(--fraco); font-size:13px }
+.mLista .marca-on { width:20px; height:20px; flex:none; border-radius:50%; border:1.5px solid #4a5058 }
+.mLista button.on .marca-on { border-color:var(--areia); box-shadow:inset 0 0 0 4px #1a1d21; background:var(--areia) }
+.mLista .int { width:40px; height:24px; flex:none; border-radius:12px; background:#3a3f45; position:relative }
+.mLista .int::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#e7e2d9; transition:transform .15s }
+.mLista button.on .int { background:var(--salva) } .mLista button.on .int::after { transform:translateX(16px) }
+
+.mLista .grupo { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco); padding:12px 18px 6px }
+.mLista .grupo .ouro { letter-spacing:.08em }
+.mLista button .esq { display:flex; flex-direction:column; min-width:0 }
+.mLista button .esq small { font-size:12px; color:var(--fraco) }
+.mLista button .dir { display:flex; align-items:center; gap:12px; flex:none }
+.mLista button .p { font-size:13px; font-variant-numeric:tabular-nums; color:var(--suave) }
+.mLista button .p.sobe { color:var(--salva) } .mLista button .p.desce { color:var(--rosa) }
+/* no computador a lista abre por baixo do botão, como um menu */
+@media (min-width: 1001px) and (min-height: 521px) {
+  .mFolha .mFundo { background:transparent }
+  .mFolha .mCaixa { left:var(--x, 0); top:var(--y, 0); right:auto; bottom:auto; width:400px; max-height:min(70vh, 640px); border:1px solid var(--borda); border-radius:10px; box-shadow:0 14px 34px rgba(0,0,0,.5); padding:4px 0 6px }
+  .mFolha .mPega { display:none }
+  .mFolha .mTit { padding:8px 18px 4px }
+  .mLista button { min-height:44px; font-size:13.5px; cursor:pointer }
+  .mLista button:hover { background:rgba(255,255,255,.04) }
+}
+
+.mLista .grupo .laranja { color:#d9a47c; -webkit-text-fill-color:#d9a47c; background:none }

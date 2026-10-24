@@ -8,6 +8,7 @@ const NB = ' ', LX = 'Europe/Lisbon'
 const fmt = (v, c = 1) => { if (v == null || Number.isNaN(+v)) return '-'; const s = Math.abs(v).toFixed(c).split('.'); return (v < 0 ? '-' : '') + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, NB) + (s[1] ? ',' + s[1] : '') }
 const casasTexto = s => s === 'XAUUSD' ? 1 : /JPY/.test(s) ? 3 : 5
 const pipDe = s => s === 'XAUUSD' ? 0.1 : /JPY/.test(s) ? 0.01 : 0.0001
+let ultimoPlacar = []
 const TFN = { '15m': '15 min', '1h': '1 h', '4h': '4 h', '1d': 'dia' }, FIBO = { 0.382: '38,2', 0.5: '50', 0.618: '61,8' }
 let ultimaR = null   // a última análise, para a contagem do mercado fechado no Agora
 const hhmm = ms => new Date(ms).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit' })
@@ -319,7 +320,7 @@ function escolhaEstr() {
   el.classList.toggle('on', !!el.value)
 }
 $('estrSel').addEventListener('change', e => {
-  est.estrVer = e.target.value ? [e.target.value] : []; guardar(); escolhaEstr()
+  est.estrVer = e.target.value ? [e.target.value] : []; guardar(); escolhaEstr(); mAtualizar()
   if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer })
 })
 $('tfs').addEventListener('click', e => { const t = e.target.dataset.tf; if (!t || t === est.tf) return; est.tf = t; guardar(); marcar(); carregarGrafico() })
@@ -470,6 +471,7 @@ function resultado(r) {
 function placarTP(L) {
   const el = $('estrTP')
   if (!el || !L?.length) return
+  ultimoPlacar = L
   const pct = (k, n) => n ? Math.round(100 * k / n) + '%' : '-'
   const pips = x => { const d = Math.round(Math.abs(x) * 10) / 10; return (x < 0 && d ? '-' : '+') + fmt(d, d % 1 ? 1 : 0) }
   const cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
@@ -574,6 +576,7 @@ function mAtualizar() {
   const b = $('mBarra'); if (!b) return
   b.querySelector('.tf .sub').textContent = TFN[est.tf] || est.tf
   const sel = $('estrSel'), op = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text.replace(/\s*\(\d+\)$/, '') : 'Estratégia'
+  $('estrBtnV').textContent = sel.selectedIndex > 0 ? op : 'nenhuma'; $('estrBtn').classList.toggle('on', sel.selectedIndex > 0)
   b.querySelector('.estr .sub').textContent = op; b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
   $('mLeg').innerHTML = '<b>' + esc($('gNome').textContent) + '</b> · ' + esc(TFN[est.tf] || est.tf) + ' &nbsp;<b class="num">' + esc($('gPx').textContent) + '</b> <span class="num ' + ($('gVar').className.includes('sobe') ? 'sobe' : 'desce') + '">' + esc($('gVar').textContent.replace(' em 24 h', '')) + '</span>'
     + ($('gTimer').textContent ? '<br><span class="estado">' + esc($('gTimer').textContent) + '</span>' : '')
@@ -606,9 +609,13 @@ function mAtualizar() {
   addEventListener('keydown', e => { if (e.key === 'Escape') fechar() })
   let acao = null, multi = false, itens = () => []
   const desenhar = () => {
-    folha.querySelector('.mLista').innerHTML = itens().map((x, k) => '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '"><span>' + esc(x.nome) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span><span class="' + (multi ? 'int' : 'marca-on') + '"></span></button>').join('')
+    folha.querySelector('.mLista').innerHTML = itens().map((x, k) => x.grupo != null ? '<div class="grupo">' + x.grupo + '</div>'
+      : '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '"><span class="esq"><span>' + esc(x.nome) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span>' + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span>'
+      + '<span class="dir">' + (x.p != null ? '<span class="p' + (x.p >= 0.5 ? ' sobe' : x.p <= -0.5 ? ' desce' : '') + '">' + (x.p < 0 ? '-' : '+') + fmt(Math.abs(x.p), 1) + ' pips</span>' : '') + '<span class="' + (multi ? 'int' : 'marca-on') + '"></span></span></button>').join('')
   }
-  const abrir = (tit, f, fn, m) => { folha.querySelector('.mTit').textContent = tit; itens = f; acao = fn; multi = m; desenhar(); folha.classList.add('aberta') }
+  const abrir = (tit, f, fn, m, ancora) => {
+    if (ancora) { const r = ancora.getBoundingClientRect(); folha.style.setProperty('--x', Math.min(r.left, innerWidth - 410) + 'px'); folha.style.setProperty('--y', r.bottom + 6 + 'px') }
+    folha.querySelector('.mTit').textContent = tit; itens = f; acao = fn; multi = m; desenhar(); folha.classList.add('aberta') }
   folha.querySelector('.mLista').addEventListener('click', e => {
     const b = e.target.closest('[data-k]'); if (!b) return
     acao(itens()[+b.dataset.k]); mAtualizar()
@@ -618,9 +625,20 @@ function mAtualizar() {
     () => [...$('tfs').children].map(b => ({ nome: b.textContent, on: b.dataset.tf === est.tf, b })), x => x.b.click(), false))
   barra.querySelector('.cam').addEventListener('click', () => abrir('Camadas no gráfico',
     () => [...$('camadas').querySelectorAll('[data-c]')].map(b => ({ nome: b.title || b.textContent, on: !!est.camadas[b.dataset.c], b })), x => x.b.click(), true))
-  barra.querySelector('.estr').addEventListener('click', () => abrir('Estratégia no gráfico',
-    () => [...$('estrSel').options].map(o => { const m = o.text.match(/^(.*?)\s*\((\d+)\)$/); return { nome: o.value ? (m ? m[1] : o.text) : 'Nenhuma', n: m ? m[2] + (m[2] === '1' ? ' entrada' : ' entradas') : null, on: $('estrSel').value === o.value, v: o.value } }),
-    x => { $('estrSel').value = x.v; $('estrSel').dispatchEvent(new Event('change')) }, false))
+  // a lista das estratégias por grupos, cada uma com o que fez desde 21/10 (o placar), as que mais deram primeiro
+  const listaEstr = () => {
+    const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value)
+    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^EDNEY: /, '').replace(/^todas \(.*\)$/, 'Todas juntas')
+      return { nome, v: o.value, on: $('estrSel').value === o.value, p: e?.n ? e.pips : null,
+        sub: e ? (e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' : 'sem entradas desde 21/10') : '',
+        ordem: o.value === 'edney' ? 1e9 : e?.n ? e.pips : -1e9 } }
+    const ed = ['edney', 'liquidez', 'choch', 'orderblock'], por = l => l.sort((a, b) => b.ordem - a.ordem)
+    return [{ nome: 'Nenhuma', v: '', on: !$('estrSel').value }, { grupo: '<span class="ouro laranja">EDNEY</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
+      { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value)).map(item))]
+  }
+  const escolher = x => { $('estrSel').value = x.v; $('estrSel').dispatchEvent(new Event('change')) }
+  barra.querySelector('.estr').addEventListener('click', () => abrir('Estratégia no gráfico', listaEstr, escolher, false))
+  $('estrBtn').addEventListener('click', e => abrir('Estratégia no gráfico', listaEstr, escolher, false, e.currentTarget))
   new MutationObserver(mAtualizar).observe($('gPx'), { childList: true, characterData: true, subtree: true })
   new MutationObserver(mAtualizar).observe($('gTimer'), { childList: true, characterData: true, subtree: true })
   mostrar(est.mPainel || 'grafico'); mAtualizar()

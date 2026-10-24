@@ -9,6 +9,15 @@ const fmt = (v, c) => { const s = Math.abs(v).toFixed(c).split('.'); return (v <
 const hora = t => new Date(t * 1000).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit' })
 const data = t => new Date(t * 1000).toLocaleDateString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit' })
 const NOMES = { teto: 'venda no teto', sv3: 'SV3', pico: 'venda depois do pico', incrivel: 'INCRÍVEL' }
+// 24/10 («ainda está feio»): as cores do gráfico vêm de uma paleta. No escuro, as nossas (rosa velho, verde salva, areia);
+// no claro, as clássicas do TradingView (vermelho e verde-água, laranja nas médias), todas da mesma família das velas,
+// com os textos um pouco mais fundos para se lerem no branco
+const CORES = {
+  escuro: { r: '204,147,144', g: '156,184,148', a: '214,195,159', c: '139,144,150', rt: '#cc9390', gt: '#9cb894', at: '#d6c39f', ct: '#8f959c', vs: '#9cb894', vd: '#cc9390', rotulo: 'rgba(15,17,19,0.86)', hr: '#2a2f35' },
+  claro: { r: '239,83,80', g: '38,166,154', a: '242,153,74', c: '120,123,134', rt: '#d9443f', gt: '#15897d', at: '#d9822b', ct: '#787b86', vs: '#26a69a', vd: '#ef5350', rotulo: 'rgba(255,255,255,0.92)', hr: '#e0e3eb' }
+}
+let P = CORES.escuro
+const R = a => 'rgba(' + P.r + ',' + a + ')', G = a => 'rgba(' + P.g + ',' + a + ')', A = a => 'rgba(' + P.a + ',' + a + ')', C = a => 'rgba(' + P.c + ',' + a + ')'
 const VELA = { martelo: ['Martelo', 'o', 'martelo'], 'estrela cadente': ['Estrela cadente', 'a', 'estrela'], envolvente: ['Envolvente', 'a', 'envolv.'], doji: ['Doji', 'o', 'doji'] }
 const FIBO = { 0.382: '38,2', 0.5: '50', 0.618: '61,8' }
 const em = onde => /^[ao] /.test(onde) ? 'n' + onde : 'no ' + onde
@@ -58,7 +67,7 @@ class Caixa {
       if (!o.texto) return
       c.font = (11 * r) + 'px -apple-system, sans-serif'
       const w = c.measureText(o.texto).width, x = o.esq ? x1 + 6 : x2 - 8 - w / r, y = lugarLivre(x - 4, y1 - 16, w / r + 8, 15) + 11
-      c.fillStyle = 'rgba(15,17,19,0.82)'; c.fillRect((x - 4) * r, (y - 11) * k, w + 8 * r, 15 * k)
+      c.fillStyle = P.rotulo; c.fillRect((x - 4) * r, (y - 11) * k, w + 8 * r, 15 * k)
       c.fillStyle = o.cor; c.fillText(o.texto, x * r, y * k)
     })
   }
@@ -91,7 +100,7 @@ class Linhas {
       c.setLineDash([]); c.font = (11 * r) + 'px -apple-system, sans-serif'; c.textBaseline = 'middle'
       for (const it of rot) {
         const w = c.measureText(it.texto).width, x = x2 - w / r - 6, y = lugarLivre(x - 4, it.yr + desvio - 7.5, w / r + 8, 15) + 7.5
-        c.fillStyle = 'rgba(15,17,19,0.88)'; c.fillRect((x - 4) * r, (y - 7.5) * k, w + 8 * r, 15 * k)
+        c.fillStyle = P.rotulo; c.fillRect((x - 4) * r, (y - 7.5) * k, w + 8 * r, 15 * k)
         c.fillStyle = it.cor; c.fillText(it.texto, x * r, y * k)
       }
       c.restore()
@@ -102,7 +111,7 @@ class Linhas {
 function marca(s, casas) {
   const r = s.resultado, aberta = !r || r.estado === 'aberta'
   const bom = r?.eur != null ? r.eur >= 0 : r?.r != null ? r.r >= 0 : null
-  const cor = aberta || bom == null ? '#d6c39f' : bom ? '#9cb894' : '#cc9390'
+  const cor = aberta || bom == null ? P.at : bom ? P.gt : P.rt
   // sem texto ao lado (era confusão a mais): o resultado vê-se ao passar o rato
   return { time: s.time, position: s.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: s.lado === 'venda' ? 'arrowDown' : 'arrowUp', color: cor, size: 0.7 }
 }
@@ -116,12 +125,12 @@ function dicaDe(s, casas) {
 }
 
 export function criarGrafico(el) {
-  let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), tfAtual = '15m', estK = null, estD = null
+  let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), tfAtual = '15m', estK = null, estD = null, estLinhas = [], ultimaVez = null, ultimoPlano = null
   const rot = t => tfAtual === '1d' ? t + 43200 : t   // a vela do dia começa às 17:00 de NY da véspera: mostra-se a data do dia
   const chart = L.createChart(el, {
     autoSize: true,
     kineticScroll: { touch: true, mouse: false },
-    layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#8f959c', fontSize: 11, attributionLogo: false,
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: P.ct, fontSize: 11, attributionLogo: false,
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },
     rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: 1.2 },   // mais preços na escala (24/10)
@@ -129,17 +138,17 @@ export function criarGrafico(el) {
     localization: { locale: 'pt-PT', timeFormatter: t => tfAtual === '1d' ? data(rot(t)) : data(t) + ' ' + hora(t) },
     crosshair: { vertLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' }, horzLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' } }
   })
-  const velas = chart.addSeries(L.CandlestickSeries, { upColor: '#9cb894', downColor: '#cc9390', borderUpColor: '#9cb894', borderDownColor: '#cc9390',
-    wickUpColor: 'rgba(156,184,148,.7)', wickDownColor: 'rgba(204,147,144,.7)', priceLineColor: '#6f757c' })
+  const velas = chart.addSeries(L.CandlestickSeries, { upColor: P.gt, downColor: P.rt, borderUpColor: P.gt, borderDownColor: P.rt,
+    wickUpColor: G(.7), wickDownColor: R(.7), priceLineColor: '#6f757c' })
   const linha = (cor, w, estilo = 0) => chart.addSeries(L.LineSeries, { color: cor, lineWidth: w, lineStyle: estilo, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-  const verm = linha('rgba(204,147,144,.9)', 2), cinza = linha('rgba(139,144,150,.8)', 1, 2), verde = linha('rgba(156,184,148,.9)', 2), ema = linha('rgba(214,195,159,.7)', 1)
-  const ema80 = linha('rgba(214,195,159,.5)', 1, 2)
+  const verm = linha(R(.9), 2), cinza = linha(C(.8), 1, 2), verde = linha(G(.9), 2), ema = linha(A(.7), 1)
+  const ema80 = linha(A(.5), 1, 2)
   // as linhas de tendência (4 h grossa, 1 h fina), com o preço onde passam agora no eixo; tracejadas quando partiram
   const linhasLT = new Map()
   const serieLT = k => {
     if (!linhasLT.has(k)) {
       const [tf, lado] = k.split('|')
-      linhasLT.set(k, chart.addSeries(L.LineSeries, { color: lado === 'subida' ? 'rgba(156,184,148,.85)' : 'rgba(204,147,144,.85)', lineWidth: tf === '4h' ? 2 : 1, priceLineVisible: false,
+      linhasLT.set(k, chart.addSeries(L.LineSeries, { color: lado === 'subida' ? G(.85) : R(.85), lineWidth: tf === '4h' ? 2 : 1, priceLineVisible: false,
         crosshairMarkerVisible: false, title: 'LT ' + (tf === '4h' ? '4 h' : '1 h'), priceFormat: { type: 'custom', minMove: 1e-5, formatter: p => fmt(p, casas) } }, 0))
     }
     return linhasLT.get(k)
@@ -193,7 +202,7 @@ export function criarGrafico(el) {
     const stops = x => !x ? '0 stops' : '<b class="st">' + x + (x === 1 ? ' stop' : ' stops') + (ultStop ? (x === 1 ? ' a ' : ', o último a ') + hora(ultStop.fim.exato ?? ultStop.fim.t) : '') + '</b>'
     quadro.innerHTML = '<div class="t">' + (ouro ? 'Avisos do bot' : 'Sinais do SV3')
       + '<div class="seg">' + [['tudo', 'Tudo'], ['hoje', 'Hoje'], ['ontem', 'Ontem']].map(([v, x]) => '<button type="button" data-vista="' + v + '" aria-pressed="' + (v === vistaAlvos) + '"' + (v === vistaAlvos ? ' class="on"' : '') + '>' + x + '</button>').join('') + '</div></div>'
-      + (quantos ? linha('TP1', n(0), '#9cb894') + linha('TP2', n(1), '#9cb894') + linha('TP3', n(2), '#9cb894') + linha('Stop', st, '#cc9390')
+      + (quantos ? linha('TP1', n(0), P.gt) + linha('TP2', n(1), P.gt) + linha('TP3', n(2), P.gt) + linha('Stop', st, P.rt)
         + '<div class="a"><span>' + quantos + nome(quantos) + ' · ' + (tudo ? 'desde ' + data(c.desde) : dia) + '</span>' + (acerto != null ? '<span>Acerto <b>' + acerto + '%</b></span>' : '') + '</div>'
         : '<div class="r">' + (vistaAlvos === 'ontem' ? 'Sem' + nome(2) + ' ontem (' + dia + ').' : 'Ainda sem' + nome(2) + ' hoje (' + dia + ').') + '</div>')
       + (tudo ? (c.stop ? '<div class="r">' + stops(c.stop) + '</div>' : '')
@@ -215,9 +224,9 @@ export function criarGrafico(el) {
     }
     if (!estK) {
       const op = { lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false, priceFormat: { type: 'custom', minMove: 1, formatter: p => String(Math.round(p)) }, autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }) }
-      estK = chart.addSeries(L.LineSeries, { ...op, color: '#d6c39f', lastValueVisible: true }, 1)
-      estD = chart.addSeries(L.LineSeries, { ...op, color: 'rgba(139,144,150,.8)', lineStyle: 2, lastValueVisible: false }, 1)
-      for (const [p, cor] of [[80, 'rgba(204,147,144,.5)'], [20, 'rgba(156,184,148,.5)']]) estK.createPriceLine({ price: p, color: cor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' })
+      estK = chart.addSeries(L.LineSeries, { ...op, color: P.at, lastValueVisible: true }, 1)
+      estD = chart.addSeries(L.LineSeries, { ...op, color: C(.8), lineStyle: 2, lastValueVisible: false }, 1)
+      estLinhas = [[80, R], [20, G]].map(([p, f]) => [estK.createPriceLine({ price: p, color: f(.5), lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' }), f])
       chart.panes()[0].setStretchFactor(4.5); chart.panes()[1].setStretchFactor(1)
     }
     estK.setData(d.estoc.k); estD.setData(d.estoc.d)
@@ -236,13 +245,14 @@ export function criarGrafico(el) {
   chart.subscribeCrosshairMove(p => {
     const s = p?.time != null ? porTempo.get(p.time) || [] : [], v = p?.time != null ? velaPorTempo.get(p.time) || [] : []
     if ((!s.length && !v.length) || !p.point) { dica.style.display = 'none'; return }
-    dica.innerHTML = [...s.map(x => dicaDe(x, casas)), ...v.map(dicaVela)].join('<hr style="border:0;border-top:1px solid #2a2f35;margin:6px 0">')
+    dica.innerHTML = [...s.map(x => dicaDe(x, casas)), ...v.map(dicaVela)].join('<hr style="border:0;border-top:1px solid ' + P.hr + ';margin:6px 0">')
     dica.style.display = 'block'
     dica.style.left = Math.min(p.point.x + 14, el.clientWidth - 270) + 'px'
     dica.style.top = Math.max(8, p.point.y - 70) + 'px'
   })
 
   function mostrar(d, camadas) {
+    ultimaVez = [d, camadas]
     const nova = d.simbolo + '|' + d.tf !== chave
     chave = d.simbolo + '|' + d.tf; casas = d.casas; tfAtual = d.tf
     velas.applyOptions({ priceFormat: { type: 'custom', minMove: 1 / 10 ** casas, formatter: p => fmt(p, casas) } })   // cada painel com o seu formato
@@ -256,17 +266,17 @@ export function criarGrafico(el) {
     const junta = o => { const c = new Caixa(o); velas.attachPrimitive(c); caixas.push(c) }
     const alinhar = t => t - t % TFS[d.tf]
     if (camadas.asia && d.asia && (d.tf === '15m' || d.tf === '1h'))
-      junta({ de: alinhar(d.asia.de), ate: alinhar(d.asia.ate), hi: d.asia.hi, lo: d.asia.lo, fundo: 'rgba(214,195,159,0.05)', borda: 'rgba(214,195,159,0.55)', tracejado: true, texto: 'caixa da Ásia', cor: '#d6c39f', esq: true })
+      junta({ de: alinhar(d.asia.de), ate: alinhar(d.asia.ate), hi: d.asia.hi, lo: d.asia.lo, fundo: A(0.05), borda: A(0.55), tracejado: true, texto: 'caixa da Ásia', cor: P.at, esq: true })
     // o mapa do diário: caixas a toda a largura, tracejadas, por baixo dos níveis do dia
     if (camadas.diario) for (const z of d.diario || []) {
-      const cor = z.lado === 'venda' ? '204,147,144' : z.lado === 'compra' ? '156,184,148' : '214,195,159'
+      const cor = z.lado === 'venda' ? P.r : z.lado === 'compra' ? P.g : P.a
       junta({ hi: z.hi, lo: z.lo, fundo: 'rgba(' + cor + ',0.06)', borda: 'rgba(' + cor + ',0.45)', tracejado: true, esq: true, cor: 'rgb(' + cor + ')',
         texto: 'diário · ' + ({ major: 'Major Key', swing: 'swing', intradia: 'intradía' }[z.tipo] || z.tipo) + ' · ' + z.toques + (z.toques === 1 ? ' toque' : ' toques') })
     }
     if (camadas.niveis) for (const z of d.zonas) {
       const meia = 0.6 * 10 ** -(casas === 2 ? 0 : casas - 1)
-      junta({ hi: Math.max(z.hi, z.mid + meia), lo: Math.min(z.lo, z.mid - meia), fundo: z.tipo === 'teto' ? 'rgba(204,147,144,0.13)' : 'rgba(156,184,148,0.13)',
-        texto: z.tipo + ' ' + fmt(z.mid, casas === 2 ? 1 : casas) + ' · ' + z.nome, cor: z.tipo === 'teto' ? '#cc9390' : '#9cb894' })
+      junta({ hi: Math.max(z.hi, z.mid + meia), lo: Math.min(z.lo, z.mid - meia), fundo: z.tipo === 'teto' ? R(0.13) : G(0.13),
+        texto: z.tipo + ' ' + fmt(z.mid, casas === 2 ? 1 : casas) + ' · ' + z.nome, cor: z.tipo === 'teto' ? P.rt : P.gt })
     }
     // as caixas dos alvos: verde da entrada ao TP3, vermelha da entrada ao stop, da vela do sinal até ao fim (TP3 ou stop;
     // aberta, até à direita); o TP1, o TP2, o TP3 e o stop marcados no preço, na vela em que lá chegou
@@ -280,19 +290,19 @@ export function criarGrafico(el) {
     for (const p of alvos) { const g = grupos.at(-1), u = g?.at(-1); if (u && u.lado === p.lado && p.time - u.time <= 3600) g.push(p); else grupos.push([p]) }
     const fim = alvos.at(-1), rep = grupos.at(-1)?.[0], solto = fim && !fim.fim && rep !== fim && rep.fim ? fim : null, ultimo = solto || rep
     const juntaL = o => { const c = new Linhas(o); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas)   // 24/10 («às vezes estou em 4445,00 e é 4445,10»): com as duas casas
-    const precos = p => [{ preco: p.sl, cor: '#cc9390', texto: 'stop ' + fp(p.sl) }, { preco: p.entrada, cor: '#d6c39f', texto: 'entrada ' + fp(p.entrada) },
-      ...p.tps.map((preco, k) => ({ preco, cor: '#9cb894', texto: 'TP' + (k + 1) + ' ' + fp(preco) + (p.hits[k] ? ' ✓' : '') }))]
+    const precos = p => [{ preco: p.sl, cor: P.rt, texto: 'stop ' + fp(p.sl) }, { preco: p.entrada, cor: P.at, texto: 'entrada ' + fp(p.entrada) },
+      ...p.tps.map((preco, k) => ({ preco, cor: P.gt, texto: 'TP' + (k + 1) + ' ' + fp(preco) + (p.hits[k] ? ' ✓' : '') }))]
     const caixa = (p, de, ate) => {
-      junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.tps[2]), lo: Math.min(p.entrada, p.tps[2]), fundo: 'rgba(156,184,148,0.10)', borda: 'rgba(156,184,148,0.30)' })
-      junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.sl), lo: Math.min(p.entrada, p.sl), fundo: 'rgba(204,147,144,0.12)', borda: 'rgba(204,147,144,0.30)' })
+      junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.tps[2]), lo: Math.min(p.entrada, p.tps[2]), fundo: G(0.10), borda: G(0.30) })
+      junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.sl), lo: Math.min(p.entrada, p.sl), fundo: R(0.12), borda: R(0.30) })
     }
-    const nome = (p, extra = '') => { const v = p.lado === 'venda'; return { time: p.time, position: v ? 'aboveBar' : 'belowBar', shape: v ? 'arrowDown' : 'arrowUp', color: v ? '#cc9390' : '#9cb894', text: (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : '') + extra, size: 0.7 } }
+    const nome = (p, extra = '') => { const v = p.lado === 'venda'; return { time: p.time, position: v ? 'aboveBar' : 'belowBar', shape: v ? 'arrowDown' : 'arrowUp', color: v ? P.rt : P.gt, text: (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : '') + extra, size: 0.7 } }
     const pontos = (p, visto) => {
-      p.hits.forEach((t, k) => { if (t != null && visto(t)) mAlvos.push({ time: t, position: 'atPriceMiddle', price: p.tps[k], shape: 'circle', color: '#9cb894', text: 'TP' + (k + 1), size: 0.5 }) })
-      if (p.fim?.estado === 'stop' && visto(p.fim.t)) mAlvos.push({ time: p.fim.t, position: 'atPriceMiddle', price: p.sl, shape: 'circle', color: '#cc9390', text: 'stop', size: 0.5 })
+      p.hits.forEach((t, k) => { if (t != null && visto(t)) mAlvos.push({ time: t, position: 'atPriceMiddle', price: p.tps[k], shape: 'circle', color: P.gt, text: 'TP' + (k + 1), size: 0.5 }) })
+      if (p.fim?.estado === 'stop' && visto(p.fim.t)) mAlvos.push({ time: p.fim.t, position: 'atPriceMiddle', price: p.sl, shape: 'circle', color: P.rt, text: 'stop', size: 0.5 })
       // 24/10: com a regra, o preço voltou ao TP1 depois do TP2 e o aviso fechou aí. O texto fica do lado de onde o preço
       // voltou (por cima numa venda): no meio ficava em cima da vela verde e não se lia
-      if (p.fim?.estado === 'tp1' && visto(p.fim.t)) mAlvos.push({ time: p.fim.t, position: p.lado === 'venda' ? 'atPriceTop' : 'atPriceBottom', price: p.tps[0], shape: 'circle', color: '#9cb894', text: 'saiu no TP1', size: 0.5 })
+      if (p.fim?.estado === 'tp1' && visto(p.fim.t)) mAlvos.push({ time: p.fim.t, position: p.lado === 'venda' ? 'atPriceTop' : 'atPriceBottom', price: p.tps[0], shape: 'circle', color: P.gt, text: 'saiu no TP1', size: 0.5 })
     }
     // 24/10 («este TP3, tu metes esta box: isso quer dizer que a trade só vai até essa box?»): o nome do aviso diz o que ele
     // fez depois de a caixa fechar e a que horas (de Lisboa, com o dia quando já é outro)
@@ -309,7 +319,7 @@ export function criarGrafico(el) {
       // as linhas do TP1 e do TP2 dentro da caixa verde; no último sinal, todas com o preço escrito e um ✓ no TP tocado
       // 23/10 («isto fica sempre do lado direito, para não confundir»): os preços do último aviso vão sempre até à direita
       // do gráfico, mesmo com a caixa já fechada
-      juntaL({ de: p.time, ate: p === ultimo ? null : ate, itens: p === ultimo ? precos(p) : [0, 1].map(k => ({ preco: p.tps[k], cor: 'rgba(156,184,148,0.45)' })) })
+      juntaL({ de: p.time, ate: p === ultimo ? null : ate, itens: p === ultimo ? precos(p) : [0, 1].map(k => ({ preco: p.tps[k], cor: G(0.45) })) })
       if (!camadas.sinais) mAlvos.push(nome(p, ((n => n > 1 ? ' ×' + n : '')(g.length - (solto && g.includes(solto) ? 1 : 0))) + depois))
       pontos(p, visto)
     })
@@ -326,7 +336,7 @@ export function criarGrafico(el) {
     // «EDNEY: todas» junta as três dele (liquidez, CHoCH e order block)
     const ver = (camadas.estrVer || []).flatMap(v => v === 'edney' ? ['liquidez', 'choch', 'orderblock'] : [v]), EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
     marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
-      color: x.lado === 'venda' ? '#cc9390' : '#9cb894', size: 0.8, text: x.curto + (x.fim === 'stop' ? ' ✗' : /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0) ? ' ✓' : '') })).sort((a, b) => a.time - b.time))
+      color: x.lado === 'venda' ? P.rt : P.gt, size: 0.8, text: x.curto + (x.fim === 'stop' ? ' ✗' : /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0) ? ' ✓' : '') })).sort((a, b) => a.time - b.time))
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
     // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte
     EL.forEach((x, i) => { const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate; caixa(x, x.time, ate) })
@@ -334,7 +344,7 @@ export function criarGrafico(el) {
     const pads = camadas.velas ? d.padroes || [] : []
     for (const v of pads) velaPorTempo.set(v.time, [...(velaPorTempo.get(v.time) || []), v])
     marcasVelas.setMarkers(pads.map(v => ({ time: v.time, position: v.lado === 'compra' ? 'belowBar' : 'aboveBar', shape: 'circle', size: 0.5,
-      color: v.confirmada ? (v.lado === 'compra' ? '#9cb894' : '#cc9390') : '#8f959c' })).sort((a, b) => a.time - b.time))
+      color: v.confirmada ? (v.lado === 'compra' ? P.gt : P.rt) : P.ct })).sort((a, b) => a.time - b.time))
     const vistas = new Set()
     if (camadas.linhas) for (const l of d.linhas || []) {
       const k = l.tf + '|' + l.lado, sr = serieLT(k)
@@ -343,13 +353,13 @@ export function criarGrafico(el) {
     for (const [k, sr] of linhasLT) if (!vistas.has(k)) sr.setData([])
     for (const p of linhasFibo) velas.removePriceLine(p)
     linhasFibo = []
-    if (camadas.fibo && d.fibo) for (const n of d.fibo.niveis) linhasFibo.push(velas.createPriceLine({ price: n.p, color: 'rgba(214,195,159,.6)', lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Fibo ' + FIBO[n.r] }))
+    if (camadas.fibo && d.fibo) for (const n of d.fibo.niveis) linhasFibo.push(velas.createPriceLine({ price: n.p, color: A(.6), lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Fibo ' + FIBO[n.r] }))
     for (const p of linhasPos) velas.removePriceLine(p)
     linhasPos = []
     if (camadas.posicoes) for (const p of d.posicoes) {
-      linhasPos.push(velas.createPriceLine({ price: p.preco, color: '#d6c39f', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: p.lado + ' ' + fmt(p.lotes, 2) }))
-      if (p.sl > 0) linhasPos.push(velas.createPriceLine({ price: p.sl, color: '#cc9390', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'stop' }))
-      if (p.tp > 0) linhasPos.push(velas.createPriceLine({ price: p.tp, color: '#9cb894', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'TP' }))
+      linhasPos.push(velas.createPriceLine({ price: p.preco, color: P.at, lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: p.lado + ' ' + fmt(p.lotes, 2) }))
+      if (p.sl > 0) linhasPos.push(velas.createPriceLine({ price: p.sl, color: P.rt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'stop' }))
+      if (p.tp > 0) linhasPos.push(velas.createPriceLine({ price: p.tp, color: P.gt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'TP' }))
     }
     n = d.velas.length; nVer = d.tf === '15m' ? 130 : 110
     if (nova) { mexeu = false; ajustar() }
@@ -357,20 +367,26 @@ export function criarGrafico(el) {
   // o plano no gráfico: a entrada, o stop e os dois alvos (tracejados, com o nome no eixo)
   let linhasPlano = []
   function plano(p) {
+    ultimoPlano = p
     for (const l of linhasPlano) velas.removePriceLine(l)
     linhasPlano = []
     if (!p) return
-    for (const [preco, cor, titulo] of [[p.entrada, '#d6c39f', 'entrada'], [p.sl, '#cc9390', 'stop'], [p.tp1, '#9cb894', 'alvo 1'], [p.tp2, '#9cb894', 'alvo 2']])
+    for (const [preco, cor, titulo] of [[p.entrada, P.at, 'entrada'], [p.sl, P.rt, 'stop'], [p.tp1, P.gt, 'alvo 1'], [p.tp2, P.gt, 'alvo 2']])
       linhasPlano.push(velas.createPriceLine({ price: preco, color: cor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: titulo }))
   }
-  // 24/10 («mete white mode opção»): as cores do gráfico para o modo claro e de volta para o escuro
+    // 24/10 (modo claro): troca a paleta, pinta de novo o que já está no gráfico e redesenha as caixas e as marcas
   function tema(claro) {
+    P = claro ? CORES.claro : CORES.escuro
     const borda = claro ? '#e0e3eb' : '#23272c', linha = claro ? '#9598a1' : '#3a4047', etiqueta = claro ? '#131722' : '#2a2f35', grelha = claro ? '#f0f3fa' : 'rgba(255,255,255,0.035)'
     chart.applyOptions({ layout: { textColor: claro ? '#131722' : '#8f959c', panes: { separatorColor: borda } }, grid: { vertLines: { color: grelha }, horzLines: { color: grelha } },
       rightPriceScale: { borderColor: borda }, timeScale: { borderColor: borda },
       crosshair: { vertLine: { color: linha, labelBackgroundColor: etiqueta }, horzLine: { color: linha, labelBackgroundColor: etiqueta } } })
-    const sobe = claro ? '#26a69a' : '#9cb894', desce = claro ? '#ef5350' : '#cc9390'
-    velas.applyOptions({ upColor: sobe, downColor: desce, borderUpColor: sobe, borderDownColor: desce, wickUpColor: sobe, wickDownColor: desce })
+    velas.applyOptions({ upColor: P.vs, downColor: P.vd, borderUpColor: P.vs, borderDownColor: P.vd, wickUpColor: claro ? P.vs : G(.7), wickDownColor: claro ? P.vd : R(.7), priceLineColor: claro ? '#9598a1' : '#6f757c' })
+    verm.applyOptions({ color: R(.9) }); cinza.applyOptions({ color: C(.8) }); verde.applyOptions({ color: G(.9) }); ema.applyOptions({ color: A(.7) }); ema80.applyOptions({ color: A(.5) })
+    for (const [k, sr] of linhasLT) sr.applyOptions({ color: k.endsWith('subida') ? G(.85) : R(.85) })
+    if (estK) { estK.applyOptions({ color: P.at }); estD.applyOptions({ color: C(.8) }); for (const [l, f] of estLinhas) l.applyOptions({ color: f(.5) }) }
+    if (ultimaVez) mostrar(...ultimaVez)
+    plano(ultimoPlano)
   }
   return { mostrar, plano, tema }
 }

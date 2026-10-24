@@ -546,17 +546,17 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 /* 24/10 («no modo claro mete mesmo o estilo das cores do TradingView»): as cores do tema claro do TradingView */
 /* («o white mode não precisa ser levado ao extremo, aplica normal»): os fundos claros do TradingView ficam, mas as cores
    de destaque voltam às nossas (areia, verde e rosa), só um pouco mais fundas para se lerem no branco; nada de azul */
-html.claro { --bg:#eef0f4; --painel:#ffffff; --painel2:#f7f8fa; --borda:#e1e4ea; --texto:#1e222b; --suave:#6b7080; --fraco:#8c919c;
-  --areia:#94733d; --salva:#3d8a5f; --rosa:#bf5a55; color-scheme:light }
+html.claro { --bg:#eef0f4; --painel:#ffffff; --painel2:#f7f8fa; --borda:#e0e3eb; --texto:#131722; --suave:#6a6d78; --fraco:#8b8e99;
+  --areia:#b07a1a; --salva:#1d8a7a; --rosa:#d0504c; color-scheme:light }
 html.claro body { background:#eef0f4 }
 html.claro .col.esq .card, html.claro .col.dir .card { background:var(--painel) }
 html.claro .seg, html.claro .estrBtn { background:#f0f3fa }
 html.claro .seg > .on { background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08) }
 html.claro .estrBtn:hover, html.claro .par:hover { background:#e9edf7 }
-html.claro .col.dir .card, html.claro .quad, html.claro .mc-ouro, html.claro .maq { background:var(--painel2) }
+html.claro .quad, html.claro .mc-ouro, html.claro .maq { background:var(--painel2) }
 html.claro #dica, html.claro .alvos, html.claro .mCaixa { background:#fffefb; box-shadow:0 10px 28px rgba(19,23,34,.14) }
 html.claro .mFundo { background:rgba(19,23,34,.3) }
-html.claro .sw { background:#d1d4dc } html.claro .sw::after { background:#fff } html.claro .sw.on { background:#7fb38f }
+html.claro .sw { background:#d1d4dc } html.claro .sw::after { background:#fff } html.claro .sw.on { background:#26a69a }
 html.claro .par .barra, html.claro .risco, html.claro .forca .b { background:#e0e3eb }
 html.claro .par .barra i, html.claro .risco i, html.claro .forca .b i { background:#9598a1 }
 html.claro .alvos .barra { background:rgba(0,0,0,.07) }
@@ -574,7 +574,13 @@ html.claro .mLista .int { background:#d1d4dc }
 html.claro .mPega { background:#d1d4dc }
 html.claro .camadas .estrSel option { background:#fff }
 html.claro ::-webkit-scrollbar-thumb { background:#d1d4dc }
-html.claro .estrTP .placar .ouro { background:none; -webkit-text-fill-color:#94733d; color:#94733d }
-html.claro .estrTP .placar .ouro.laranja, html.claro .mLista .grupo .laranja { -webkit-text-fill-color:#c26a2e; color:#c26a2e }
+html.claro .estrTP .placar .ouro { background:none; -webkit-text-fill-color:#b07a1a; color:#b07a1a }
+html.claro .estrTP .placar .ouro.laranja, html.claro .mLista .grupo .laranja { -webkit-text-fill-color:#cf6a2c; color:#cf6a2c }
 html.claro .mLeg { text-shadow:0 0 6px var(--bg) }
+/* 24/10 («ainda está bué feio»): no claro os títulos grandes ficam escuros (o dourado só em detalhes pequenos), todos os
+   cartões no mesmo branco, e o bloco da ordem parada num cinzento muito leve */
+html.claro .card { background:var(--painel) }
+html.claro .ordemParada.fechado .op-est, html.claro .mf-est { color:var(--texto) }
+html.claro .plano .ordemParada, html.claro .plano .acaoBloco.pausa { background:var(--painel2) }
+html.claro .ag-atencao { background:var(--painel2) }
 

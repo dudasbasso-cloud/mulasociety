@@ -314,12 +314,14 @@ export function criarGrafico(el) {
       pontos(p, visto)
     })
     if (solto) { caixa(solto, solto.time, null); juntaL({ de: solto.time, ate: null, itens: precos(solto) }); if (!camadas.sinais) mAlvos.push(nome(solto)); pontos(solto, t => t >= solto.time) }
-    marcasAlvos.setMarkers(mAlvos.sort((a, b) => a.time - b.time))
+    // no telemóvel as marcas ficam só com a seta e o ponto, sem texto, para as velas se lerem (24/10, «vê o TradingView»)
+    const curto = matchMedia('(max-width:1000px),(max-height:520px)').matches, semTexto = l => curto ? l.map(m => ({ ...m, text: '' })) : l
+    marcasAlvos.setMarkers(semTexto(mAlvos.sort((a, b) => a.time - b.time)))
     if (camadas.alvos) quadroAlvos(d.alvos, d.simbolo === 'XAUUSD'); else quadro.style.display = 'none'
     requestAnimationFrame(porQuadro)
     porTempo = new Map()
     if (camadas.sinais) for (const s of d.sinais) porTempo.set(s.time, [...(porTempo.get(s.time) || []), s])
-    marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time) : [])
+    marcadores.setMarkers(camadas.sinais ? semTexto(d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time)) : [])
     // as entradas das estratégias (camada Estratégias): seta do lado, nome curto e ✓ se chegou a um TP, ✗ se foi ao stop
     // «EDNEY: todas» junta as três dele (liquidez, CHoCH e order block)
     const ver = (camadas.estrVer || []).flatMap(v => v === 'edney' ? ['liquidez', 'choch', 'orderblock'] : [v]), EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []

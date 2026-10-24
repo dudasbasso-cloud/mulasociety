@@ -410,35 +410,66 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .estrTP .placarDuas .placar + .placar { border-left:1px solid #3d434a; padding-left:16px; margin-left:16px; width:calc(100% - 16px) }
 .estrTP .placarDuas .placar:first-child { width:calc(100% - 16px) }
 
-/* 24/10 («faz algo do género do TradingView para mobile»): no telemóvel (de pé ou deitado) a página não corre. Um painel de
-   cada vez, a ecrã inteiro entre a barra de cima e os separadores de baixo; o gráfico tem o dedo todo para ele */
-.mNav { display:none }
+/* 24/10 («vê como é o TradingView na app mobile»): no telemóvel é como a app deles. Sem barra da marca; o gráfico de ponta
+   a ponta com uma barra fina de botões em cima (tempo, camadas, estratégia) que abrem uma folha de baixo; a legenda por cima
+   das velas; separadores com ícone em baixo. Um painel de cada vez e a página nunca corre */
+.mNav, .mBarra, .mLeg, .mFolha { display:none }
 @media (max-width: 1000px), (max-height: 520px) {
-  #app { height:100dvh; padding:4px max(6px, env(safe-area-inset-right)) 0 max(6px, env(safe-area-inset-left)) }
-  .topo { padding:3px 10px; margin-bottom:4px; gap:12px; flex-wrap:nowrap; overflow:hidden }
-  .topo #sessoes, .topo #proxima, .topo .relogio span, .topo #resultado, .topo #topoConta { display:none }
-  .marca { letter-spacing:.2em; font-size:11.5px }
-  .relogio b { font-size:14px }
+  body { background:var(--bg) }
+  #app { height:100dvh; padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left) }
+  .topo { display:none }
   .grelha { display:block; position:relative; flex:1; min-height:0 }
   .col { display:contents }
   [data-painel], .col > .card:not([data-painel]) { display:none !important }
+  body[data-m] [data-painel] { border:0; border-radius:0 }
   body[data-m="grafico"] [data-painel="grafico"], body[data-m="estrategias"] [data-painel="estrategias"], body[data-m="ordem"] [data-painel="ordem"],
-  body[data-m="noticias"] [data-painel="noticias"] { display:flex !important; flex-direction:column; position:absolute; inset:0; overflow:auto; max-height:none }
+  body[data-m="noticias"] [data-painel="noticias"] { display:flex !important; flex-direction:column; position:absolute; inset:0; overflow:auto; max-height:none; padding-top:env(safe-area-inset-top) }
   body[data-m="analise"] [data-painel="analise"] { display:flex !important; flex-direction:column; overflow:auto }
-  body[data-m="analise"] .card.abas { position:absolute; inset:0 0 46% 0 } body[data-m="analise"] [data-painel="analise"]:not(.abas) { position:absolute; inset:calc(54% + 8px) 0 0 0 }
+  body[data-m="analise"] .card.abas { position:absolute; inset:0 0 46% 0; padding-top:env(safe-area-inset-top) } body[data-m="analise"] [data-painel="analise"]:not(.abas) { position:absolute; inset:54% 0 0 0; border-top:1px solid var(--borda) }
   body[data-m="estrategias"] #estrTP { display:block !important }
-  .cab { padding:6px 10px 2px; gap:4px 10px; flex-wrap:wrap }
-  .cab > :not(.camadas) { flex:none }
-  .camadas { flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; scrollbar-width:none; padding:0 0 2px; flex-basis:100%; min-width:0 }
-  .camadas .estrSel { order:-1; padding-right:6px; border-right:1px solid var(--borda) }
-  .camadas .estrSel select { min-height:28px; color:var(--texto) }
-  .camadas::-webkit-scrollbar { display:none }
-  .camadas > * { flex:none }
-  #grafico { min-height:0; margin:0 2px; touch-action:none }
-  .alvos, .legenda { display:none !important }
-  .mNav { display:flex; flex:none; gap:2px; padding:4px 0 max(4px, env(safe-area-inset-bottom)); border-top:1px solid var(--borda); margin-top:4px }
-  .mNav button { flex:1; text-align:center; font-size:12px; color:var(--suave); padding:7px 0; border-radius:8px; min-height:34px }
-  .mNav button.on { color:var(--texto); background:rgba(255,255,255,.06) }
+  [data-painel="grafico"] { background:var(--bg) }
+  [data-painel="grafico"] .cab, .alvos, .legenda { display:none !important }
+  #grafico { position:relative; min-height:0; margin:0; touch-action:none }
+
+  /* a barra de cima do gráfico */
+  .mBarra { display:flex; align-items:center; flex:none; height:46px; padding:0 4px; border-bottom:1px solid var(--borda); overflow-x:auto; scrollbar-width:none }
+  .mBarra::-webkit-scrollbar { display:none }
+  .mBarra button { flex:none; display:flex; align-items:center; gap:6px; height:36px; padding:0 11px; border-radius:8px; color:var(--texto); font-size:14px; font-weight:600 }
+  .mBarra button:active { background:rgba(255,255,255,.06) }
+  .mBarra button svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; color:var(--suave) }
+  .mBarra button .sub { font-weight:400; color:var(--suave) }
+  .mBarra button.tf .sub { color:var(--texto); font-weight:600 }
+  .mBarra button.estr .sub { max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .mBarra button.estr.on .sub { color:var(--areia) }
+  .mBarra .div { flex:none; width:1px; height:22px; background:var(--borda) }
+
+  /* a legenda por cima das velas, como a deles */
+  .mLeg { display:block; position:absolute; z-index:4; left:10px; top:6px; right:70px; pointer-events:none; font-size:12px; line-height:1.5; color:var(--suave); text-shadow:0 0 6px var(--bg) }
+  .mLeg b { color:var(--texto); font-weight:600 } .mLeg .sobe { color:var(--salva) } .mLeg .desce { color:var(--rosa) }
+  .mLeg .estado { color:var(--fraco) }
+
+  /* a folha que sobe de baixo */
+  .mFolha { position:fixed; inset:0; z-index:50 }
+  .mFolha.aberta { display:block }
+  .mFundo { position:absolute; inset:0; background:rgba(0,0,0,.5) }
+  .mCaixa { position:absolute; left:0; right:0; bottom:0; max-height:72dvh; overflow:auto; background:#1a1d21; border-radius:14px 14px 0 0; padding:6px 0 max(10px, env(safe-area-inset-bottom)); overscroll-behavior:contain }
+  .mPega { width:36px; height:4px; border-radius:2px; background:#3d434a; margin:4px auto 8px }
+  .mTit { font-size:13px; color:var(--suave); padding:2px 18px 8px }
+  .mLista button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:48px; padding:0 18px; font-size:15px; color:var(--texto); text-align:left; border-top:1px solid #23272c }
+  .mLista button:active { background:rgba(255,255,255,.04) }
+  .mLista button .n { color:var(--fraco); font-size:13px }
+  .mLista .marca-on { width:20px; height:20px; flex:none; border-radius:50%; border:1.5px solid #4a5058 }
+  .mLista button.on .marca-on { border-color:var(--areia); box-shadow:inset 0 0 0 4px #1a1d21; background:var(--areia) }
+  .mLista .int { width:40px; height:24px; flex:none; border-radius:12px; background:#3a3f45; position:relative }
+  .mLista .int::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#e7e2d9; transition:transform .15s }
+  .mLista button.on .int { background:var(--salva) } .mLista button.on .int::after { transform:translateX(16px) }
+
+  /* os separadores de baixo, com ícone */
+  .mNav { display:flex; flex:none; padding:2px 0 max(2px, env(safe-area-inset-bottom)); border-top:1px solid var(--borda); background:var(--bg) }
+  .mNav button { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; color:var(--fraco); padding:6px 0 4px; min-height:48px }
+  .mNav button svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round }
+  .mNav button.on { color:var(--areia) }
+
   /* o placar numa coluna, com as colunas alinhadas */
   .estrTP .placarDuas { grid-template-columns:minmax(0,1fr) }
   .estrTP .placarDuas .placar + .placar { border-left:0; padding-left:0; margin-left:0; width:100%; margin-top:2px }
@@ -455,12 +486,9 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
   .estrTP .tit span + span { display:none }
   .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:86px }
 }
-
-/* telemóvel deitado: cabeçalho do gráfico numa só linha, o gráfico fica com a altura (24/10) */
-@media (max-height:520px) {
-  .cab { flex-wrap:nowrap }
-  .cab #gTimer { display:none }
-  .camadas { flex:1 1 0; flex-basis:0 }
-  .camadas .estrSel select { max-width:170px }
+/* deitado: separadores mais baixos, só o ícone com o nome ao lado, para o gráfico ficar com a altura */
+@media (max-height: 520px) {
+  .mBarra { height:40px }
+  .mNav button { flex-direction:row; justify-content:center; gap:6px; min-height:38px; padding:0; font-size:11.5px }
+  .mNav button svg { width:19px; height:19px }
 }
-

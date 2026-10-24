@@ -305,6 +305,7 @@ function marcar() {
   for (const s of $('tfs').children) { const on = s.dataset.tf === est.tf; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on) }
   for (const s of $('camadas').children) { const on = !!est.camadas[s.dataset.c]; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on) }
   escolhaEstr()
+  mAtualizar()
 }
 // 24/10 («mete as estratégias mesmo, e eu seleciono para ver só aquela»): uma lista na barra das camadas; a escolhida
 // mostra as entradas dela no gráfico (seta do lado, ✓ se chegou a um TP, ✗ se foi ao stop). Nenhuma = nada
@@ -565,8 +566,18 @@ async function carregarMacro() {
 }
 setInterval(() => { if (est.aba === 'macro') carregarMacro() }, 60e3)
 
-// 24/10 («faz algo do género do TradingView para mobile»): no telemóvel cada painel ocupa o ecrã e muda-se nos separadores
-// de baixo; o gráfico fica com o dedo todo para ele (arrastar, dois dedos para o zoom), sem a página a fugir
+// 24/10 («vê como é o TradingView na app mobile»): no telemóvel é como a app deles. Cada painel ocupa o ecrã e muda-se nos
+// separadores de baixo; no gráfico, uma barra fina de botões (tempo, camadas, estratégia) que abrem uma folha a subir de
+// baixo, e a legenda por cima das velas. Os botões da folha carregam nos de sempre, por isso guardam e redesenham igual
+const SVG = d => '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'
+function mAtualizar() {
+  const b = $('mBarra'); if (!b) return
+  b.querySelector('.tf .sub').textContent = TFN[est.tf] || est.tf
+  const sel = $('estrSel'), op = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text.replace(/\s*\(\d+\)$/, '') : 'Estratégia'
+  b.querySelector('.estr .sub').textContent = op; b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
+  $('mLeg').innerHTML = '<b>' + esc($('gNome').textContent) + '</b> · ' + esc(TFN[est.tf] || est.tf) + ' &nbsp;<b class="num">' + esc($('gPx').textContent) + '</b> <span class="num ' + ($('gVar').className.includes('sobe') ? 'sobe' : 'desce') + '">' + esc($('gVar').textContent.replace(' em 24 h', '')) + '</span>'
+    + ($('gTimer').textContent ? '<br><span class="estado">' + esc($('gTimer').textContent) + '</span>' : '')
+}
 {
   const P = { grafico: [$('grafico').closest('.card')], estrategias: [$('estrTP')], ordem: [$('plano').closest('.card')],
     analise: [document.querySelector('.card.abas'), $('calendario')?.closest('.card')], noticias: [document.querySelector('.card.noticias')] }
@@ -574,7 +585,43 @@ setInterval(() => { if (est.aba === 'macro') carregarMacro() }, 60e3)
   const mostrar = m => {
     document.body.dataset.m = m
     for (const b of $('mNav').children) { const on = b.dataset.m === m; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false') }
+    if (m === 'grafico') dispatchEvent(new Event('resize'))
   }
   $('mNav').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) { mostrar(b.dataset.m); est.mPainel = b.dataset.m; guardar() } })
-  mostrar(est.mPainel || 'grafico')
+
+  // a barra de cima do gráfico e a legenda
+  const barra = document.createElement('div'); barra.className = 'mBarra'; barra.id = 'mBarra'
+  barra.innerHTML = '<button type="button" class="tf" aria-label="Tempo das velas">' + SVG('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>') + '<span class="sub"></span></button><span class="div"></span>'
+    + '<button type="button" class="cam" aria-label="Camadas">' + SVG('<path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/>') + 'Camadas</button><span class="div"></span>'
+    + '<button type="button" class="estr" aria-label="Estratégia no gráfico">' + SVG('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>') + '<span class="sub"></span></button>'
+  $('grafico').closest('.card').prepend(barra)
+  const leg = document.createElement('div'); leg.className = 'mLeg'; leg.id = 'mLeg'; $('grafico').append(leg)
+
+  // a folha que sobe de baixo
+  const folha = document.createElement('div'); folha.className = 'mFolha'; folha.setAttribute('role', 'dialog'); folha.setAttribute('aria-modal', 'true')
+  folha.innerHTML = '<div class="mFundo"></div><div class="mCaixa"><div class="mPega"></div><div class="mTit"></div><div class="mLista"></div></div>'
+  document.body.append(folha)
+  const fechar = () => folha.classList.remove('aberta')
+  folha.querySelector('.mFundo').addEventListener('click', fechar)
+  addEventListener('keydown', e => { if (e.key === 'Escape') fechar() })
+  let acao = null, multi = false, itens = () => []
+  const desenhar = () => {
+    folha.querySelector('.mLista').innerHTML = itens().map((x, k) => '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '"><span>' + esc(x.nome) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span><span class="' + (multi ? 'int' : 'marca-on') + '"></span></button>').join('')
+  }
+  const abrir = (tit, f, fn, m) => { folha.querySelector('.mTit').textContent = tit; itens = f; acao = fn; multi = m; desenhar(); folha.classList.add('aberta') }
+  folha.querySelector('.mLista').addEventListener('click', e => {
+    const b = e.target.closest('[data-k]'); if (!b) return
+    acao(itens()[+b.dataset.k]); mAtualizar()
+    if (multi) desenhar(); else fechar()
+  })
+  barra.querySelector('.tf').addEventListener('click', () => abrir('Tempo das velas',
+    () => [...$('tfs').children].map(b => ({ nome: b.textContent, on: b.dataset.tf === est.tf, b })), x => x.b.click(), false))
+  barra.querySelector('.cam').addEventListener('click', () => abrir('Camadas no gráfico',
+    () => [...$('camadas').querySelectorAll('[data-c]')].map(b => ({ nome: b.title || b.textContent, on: !!est.camadas[b.dataset.c], b })), x => x.b.click(), true))
+  barra.querySelector('.estr').addEventListener('click', () => abrir('Estratégia no gráfico',
+    () => [...$('estrSel').options].map(o => { const m = o.text.match(/^(.*?)\s*\((\d+)\)$/); return { nome: o.value ? (m ? m[1] : o.text) : 'Nenhuma', n: m ? m[2] + (m[2] === '1' ? ' entrada' : ' entradas') : null, on: $('estrSel').value === o.value, v: o.value } }),
+    x => { $('estrSel').value = x.v; $('estrSel').dispatchEvent(new Event('change')) }, false))
+  new MutationObserver(mAtualizar).observe($('gPx'), { childList: true, characterData: true, subtree: true })
+  new MutationObserver(mAtualizar).observe($('gTimer'), { childList: true, characterData: true, subtree: true })
+  mostrar(est.mPainel || 'grafico'); mAtualizar()
 }

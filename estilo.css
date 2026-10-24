@@ -1,0 +1,383 @@
+/* O Jarvis: escuro e calmo. Cores suaves (rosa velho, areia, verde salva), barras cinzentas, cor só em texto pequeno.
+   Sem brilhos, sem cápsulas com ícone. */
+:root { --bg:#0f1113; --painel:#16191c; --painel2:#1a1d21; --borda:#23272c; --texto:#e7e2d9; --suave:#8f959c; --fraco:#7d838a;
+        --areia:#d6c39f; --salva:#9cb894; --rosa:#cc9390 }
+* { box-sizing:border-box; margin:0; padding:0 }
+html, body { height:100% }
+body { background:var(--bg); color:var(--texto); font:13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden }
+#app { height:100%; display:flex; flex-direction:column; padding:10px 14px 12px }
+.num { font-variant-numeric:tabular-nums }
+.topo { display:flex; align-items:center; gap:20px; white-space:nowrap; padding:0 4px 10px; border-bottom:1px solid var(--borda); margin-bottom:12px; overflow:hidden }
+.marca { font-weight:600; letter-spacing:.32em; font-size:15px }
+.marca small { letter-spacing:.02em; font-weight:400; color:var(--suave); font-size:12px; margin-left:8px }
+.topo .it { color:var(--suave) } .topo .it b { color:var(--texto); font-weight:500 }
+.topo .dir { margin-left:auto; display:flex; gap:20px; align-items:center }
+.ponto { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--fraco); margin-right:6px; vertical-align:1px }
+.ponto.on { background:var(--salva) } .ponto.erro { background:var(--rosa) } .ponto.pausa { background:var(--areia) }
+.grelha { flex:1; min-height:0; display:grid; grid-template-columns:232px minmax(520px, 1fr) 326px; gap:18px }
+.col { display:flex; flex-direction:column; gap:14px; min-height:0; min-width:0 }
+.col.dir { overflow:auto }
+.card { background:var(--painel); border:1px solid var(--borda); border-radius:10px }
+.card.cresce { flex:1; min-height:0; display:flex; flex-direction:column }
+[hidden] { display:none !important }
+/* 23/10 (revisão de design): os controlos são botões a sério, com o aspeto de antes; quem usa o teclado vê onde está */
+button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; text-align:inherit }
+:focus-visible { outline:2px solid var(--areia); outline-offset:2px; border-radius:4px }
+.conversa { min-height:300px }
+.desliza { overflow:auto; flex:1; min-height:0 }
+.tit { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); padding:12px 14px 8px; display:flex; justify-content:space-between; gap:10px }
+.tit span + span { text-transform:none; letter-spacing:0 }
+.sobe { color:var(--salva) } .desce { color:var(--rosa) } .areia { color:var(--areia) } .suave { color:var(--suave) }
+.vazio { padding:6px 14px 12px; color:var(--fraco); font-size:12px }
+/* radar */
+.par { padding:9px 14px; border-top:1px solid var(--borda); display:grid; grid-template-columns:1fr auto; row-gap:2px; cursor:pointer }
+.par:hover { background:#181b1f } .par.ativo { background:var(--painel2) }
+.par .n { font-weight:600 } .par .p { text-align:right }
+.par .e { grid-column:1 / 2; font-size:11.5px; color:var(--suave); align-self:center } .par .e.toda { grid-column:1 / 3 }
+/* 22/10: «carregar gráfico» nos pares; o ouro preso no topo da lista, sempre à mostra */
+.par { cursor:default } .par.ouro { cursor:pointer; position:sticky; top:0; z-index:2; background:var(--painel); border-bottom:1px solid var(--borda) } .par.ouro.ativo { background:var(--painel2) }
+.carregar { justify-self:end; align-self:center; font:inherit; font-size:11px; line-height:1; padding:5px 9px; border-radius:6px; border:1px solid #3a4047; background:transparent; color:var(--texto); cursor:pointer; white-space:nowrap }
+.carregar:hover { background:#22262b; border-color:#4a5058 } .carregar.on { border-color:transparent; color:var(--areia); cursor:default; padding-right:0 }
+.par .barra { grid-column:1 / 3; height:3px; background:#24282d; border-radius:2px; margin-top:5px; overflow:hidden }
+.par .barra i { display:block; height:100%; background:#5d636a; border-radius:2px }
+/* opções */
+.opc { padding:2px 14px 12px }
+.opc .opcao { width:100%; display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:12.5px; text-align:left; cursor:pointer }
+.opc .opcao:disabled { color:var(--fraco); cursor:default }
+.sw { width:30px; height:17px; border-radius:9px; background:#2a2f35; position:relative; flex:none }
+.sw::after { content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#8f959c; transition:transform .15s }
+.sw.on { background:#3c4a3a } .sw.on::after { transform:translateX(13px); background:var(--salva) }
+/* gráfico */
+.cab { display:flex; align-items:center; gap:14px; padding:12px 14px 6px; white-space:nowrap }
+.cab .sim { font-size:16px; font-weight:600 } .cab .px { font-size:16px }
+.seg { display:flex; gap:2px; background:#121518; border:1px solid var(--borda); border-radius:7px; padding:2px }
+.seg > * { padding:3px 9px; border-radius:5px; color:var(--suave); font-size:12px; cursor:pointer } .seg > .on { background:#262b31; color:var(--texto) }
+.cab { flex-wrap:wrap; row-gap:6px }
+.camadas { order:9; flex-basis:100%; display:flex; justify-content:flex-end; gap:12px; font-size:11.5px; color:var(--fraco) } .camadas > * { cursor:pointer } .camadas > .on { color:var(--texto) }
+.camadas > .on::before { content:'● '; font-size:8px; vertical-align:2px }
+/* desde 23/10 as notícias estão à esquerda e o gráfico ocupa a coluna do meio toda */
+#grafico { flex:1; min-height:300px; margin:0 6px; position:relative }
+.paneTit { position:absolute; left:6px; top:3px; z-index:3; font-size:11px; color:var(--fraco); pointer-events:none }
+#dica { position:absolute; z-index:5; display:none; pointer-events:none; background:#1d2126; border:1px solid var(--borda); border-radius:6px; padding:7px 9px; font-size:12px; max-width:260px }
+.legenda { display:flex; flex-wrap:wrap; gap:6px 16px; padding:2px 14px 10px; font-size:11.5px; color:var(--suave) }
+.legenda i { display:inline-block; width:14px; height:2px; vertical-align:3px; margin-right:6px }
+.legenda i.trac { background:repeating-linear-gradient(90deg, rgba(214,195,159,.6) 0 4px, transparent 4px 7px) }
+.legenda i.pont { background:repeating-linear-gradient(90deg, rgba(214,195,159,.7) 0 2px, transparent 2px 4px) }
+.legenda i.caixa { height:8px; vertical-align:0; border:1px dashed rgba(214,195,159,.55); background:rgba(214,195,159,.06) }
+.maq { margin:0 14px 14px; padding:11px 13px; border:1px solid var(--borda); border-radius:8px; background:#14171a; display:grid; grid-template-columns:1fr auto; gap:4px 18px; align-items:center; font-size:12px }
+.maq .t1 { font-size:12.5px } .maq .t2 { color:var(--suave) } .maq .t2 div + div { margin-top:2px }
+.maq .ver { grid-row:1 / 3; grid-column:2; text-align:right; color:var(--suave) }
+.maq .ver b { display:block; font-size:14px; letter-spacing:.04em }
+/* 24/10: o card das estratégias de TP, por baixo do gráfico; uma coluna por maneira de fechar */
+.estrTP { padding:0 14px 11px; font-size:12px; flex:none }
+.estrTP .tit { padding:10px 0 8px }
+.estrTP .lista { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px 18px }
+.estrTP .n { color:var(--suave) } .estrTP .nossa .n { color:var(--texto) } .estrTP .n i { font-style:normal; color:var(--areia) }
+.estrTP .e b { display:block; font-size:15px; font-weight:600; margin:3px 0 2px } .estrTP .q { color:var(--suave) }
+/* observações */
+.obs { padding:0 14px 10px }
+.obs > div:not(.vazio) { display:grid; grid-template-columns:52px 1fr; gap:10px; padding:6px 0; border-top:1px solid var(--borda); font-size:12.5px }
+.obs > div:first-child { border-top:0 } .obs .vazio { padding:6px 0 } .obs .h { color:var(--suave) }
+.obs .forte > span:last-child { color:var(--texto); font-weight:500 } .obs .info > span:last-child { color:#c9c4bb }
+/* agora e conta */
+.brief { padding:0 14px 12px }
+.brief p { margin-bottom:8px }
+.brief .se { padding-left:12px; position:relative; margin-bottom:6px } .brief .se::before { content:''; position:absolute; left:0; top:9px; width:5px; height:1px; background:var(--suave) }
+.brief .forte { color:var(--salva) }
+.linha { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--borda); font-size:12.5px }
+.linha span:first-child { color:var(--suave) } .linha span:last-child { text-align:right }
+.risco { height:4px; background:#24282d; border-radius:2px; margin:2px 0 4px; overflow:hidden }
+.risco i { display:block; height:100%; background:#5d636a; border-radius:2px }
+/* notícias e calendário */
+.noticia { padding:8px 14px; border-top:1px solid var(--borda); font-size:12px }
+.noticia .q { display:flex; justify-content:space-between; align-items:center; gap:8px; color:var(--suave); font-size:11px; margin-bottom:4px }
+.noticia .pq { color:var(--suave); font-size:11px; margin-top:3px }
+/* conversa */
+.conv { padding:0 14px 8px; font-size:12.5px }
+.msg { padding:8px 10px; border-radius:8px; margin-bottom:8px; white-space:pre-wrap }
+.msg.eu { background:#20242a; margin-left:40px } .msg.jv { background:#191c20; border:1px solid var(--borda) }
+.msg .q { color:var(--suave); font-size:11px; margin-bottom:2px }
+.entrada { display:flex; gap:8px; margin:0 14px 12px; border:1px solid var(--borda); border-radius:8px; padding:6px 6px 6px 10px }
+.entrada input { flex:1; background:transparent; border:0; outline:0; color:var(--texto); font:inherit }
+.entrada button { background:#262b31; color:var(--texto); border:0; border-radius:6px; padding:4px 10px; font:inherit; cursor:pointer }
+.entrada button:disabled { color:var(--fraco); cursor:default }
+::-webkit-scrollbar { width:8px; height:8px } ::-webkit-scrollbar-thumb { background:#2a2f35; border-radius:4px } ::-webkit-scrollbar-track { background:transparent }
+.msg .c b { color:var(--texto); font-weight:600 }
+/* tendência nos quatro tempos */
+.tend { width:100%; border-collapse:collapse; font-size:12.5px }
+.tend th { text-align:left; color:var(--fraco); font-weight:400; font-size:11px; padding:0 14px 6px }
+.tend td { padding:6px 14px; border-top:1px solid var(--borda); white-space:nowrap }
+.tend td:first-child { color:var(--suave) } .tend th:last-child, .tend td:last-child { text-align:right }
+.tend .terra { color:var(--areia); font-size:11px }
+.tnota { padding:8px 14px 12px; border-top:1px solid var(--borda); font-size:12px; color:var(--suave) } .tnota div + div { margin-top:4px }
+.tnota b { color:var(--texto); font-weight:500 }
+/* força das divisas: barras cinzentas a partir do meio, o valor com cor */
+.forca .m { display:grid; grid-template-columns:34px 1fr 52px 46px; align-items:center; gap:8px; padding:4px 14px; font-size:12px }
+.forca .m .n { font-weight:600 } .forca .m .v { text-align:right } .forca .m .c { text-align:right; color:var(--fraco); font-size:11px }
+.forca .b { position:relative; height:4px; background:#24282d; border-radius:2px }
+.forca .b i { position:absolute; top:0; height:100%; background:#5d636a; border-radius:2px }
+.forca .sugere { padding:8px 14px 12px; margin-top:4px; border-top:1px solid var(--borda); font-size:12px; color:var(--suave) }
+.forca .sugere b { color:var(--texto); font-weight:500; cursor:pointer } .forca .sugere b:hover { text-decoration:underline }
+/* o resumo do «Agora»: o rótulo à esquerda, a frase à direita, os números a negrito; a análise toda fica em «Ver tudo» */
+.resumo { margin-bottom:10px }
+.resumo > div { display:grid; grid-template-columns:74px 1fr; gap:10px; padding:7px 0; border-top:1px solid var(--borda); font-size:13px }
+.resumo > div:first-child { border-top:0; padding-top:0 }
+.resumo > div > span:first-child { color:var(--suave); font-size:11.5px; padding-top:1px }
+.resumo b { font-weight:600; color:var(--texto) }
+.mais summary { cursor:pointer; color:var(--suave); font-size:12px; padding:4px 0 8px; list-style:none }
+.mais summary::-webkit-details-marker { display:none } .mais summary::before { content:'▸ '; font-size:10px } .mais[open] summary::before { content:'▾ ' }
+.mais[open] summary { margin-bottom:6px }
+/* as estratégias que ele mandou */
+.estr { padding:8px 14px 10px; border-top:1px solid var(--borda); font-size:12.5px } .estr:first-child { border-top:0; padding-top:2px }
+.estr .en { margin-bottom:3px } .estr .ee { margin-bottom:5px } .estr .ee.sinal { color:var(--areia) }
+.estr .ep { color:var(--fraco); font-size:12px; padding:1px 0 } .estr .ep.ok { color:var(--salva) } .estr .ep.nao { color:var(--rosa) }
+.estr .ec { color:var(--suave); font-size:11.5px; margin-top:5px }
+.estr b { font-weight:600 }
+/* o plano de agora */
+.plano { padding:0 14px 12px }
+.plano .acao { font-size:18px; font-weight:600; letter-spacing:.04em; margin-bottom:8px } .plano .acao small { font-size:12px; font-weight:400; letter-spacing:0; color:var(--suave) }
+.plano .acao.vender { color:var(--rosa) } .plano .acao.comprar { color:var(--salva) } .plano .acao.esperar { color:var(--areia) }
+.plano .pl { display:grid; grid-template-columns:58px auto 1fr; gap:4px 10px; padding:6px 0; border-top:1px solid var(--borda); font-size:12.5px; align-items:baseline }
+.plano .pl > span:first-child { color:var(--suave); font-size:11.5px } .plano .pl b { font-weight:600 } .plano .pl .x { color:var(--suave); font-size:11.5px }
+.plano .pq { color:var(--suave); font-size:12px; margin-top:6px }
+/* o quadro dos alvos (camada «Alvos»), no canto de baixo à direita das velas */
+.alvos { position:absolute; z-index:4; display:none; pointer-events:none; width:224px; padding:8px 10px 7px; background:rgba(21,24,28,.92); border:1px solid var(--borda); border-radius:8px; font-size:11px; font-variant-numeric:tabular-nums }
+.alvos .t { color:var(--fraco); margin-bottom:5px; display:flex; align-items:center; gap:8px }
+.alvos .t .seg { margin-left:auto; pointer-events:auto } .alvos .t .seg > * { padding:1px 5px; font-size:11px } .alvos .t { white-space:nowrap }
+.alvos .l { display:grid; grid-template-columns:30px 22px 1fr 32px; gap:6px; align-items:center; line-height:17px }
+.alvos .l b { font-weight:600 }
+.alvos .l .q { text-align:right; color:var(--fraco) }
+.alvos .barra { display:block; height:4px; border-radius:2px; background:rgba(255,255,255,.06); overflow:hidden }
+.alvos .barra span { display:block; height:100% }
+.alvos .r { margin-top:5px; color:var(--fraco) }
+.alvos .r b.st { color:#cc9390; font-weight:600 }
+.alvos .l.st b, .alvos .l.st .q { color:#cc9390 }
+.alvos .a { margin-top:2px; display:flex; justify-content:space-between; align-items:baseline; white-space:nowrap }
+.alvos .a b { font-size:13px; margin-left:3px }
+.alvos .nota { margin-top:3px; font-size:11px; color:var(--fraco) }
+/* a entrada do amigo (o link partilhado, servidor/amigo.mjs): sem a conta, o robô, as opções, as posições e a conversa */
+.amigo #topoRobo, .amigo #topoConta, .amigo #conta, .amigo .card:has(#opcoes), .amigo .conversa, .amigo [data-c="posicoes"] { display:none !important }
+/* o relógio da vela, ao lado dos tempos do gráfico */
+.timer { margin-left:auto; font-size:13px; color:var(--fraco); font-variant-numeric:tabular-nums }
+.timer b { font-size:16px; font-weight:600; color:#e8e6e1; margin-left:6px }
+.timer.quase b { color:#d6c39f }
+.alvos .hoje { margin:1px 0 8px; font-size:12px }
+.alvos .hoje b { font-weight:600 } .alvos .hoje .v { color:#9cb894 } .alvos .hoje .r { color:#cc9390 }
+.alvos .t2 { color:var(--fraco); margin-bottom:3px; font-size:11px; letter-spacing:.06em; text-transform:uppercase }
+/* o Plano agora (22/10, «mete isto bacano, tem que se ver bem»): a ação num bloco com a cor do lado e os níveis numa escada
+   pela ordem do preço, como no gráfico, com o preço de agora no sítio dele */
+.plano .acaoBloco { border-left:3px solid var(--rosa); background:rgba(204,147,144,.08); border-radius:8px; padding:10px 12px; margin:2px 0 10px }
+.plano .acaoBloco.comprar { border-left-color:var(--salva); background:rgba(156,184,148,.08) }
+.plano .acaoBloco .acao { font-size:24px; font-weight:700; letter-spacing:.05em; margin:0; line-height:1.1 }
+.plano .acaoBloco.vender .acao { color:var(--rosa) } .plano .acaoBloco.comprar .acao { color:var(--salva) }
+.plano .acaoBloco .sub { margin-top:4px; font-size:12px; color:var(--suave) }
+.plano .acaoBloco.pausa { border-left-color:var(--fraco); background:rgba(255,255,255,.03) } .plano .acaoBloco.pausa .acao { color:var(--suave) }
+.plano .escada.apagada { opacity:.45 }
+.plano .escada { position:relative; margin:4px 0 8px; padding-left:16px }
+.plano .escada::before { content:""; position:absolute; left:4px; top:14px; bottom:14px; width:1px; background:var(--borda) }
+.plano .deg { position:relative; display:grid; grid-template-columns:62px auto 1fr; align-items:baseline; gap:10px; padding:5px 0 }
+.plano .deg i { position:absolute; left:-16px; top:50%; width:9px; height:9px; margin-top:-4.5px; border-radius:50%; background:var(--suave) }
+.plano .deg .n { font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--suave) }
+.plano .deg b { font-size:17px; font-weight:600 }
+.plano .deg .d { justify-self:end; font-size:12px; color:var(--suave); font-variant-numeric:tabular-nums }
+.plano .deg.st i { background:var(--rosa) } .plano .deg.st .n, .plano .deg.st .d { color:var(--rosa) }
+.plano .deg.en i { background:var(--areia) } .plano .deg.en .n { color:var(--areia) }
+.plano .deg.al i { background:var(--salva) } .plano .deg.al .n, .plano .deg.al .d { color:var(--salva) }
+.plano .deg.ag { padding:3px 0 } .plano .deg.ag i { background:#15181c; border:1.5px solid #e8e6e1; width:8px; height:8px; margin-top:-4px }
+.plano .deg.ag b { font-size:13px; font-weight:500; color:#e8e6e1 } .plano .deg.ag .n { color:#e8e6e1 }
+.plano .nota { font-size:12px; color:var(--suave); margin-top:6px; line-height:1.45 } .plano .nota b { color:#cfccc5; font-weight:600 }
+/* a seta das notícias como no card Mercado do Orca (22/10, «aqui eu quero ▲2 XAUUSD»): seta, grau e símbolo numa pastilha
+   com a cor do lado */
+.chip { display:inline-block; padding:0 6px; border-radius:4px; font-weight:600; font-size:11px; line-height:17px; font-variant-numeric:tabular-nums }
+.chip.sobe { background:rgba(156,184,148,.18) } .chip.desce { background:rgba(204,147,144,.18) }
+/* a máquina do tempo saiu do ecrã (22/10) */
+.maq[hidden] { display:none !important }
+
+/* 22/10 («mete texturas tipo o meu Orca»): a mesma textura em relevo do tema do Orca (ruído fractal com luz difusa, cinzenta e
+   leve, ~/orca-tema/tema.css) por cima do fundo e, mais leve, nos cartões. As cores do Jarvis ficam as mesmas. */
+:root { --textura:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='r' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch' result='n'/%3E%3CfeDiffuseLighting in='n' lighting-color='%23fff' surfaceScale='2.6' result='l'%3E%3CfeDistantLight azimuth='225' elevation='52'/%3E%3C/feDiffuseLighting%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E"); --textura-leve:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='r' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch' result='n'/%3E%3CfeDiffuseLighting in='n' lighting-color='%23fff' surfaceScale='2.6' result='l'%3E%3CfeDistantLight azimuth='225' elevation='52'/%3E%3C/feDiffuseLighting%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .09'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E") }
+body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 100%); background-size:220px 220px, auto; background-attachment:fixed, fixed }
+/* 22/10 («há sítios que não é preciso»): os cartões ficam lisos; a textura só no fundo, à volta deles, como no Orca */
+/* 22/10 («mete isto mais na minha cara»): a barra de cima numa faixa lisa por cima da textura, as horas grandes com os
+   segundos e a hora do gráfico dele por baixo, e a sessão aberta a cor de areia */
+.topo { background:var(--painel); border:1px solid var(--borda); border-radius:10px; padding:8px 16px; margin-bottom:12px }
+.relogio { display:flex; flex-direction:column; line-height:1.1 }
+.relogio b { font-size:22px; font-weight:600; letter-spacing:.02em; color:var(--texto) }
+.relogio span { font-size:11px; color:var(--suave); margin-top:2px }
+.topo .it { font-size:13.5px } .topo .it b { font-weight:600 }
+#sessoes.aberta { color:var(--areia); font-weight:600 }
+/* 22/10: o cartão com separadores à direita (Agora, Tendência, Estratégias, Notícias, Calendário, Conversa) */
+.abas .separadores { display:flex; flex-wrap:nowrap; gap:2px; padding:10px 8px 0; overflow-x:auto; border-bottom:1px solid var(--borda) }
+.abas .separadores > * { padding:6px 5px 8px; font-size:11.5px; white-space:nowrap; color:var(--suave); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px }
+.abas .separadores > :hover { color:var(--texto) }
+.abas .separadores > .on { color:var(--texto); font-weight:600; border-bottom-color:var(--areia) }
+.abas .aba { display:none } .abas .aba.on { display:block } .abas .aba.conversa.on { display:flex; flex-direction:column; flex:1; min-height:0 }
+.abas .aba > .tit { padding-top:10px }
+.amigo #separadores [data-aba="conversa"] { display:none !important }
+/* 22/10 («retira»): sem a legenda por baixo do gráfico; o que cada coisa é vê-se ao passar o rato */
+.legenda { display:none !important }
+/* os separadores sem a barra de deslizar por baixo (aparecia uma faixa cinzenta) */
+.abas .separadores { scrollbar-width:none } .abas .separadores::-webkit-scrollbar { display:none }
+/* 22/10 («retira»): sem o separador da Conversa */
+#separadores [data-aba="conversa"], .abas .aba.conversa { display:none !important }
+/* 22/10 («tá feio, mete tipo ORDEM»): o título do cartão do plano é «Ordem» e os títulos nunca partem em duas linhas */
+.tit span:first-child { white-space:nowrap } .tit span + span { text-align:right }
+/* 22/10 («retira»): sem a sessão («entre sessões», «Londres aberta») na barra de cima */
+#sessoes { display:none !important }
+/* 22/10 («mete tipo assim»): os eventos do calendário em caixas, como o cartão «Próximos eventos» do Orca */
+.evento { display:inline-flex; align-items:center; gap:10px; padding:4px 12px; border:1px solid rgba(214,195,159,.35); border-radius:8px; background:rgba(214,195,159,.05); color:var(--texto); max-width:100% }
+.evento .moeda { color:var(--areia); font-weight:700; letter-spacing:.03em }
+.evento .tt { overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.evento .prev { color:var(--suave); white-space:nowrap }
+.evento .hora { color:var(--areia); font-weight:700; white-space:nowrap; margin-left:auto }
+.evento.forte { border-color:rgba(204,147,144,.5); background:rgba(204,147,144,.06) } .evento.forte .moeda, .evento.forte .hora { color:var(--rosa) }
+.eventos { display:flex; flex-direction:column; gap:6px; padding:2px 14px 12px } .eventos .evento { display:flex; font-size:12.5px }
+#proxima .evento { font-size:13px; padding:3px 12px }
+/* na barra de cima o «.topo .it b» punha a moeda e a hora a branco: a cor de areia (ou rosa nos fortes) ganha aqui */
+.topo .it .evento b.moeda, .topo .it .evento b.hora { color:var(--areia); font-weight:700 }
+.topo .it .evento.forte b.moeda, .topo .it .evento.forte b.hora { color:var(--rosa) }
+/* 22/10 («quero o Agora bacano e apelativo»): o Agora em blocos (direção, onde está, cenários, SV3, atenção) */
+.agora { padding:4px 14px 10px; display:flex; flex-direction:column; gap:14px }
+.ag-rot { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); margin-bottom:6px }
+.ag-px { font-size:20px; font-weight:600; color:var(--texto) }
+.ag-faixa { position:relative; height:6px; border-radius:3px; margin:10px 2px 7px; background:linear-gradient(90deg, rgba(156,184,148,.6), rgba(255,255,255,.08) 50%, rgba(204,147,144,.6)) }
+.ag-faixa i { position:absolute; top:50%; width:13px; height:13px; margin:-6.5px 0 0 -6.5px; border-radius:50%; background:var(--texto); border:2px solid var(--painel) }
+.ag-pontas { display:flex; justify-content:space-between; font-size:11.5px }
+.ag-cens { display:grid; grid-template-columns:1fr 1fr; gap:8px }
+.ag-cen { padding:9px 10px; border-radius:8px; border:1px solid var(--borda); display:flex; flex-direction:column; gap:1px }
+.ag-cen.sobe { background:rgba(156,184,148,.06) } .ag-cen.desce { background:rgba(204,147,144,.06) }
+.ag-cen .ag-cen-t { font-size:11px; color:var(--suave) } .ag-cen b { font-size:15px; font-weight:600; margin-bottom:3px }
+.ag-sv3 { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; font-size:13px } .ag-sv3 b { font-size:15px; color:var(--texto) }
+.ag-sv3.entrar { padding:8px 10px; border-radius:8px; background:rgba(156,184,148,.1) }
+.ag-atencao { padding:8px 10px; border-left:3px solid var(--areia); background:rgba(214,195,159,.06); border-radius:6px; font-size:12.5px }
+.ag-txt { font-size:13px }
+/* lá em cima, o que os avisos davam com o lote dele desde as 17:00 (o amigo não vê) */
+.topo .it b.sobe { color:var(--salva) } .topo .it b.desce { color:var(--rosa) }
+.amigo #resultado { display:none !important }
+/* a explicação da barra lá em cima (23/10, «dizer com base no quê»): aparece logo ao passar o rato, por cima de tudo */
+.dicaTopo { position:fixed; z-index:50; width:360px; padding-bottom:12px; background:var(--painel); border:1px solid var(--borda); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.5); font-size:12.5px; pointer-events:none }
+.dicaTopo .l { display:grid; grid-template-columns:1fr auto; column-gap:12px; padding:3px 14px }
+.dicaTopo .l i { grid-column:1 / 3; font-style:normal; color:var(--suave); font-size:11.5px; line-height:1.35 }
+.dicaTopo p { margin:10px 14px 0; color:var(--suave); font-size:11.5px; line-height:1.45 }
+/* 23/10 (revisão de design, «um pouco mais clean»): no Agora sai o título repetido (o separador já diz «Agora» e a hora da
+   vela já está no cartão da Ordem) */
+.abas .aba[data-aba="agora"] > .tit { display:none } .abas .aba[data-aba="agora"] { padding-top:10px }
+/* 24/10: o placar das estratégias, no lugar do card das estratégias de TP */
+.estrTP .placar { width:100%; border-collapse:collapse; font-size:12px }
+.estrTP .placar th { text-align:right; font-weight:500; color:var(--suave); padding:4px 8px; border-bottom:1px solid var(--borda); white-space:nowrap }
+.estrTP .placar td { text-align:right; padding:5px 8px; white-space:nowrap }
+.estrTP .placar th:first-child, .estrTP .placar td:first-child { text-align:left; white-space:normal }
+.estrTP .placar tbody tr + tr td { border-top:1px solid var(--borda) }
+.estrTP .placar .ouro { background:linear-gradient(100deg, #b8925a 0%, #b8925a 40%, #f3dfb0 50%, #b8925a 60%, #b8925a 100%); background-size:250% 100%;
+  background-position:100% 0; -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:.04em }
+@media (prefers-reduced-motion: no-preference) { .estrTP .placar .ouro { animation:ouro 3.5s ease-in-out infinite } }
+@keyframes ouro { 0%, 30% { background-position:100% 0 } 70%, 100% { background-position:0 0 } }
+.estrTP .placar .sobe { color:var(--salva) } .estrTP .placar .desce { color:var(--rosa) }
+/* 24/10: o calendário num card só, por cima das notícias; com muitos eventos desliza em vez de empurrar as notícias */
+#calendario { max-height:220px; overflow-y:auto }
+/* 24/10 («o gráfico deveria ser a cena que se via melhor, o hiperfoco; o resto está tudo muito junto»): as colunas dos lados mais
+   estreitas e mais espaço entre os cards; a tabela das estratégias fica baixa e desliza por dentro, para o gráfico ficar com a altura */
+/* 24/10 («diminui o gráfico e mete isto sempre à mostra»): a tabela inteira, sem deslizar; o gráfico fica com o resto */
+.estrTP { max-height:none; overflow:visible }
+.estrTP .tit { position:sticky; top:0; background:var(--painel); z-index:1 }
+.col.esq .card, .col.dir .card { background:#141719 }
+/* 24/10 («pode mostrar apenas 5 e depois scroll»): as observações mostram umas 5 e o resto desliza */
+.obs { max-height:300px; overflow-y:auto }
+/* 24/10 («as notícias também pode só mostrar 5, o resto é scroll») */
+.noticias .desliza { max-height:none }
+/* 24/10 («....», o card das Observações com o fundo vazio): o card dos separadores fica do tamanho do que mostra; as abas compridas deslizam */
+.abas .aba.on { max-height:560px; overflow-y:auto }
+/* o calendário em grelha (24/10) */
+.mes { padding:0 14px 10px }
+.mesNome { color:var(--texto); font-weight:500; margin-bottom:6px }
+.grelhaMes { display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; text-align:center; font-variant-numeric:tabular-nums }
+.grelhaMes .dsem { color:var(--fraco); font-size:10.5px; padding-bottom:3px }
+.grelhaMes .dia { position:relative; padding:5px 0 7px; border-radius:6px; font-size:12px; color:var(--texto) }
+.grelhaMes .dia.passou, .grelhaMes .dia.fds { color:var(--fraco) }
+.grelhaMes .dia.hoje { background:rgba(214,195,159,.14); color:var(--areia); font-weight:600 }
+.grelhaMes .dia i { position:absolute; left:50%; bottom:2px; width:4px; height:4px; margin-left:-2px; border-radius:50% }
+.grelhaMes .dia i.forte { background:var(--rosa) } .grelhaMes .dia i.medio { background:var(--areia) }
+#calendario { max-height:none }
+/* as observações (24/10): títulos dos dias, a hora numa coluna estreita, as repetidas juntas */
+.obs > .o { grid-template-columns:40px 1fr !important; gap:12px !important; padding:8px 0 !important; line-height:1.4 }
+.obs .obsDia { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco); padding:12px 0 4px; border-top:0 !important; display:block !important }
+.obs .obsDia:first-child { padding-top:2px }
+.obs .obsDia + .o { border-top:0 }
+.obs .o .h { color:var(--fraco); padding-top:1px }
+.obs .o.atencao .tx { color:var(--texto) }
+.obs .o .rep { display:block; color:var(--suave); font-size:11.5px; margin-top:2px }
+/* o separador Agora, a conta (24/10) */
+.riscoBloco { border-top:1px solid var(--borda); padding:12px 0 4px }
+.riscoBloco .rl { display:flex; justify-content:space-between; align-items:baseline }
+.riscoBloco .rl span { color:var(--suave); font-size:12.5px }
+.riscoBloco .rl b { font-size:18px; font-weight:600 } .riscoBloco .rl small { font-size:12px; color:var(--suave); font-weight:400 }
+.riscoBloco .risco { margin-top:8px } .riscoBloco .rsem { font-size:12px; margin-top:4px }
+.quads { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px }
+.quad { background:#1a1d21; border-radius:8px; padding:9px 10px; display:flex; flex-direction:column; gap:3px; min-width:0 }
+.quad .n { color:var(--suave); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.quad b { font-size:14px; font-weight:600 } .quad b small { display:block; font-size:11px; font-weight:400; color:var(--suave); margin-top:1px }
+.planoLotes { margin-top:10px; font-size:11.5px; color:var(--suave); display:flex; justify-content:space-between; gap:8px }
+.planoLotes .num { color:var(--texto) }
+.mais summary { display:inline-block; border:1px solid var(--borda); border-radius:6px; padding:3px 9px !important; margin:2px 0 10px }
+/* 24/10 («faz com que caibam sem scroll»): a coluna da direita mais apertada, para caber inteira */
+.col.dir { gap:10px }
+.col.dir .tit { padding:9px 14px 5px }
+.plano .acaoBloco { padding:7px 11px; margin:0 0 6px }
+.plano .acaoBloco .acao { font-size:20px }
+.plano .acaoBloco .sub { margin-top:2px; font-size:11.5px }
+.plano .escada { margin:2px 0 4px }
+.plano .deg { padding:2px 0 } .plano .deg b { font-size:15px } .plano .deg.ag { padding:1px 0 }
+.plano .comoEntrar summary { margin:2px 0 2px !important }
+.plano .comoEntrar[open] summary { margin-bottom:4px !important }
+.abas .separadores { padding-top:6px }
+.abas .aba[data-aba="agora"] { padding-top:4px }
+.riscoBloco { padding:8px 0 2px } .riscoBloco .rl b { font-size:16px } .riscoBloco .risco { margin-top:5px }
+.quads { gap:6px; margin-top:8px } .quad { padding:6px 9px; gap:1px } .quad b { font-size:13px }
+.planoLotes { margin-top:7px }
+.mais summary { margin:0 0 6px !important }
+.opc { padding:0 14px 6px } .opc .opcao { padding:4px 0 }
+/* 24/10 («faz com que este e dentro dele também cheguem até aqui»): o card dos separadores enche até ao calendário, e no
+   Agora os quatro quadrados crescem com ele; as outras abas deslizam por dentro */
+.col.dir .abas { flex:1; min-height:0; display:flex; flex-direction:column }
+.abas .aba.on { flex:1; min-height:0; max-height:none; overflow-y:auto }
+.abas .aba[data-aba="agora"].on { display:flex; flex-direction:column; overflow-y:auto }
+.abas .aba[data-aba="agora"] #conta { flex:1; display:flex; flex-direction:column }
+.abas .aba[data-aba="agora"] .quads { flex:1; grid-auto-rows:1fr }
+.quad { justify-content:center }
+.obs { max-height:none }
+/* o Agora com o mercado fechado (24/10) */
+.mf { padding:4px 0 10px }
+.mf-rot { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco) }
+.mf-est { font-size:20px; font-weight:600; color:var(--areia); margin-top:2px }
+.mf-sub { font-size:12px; color:var(--suave); margin-top:1px } .mf-sub b { color:var(--texto); font-weight:600 }
+.mf-px { display:flex; align-items:baseline; gap:8px; margin-top:8px; font-size:12px } .mf-px b { font-size:14px; font-weight:600 }
+.noticia .depois { font-size:11.5px; margin-top:3px; font-variant-numeric:tabular-nums }
+/* 24/10 («tira este scroll»): as barras de deslizar não aparecem; continua a dar para deslizar com o rato ou o trackpad */
+.desliza, .obs, .abas .aba, .col.dir, .estrTP, #calendario { scrollbar-width:none }
+.desliza::-webkit-scrollbar, .obs::-webkit-scrollbar, .abas .aba::-webkit-scrollbar, .col.dir::-webkit-scrollbar, .estrTP::-webkit-scrollbar, #calendario::-webkit-scrollbar { display:none }
+/* a aba Dólar e petróleo (24/10) */
+#macro { padding:0 14px 10px }
+.mc-ouro { background:#1a1d21; border-radius:8px; padding:9px 11px; display:flex; flex-direction:column; gap:2px; margin-bottom:10px; border-left:3px solid var(--areia) }
+.mc-ouro.compra { border-left-color:var(--salva) } .mc-ouro.venda { border-left-color:var(--rosa) }
+.mc-rot { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco) }
+.mc-ouro b { font-size:16px; font-weight:600 } .mc-tx { font-size:12px; color:var(--suave) }
+.mc-at { border-top:1px solid var(--borda); padding:9px 0 }
+.mc-l1 { display:flex; align-items:baseline; gap:8px } .mc-l1 .mc-n { color:var(--suave); font-size:12px; flex:1 } .mc-l1 b { font-size:15px; font-weight:600 } .mc-l1 span:last-child { font-size:11.5px }
+.mc-l2 { display:flex; justify-content:space-between; font-size:12px; margin-top:2px }
+.mc-sp { display:flex; align-items:center; gap:8px; margin-top:5px; font-size:10.5px } .mc-sp .spark { color:#8b9096 }
+.mc-nota { font-size:11px; color:var(--fraco); margin-top:6px; line-height:1.4 }
+.abas .separadores { gap:0 } .abas .separadores > * { padding-left:4px; padding-right:4px; font-size:11px }
+.mc-l2 { flex-wrap:wrap; gap:2px 10px }
+.abas .separadores > * { padding-left:3px; padding-right:3px; font-size:10.8px }
+/* 24/10 («o calendário consegue ficar um pouco maior, só para quando houver 3 ou 4 acontecimentos») */
+.calendario #calendario { min-height:150px }
+
+/* 24/10: a ordem parada (mercado fechado ou em pausa) ocupa o cartão todo, à altura da ordem */
+.plano .ordemParada { min-height:214px; display:flex; flex-direction:column; justify-content:center; border-left:3px solid var(--fraco); background:rgba(255,255,255,.03); border-radius:8px; padding:14px 14px 12px }
+.plano .ordemParada.fechado { border-left-color:var(--areia) }
+.ordemParada .op-est { font-size:22px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--suave); line-height:1.1 }
+.ordemParada.fechado .op-est { color:var(--areia) }
+.ordemParada .op-sub { margin-top:4px; font-size:12px; color:var(--suave) }
+.ordemParada .op-lin { margin-top:14px; display:grid; gap:7px }
+.ordemParada .op-lin div { display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; color:var(--suave) }
+.ordemParada .op-lin b { font-size:15px; font-weight:600; color:var(--texto) }

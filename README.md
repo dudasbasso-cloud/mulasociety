@@ -1,2 +1,0 @@
-# mulasociety
-MULASOCIETY ORG.

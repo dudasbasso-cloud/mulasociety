@@ -521,8 +521,13 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 }
 
 .mLista .grupo .laranja { color:#d9a47c; -webkit-text-fill-color:#d9a47c; background:none }
-/* 24/10: a linha das camadas sai; ficam no botão «Camadas» ao lado da estratégia, e o gráfico ganha essa altura */
-.camadas { display:none !important }
-.camBtn { margin-left:-6px }
-.camBtn b { font-weight:500; color:var(--suave) }
+/* 24/10 («preferia como estava antes mas com mais relevância»): a linha das camadas volta, cada uma num botão com borda;
+   ligada fica cheia e clara, desligada fica apagada. Um espaço separa os grupos: linhas, zonas, entradas e o estocástico */
+.camBtn { display:none !important }
+.camadas { justify-content:flex-start; gap:5px; padding-top:2px }
+.camadas > [data-c] { padding:3px 10px; border:1px solid var(--borda); border-radius:6px; font-size:12px; color:var(--fraco); background:transparent }
+.camadas > [data-c]:hover { color:var(--suave); border-color:#30353b }
+.camadas > [data-c].on { background:#262b31; border-color:#3a4047; color:var(--texto) }
+.camadas > .on::before { content:none }
+.camadas > [data-c="niveis"], .camadas > [data-c="velas"], .camadas > [data-c="estoc"] { margin-left:12px }
 

@@ -584,3 +584,24 @@ html.claro .ordemParada.fechado .op-est, html.claro .mf-est { color:var(--texto)
 html.claro .plano .ordemParada, html.claro .plano .acaoBloco.pausa { background:var(--painel2) }
 html.claro .ag-atencao { background:var(--painel2) }
 
+/* 24/10 («melhora um pouco mais as sombras, está bué sem vida»): no claro os cartões ganham relevo com sombras suaves em
+   camadas no lugar da borda, e o fundo fica um pouco mais fundo para eles se destacarem. Os botões ficam com volume, os
+   interruptores com a bolinha em relevo, e os blocos de dentro com um tom leve da cor deles (areia, verde ou rosa) */
+html.claro { --bg:#e8ebf0 }
+html.claro body { background:linear-gradient(180deg, #eef1f5 0%, #e5e8ee 100%) fixed }
+@media (min-width: 1001px) and (min-height: 521px) {
+  html.claro .card, html.claro .topo { border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.05), 0 2px 4px rgba(19,23,34,.04), 0 12px 28px -10px rgba(19,23,34,.16) }
+}
+html.claro .seg { background:#eef0f4; border-color:transparent; box-shadow:inset 0 1px 2px rgba(19,23,34,.07) }
+html.claro .seg > .on { background:#fff; color:var(--texto); box-shadow:0 1px 2px rgba(19,23,34,.12), 0 0 0 1px rgba(19,23,34,.04) }
+html.claro .estrBtn, html.claro .temaBtn { background:#fff; border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.09), 0 1px 2px rgba(19,23,34,.07) }
+html.claro .estrBtn:hover, html.claro .temaBtn:hover { background:#f7f8fa }
+html.claro .estrBtn.on { box-shadow:0 0 0 1px rgba(176,122,26,.35), 0 1px 2px rgba(19,23,34,.07) }
+html.claro .sw::after { box-shadow:0 1px 3px rgba(19,23,34,.28), 0 0 0 .5px rgba(19,23,34,.06) }
+html.claro .plano .ordemParada { box-shadow:inset 0 0 0 1px rgba(19,23,34,.04) }
+html.claro .plano .ordemParada.fechado { background:linear-gradient(180deg, rgba(176,122,26,.06) 0%, rgba(176,122,26,.025) 100%) }
+html.claro .mc-ouro { box-shadow:inset 0 0 0 1px rgba(19,23,34,.04) }
+html.claro .mc-ouro.compra { background:linear-gradient(180deg, rgba(29,138,122,.07) 0%, rgba(29,138,122,.025) 100%) }
+html.claro .mc-ouro.venda { background:linear-gradient(180deg, rgba(208,80,76,.07) 0%, rgba(208,80,76,.025) 100%) }
+html.claro .estrTP .placar tbody tr:hover td { background:#f6f7f9 }
+html.claro .alvos { border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.06), 0 10px 28px -6px rgba(19,23,34,.18) }

@@ -524,3 +524,10 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 /* 24/10 («preferia como estava antes»): as camadas ficam na linha delas, em texto; o menu «Camadas» só no telemóvel */
 .camBtn { display:none !important }
 
+/* 24/10 («retira e mete esses filtros um pouco mais acima»): sai o «mercado fechado, abre…» e a linha das camadas
+   chega-se à de cima */
+@media (min-width: 1001px) and (min-height: 521px) {
+  .cab #gTimer { display:none }
+  .cab { row-gap:0; padding-bottom:2px }
+  .camadas { margin-top:-2px }
+}

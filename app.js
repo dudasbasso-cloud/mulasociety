@@ -472,11 +472,15 @@ function placarTP(L) {
   const pct = (k, n) => n ? Math.round(100 * k / n) + '%' : '-'
   const pips = x => { const d = Math.round(Math.abs(x) * 10) / 10; return (x < 0 && d ? '-' : '+') + fmt(d, d % 1 ? 1 : 0) }
   const cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
+  // 24/10 («preciso que o gráfico fique maior em termos verticais»): a tabela em duas colunas lado a lado (o BOT e os
+  // filtros à esquerda, as outras à direita), para ocupar metade da altura; a descrição de cada uma passa ao passar o rato
+  const linha = e => '<tr title="' + esc(e.autor) + '"><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^EDNEY/, '<span class="ouro laranja">EDNEY</span>') + '</b></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
+    + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
+    + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>'
+  const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + l.map(linha).join('') + '</tbody></table>'
+  const meio = Math.ceil(L.length / 2)
   el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 21/10 às 18:00, até 24 h cada</span></div>'
-    + '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>'
-    + L.map(e => '<tr><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^EDNEY/, '<span class="ouro laranja">EDNEY</span>') + '</b> <span class="suave">' + esc(e.autor) + '</span></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
-      + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
-      + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>').join('') + '</tbody></table>'
+    + '<div class="placarDuas">' + tabela(L.slice(0, meio)) + tabela(L.slice(meio)) + '</div>'
   el.hidden = false
 }
 function estrategiasTP(E) {

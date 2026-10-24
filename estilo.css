@@ -398,3 +398,10 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .camadas .estrSel select.on { color:var(--texto) }
 .camadas .estrSel option { background:#16191d; color:var(--texto) }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0) }
+/* o placar em duas colunas (24/10, «o gráfico maior em termos verticais») */
+.estrTP .placarDuas { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start }
+.estrTP .placarDuas .placar { font-size:11.5px }
+.estrTP .placarDuas .placar th, .estrTP .placarDuas .placar td { padding-inline:5px }
+.estrTP .placarDuas .placar td:first-child { white-space:nowrap }
+.estrTP .placarDuas { grid-template-columns:minmax(0,1fr) minmax(0,1fr) }
+.estrTP .placarDuas .placar td:first-child { white-space:normal; text-wrap:pretty }

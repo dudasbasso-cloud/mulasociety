@@ -471,7 +471,7 @@ setInterval(() => {
   el.classList.toggle('quase', s <= 60)
 }, 1000)
 
-let graficoEm = 0, pedidoGrafico = 0
+let pedidoGrafico = 0
 // 25/10 («estas funções de tempo não funcionam»): com o servidor a reiniciar, o pedido falhava e o gráfico ficava no tempo
 // anterior até 2 min depois. Agora tenta outra vez (1,5 s, 3 s, 6 s, 12 s) e, enquanto carrega, o tempo marcado fica claro
 async function carregarGrafico(tentativa = 0) {
@@ -485,7 +485,7 @@ async function carregarGrafico(tentativa = 0) {
   if (eu === pedidoGrafico) $('tfs').removeAttribute('aria-busy')
   if (!d || !atual()) return
   try {
-    ultimoGrafico = d; grafico.mostrar(d, { ...est.camadas, estrVer: est.estrVer }); escolhaEstr(); graficoEm = Date.now()
+    ultimoGrafico = d; grafico.mostrar(d, { ...est.camadas, estrVer: est.estrVer }); escolhaEstr()
     fimVela = d.velas.length ? { inicio: d.velas.at(-1).time, tf: d.tf } : null
   } catch (e) { console.warn('gráfico', e) }
 }
@@ -627,7 +627,7 @@ function estrategiasTP(E) {
       + (E.lista.length > 1 && e.pips === melhor ? '<span class="sobe"> · a que mais deu</span>' : '') + '</div></div>').join('') + '</div>'
   el.hidden = false
 }
-if (!AMIGO) { api('resultado').then(resultado, () => {}); setInterval(() => { if (!pausado) api('resultado').then(resultado, () => {}) }, 60e3) }
+if (!AMIGO) { api('resultado').then(resultado, () => {}); setInterval(() => api('resultado').then(resultado, () => {}), 60e3) }
 // o amigo vê o placar das estratégias, sem a barra dos € dele
 if (AMIGO) { const pl = () => api('placar').then(r => placarTP(r.placar), () => {}); pl(); setInterval(pl, 120e3) }
 $('resultado').addEventListener('mouseenter', () => {
@@ -643,15 +643,15 @@ await carregar()
 const verPausa = q => {
   if (!!q.pausa === pausado) return
   pausado = !!q.pausa
-  $('ligacao').innerHTML = pausado ? '<span class="ponto pausa"></span>em pausa' : '<span class="ponto on"></span>ligado'
+  $('ligacao').innerHTML = pausado ? '<span class="ponto pausa"></span>notícias em pausa' : '<span class="ponto on"></span>ligado'
   pintarPausa()
 }
 // 25/10 («adiciona aqui o play pause mas apenas eu é que o posso usar»): no título das notícias, o mesmo pausa e play do botão
-// do Orca (pára as notícias, o que gasta créditos, e as voltas do Jarvis). Na entrada do amigo não aparece nem tem rota
+// do Orca (pára as notícias, o que gasta créditos). Na entrada do amigo não aparece nem tem rota
 const bPausa = $('pausaNot')
 function pintarPausa() {
   if (AMIGO) return
-  const t = pausado ? 'Retomar as notícias e o Jarvis' : 'Pausar as notícias e o Jarvis, para não gastarem créditos'
+  const t = pausado ? 'Retomar as notícias' : 'Pausar as notícias, para não gastarem créditos'
   bPausa.innerHTML = pausado ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.8v14.4c0 .8.9 1.3 1.6.9l11-7.2c.6-.4.6-1.4 0-1.8l-11-7.2C8.9 3.5 8 4 8 4.8Z"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1.2"/><rect x="14" y="4.5" width="4" height="15" rx="1.2"/></svg>'
   bPausa.title = t; bPausa.setAttribute('aria-label', t); bPausa.hidden = false
@@ -664,11 +664,10 @@ if (!AMIGO) {
     catch {} finally { bPausa.disabled = false }
   })
 }
-// em pausa não chegam eventos: o gráfico (com as caixas dos avisos) e a barra de cima refazem-se de 2 em 2 min
+// 25/10: em pausa só param as notícias; os eventos continuam a chegar e o gráfico anda (antes refazia-se de 2 em 2 min)
 api('ping').then(p => { const v0 = p.versao; verPausa(p); setInterval(() => api('ping').then(q => {
   if (q.versao && v0 && q.versao !== v0) location.reload()
   verPausa(q)
-  if (pausado && Date.now() - graficoEm > 120e3) { carregarGrafico(); if (!AMIGO) api('resultado').then(resultado, () => {}) }
 }, () => {}), 15e3) }, () => {})
 if (AMIGO) {
   const estado = ok => { if (!pausado) $('ligacao').innerHTML = '<span class="ponto ' + (ok ? 'on' : 'erro') + '"></span>' + (ok ? 'ligado' : 'sem ligação') }

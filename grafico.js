@@ -45,7 +45,7 @@ const dicaVela = v => { const [n, g] = VELA[v.tipo] || [v.tipo, 'o']; return '<b
 let ocupados = null
 function lugarLivre(x, y, w, h) {
   if (!ocupados) { ocupados = []; queueMicrotask(() => { ocupados = null }) }
-  const bate = yy => ocupados.some(o => x < o.x + o.w && o.x < x + w && yy < o.y + o.h && o.y < yy + h)
+  const bate = yy => yy < 0 || ocupados.some(o => x < o.x + o.w && o.x < x + w && yy < o.y + o.h && o.y < yy + h)   // acima do ecrã não se lê
   let livre = y
   for (let n = 1; n <= 8 && bate(livre); n++) livre = y + (n % 2 ? 1 : -1) * Math.ceil(n / 2) * (h + 2)
   if (bate(livre)) livre = y
@@ -55,10 +55,11 @@ function lugarLivre(x, y, w, h) {
 const ocupar = o => { if (!ocupados) { ocupados = []; queueMicrotask(() => { ocupados = null }) } ocupados.push(o) }
 const ocupado = o => !!ocupados && ocupados.some(q => o.x < q.x + q.w && q.x < o.x + o.w && o.y < q.y + q.h && q.y < o.y + o.h)
 
-// uma caixa de preço (com ou sem horas): o fundo por baixo das velas e o nome por cima delas
+// uma caixa de preço (com ou sem horas): o fundo por baixo das velas e o nome por cima delas. `x` dá o sítio de uma hora
+// (xDe, em criarGrafico)
 class Caixa {
-  constructor(o) {
-    this.o = o
+  constructor(o, x) {
+    this.o = o; this.x = x
     this.vistas = [{ zOrder: () => 'bottom', renderer: () => ({ draw: t => this.desenha(t, false) }) }, { zOrder: () => 'top', renderer: () => ({ draw: t => this.desenha(t, true) }) }]
   }
   attached(p) { this.chart = p.chart; this.serie = p.series }
@@ -69,9 +70,11 @@ class Caixa {
     const o = this.o
     t.useBitmapCoordinateSpace(sc => {
       const c = sc.context, r = sc.horizontalPixelRatio, k = sc.verticalPixelRatio, ts = this.chart.timeScale(), W = sc.mediaSize.width
-      let x1 = o.de != null ? ts.timeToCoordinate(o.de) : 0, x2 = o.ate != null ? ts.timeToCoordinate(o.ate) : W
-      if (x1 == null) x1 = 0
-      if (x2 == null) x2 = W
+      let x1 = o.de != null ? this.x(o.de) : -Infinity, x2 = o.ate != null ? this.x(o.ate) : Infinity
+      // sem velas, ou acabou antes da primeira vela (no 1 s, um aviso de há horas já não se desenha)
+      if (x1 == null || x2 == null || x2 === -Infinity || x1 === Infinity) return
+      if (x1 === -Infinity) x1 = 0
+      if (x2 === Infinity) x2 = W
       // as caixas dos sinais vão da beira esquerda da primeira vela à beira direita da última
       if (o.velas) { const m = ts.options().barSpacing / 2; x1 -= m; if (o.ate != null) x2 += m }
       let y1 = this.serie.priceToCoordinate(o.hi), y2 = this.serie.priceToCoordinate(o.lo)
@@ -82,9 +85,14 @@ class Caixa {
         if (o.borda) { c.strokeStyle = o.borda; c.lineWidth = r; c.setLineDash(o.tracejado ? [5 * r, 4 * r] : []); c.strokeRect(x1 * r, y1 * k, (x2 - x1) * r, (y2 - y1) * k); c.setLineDash([]) }
         return
       }
-      if (!o.texto) return
+      if (!o.texto || y2 < 0 || y1 > sc.mediaSize.height) return
       c.font = (11 * r) + 'px -apple-system, sans-serif'
-      const w = c.measureText(o.texto).width, x = o.esq ? x1 + 6 : x2 - 8 - w / r, y = lugarLivre(x - 4, y1 - 16, w / r + 8, 15) + 11
+      // o nome vai por cima da caixa. 25/10 (gráfico mais perto, no 1 s e no telemóvel): com o topo dela fora do ecrã vai para
+      // dentro, no fundo dela; se a caixa tapa o ecrã todo, fica em cima à direita (à esquerda está a legenda do telemóvel)
+      const H = sc.mediaSize.height, w = c.measureText(o.texto).width
+      let yt = y1 - 16, esq = o.esq
+      if (yt < 2) { if (y2 <= H && y2 - 17 >= 2) yt = y2 - 17; else { yt = 2; esq = false } }
+      const x = esq ? x1 + 6 : x2 - 8 - w / r, y = lugarLivre(x - 4, yt, w / r + 8, 15) + 11
       c.fillStyle = P.rotulo; c.fillRect((x - 4) * r, (y - 11) * k, w + 8 * r, 15 * k)
       c.fillStyle = o.cor; c.fillText(o.texto, x * r, y * k)
     })
@@ -94,7 +102,7 @@ class Caixa {
 // linhas de preço entre duas horas, tracejadas, com o nome na ponta direita (os TP, a entrada e o stop dos sinais, 22/10:
 // «como é que eu sei onde é o TP1?»). Os nomes afastam-se uns dos outros quando as linhas estão muito juntas.
 class Linhas {
-  constructor(o) { this.o = o; this.vistas = [{ zOrder: () => 'top', renderer: () => ({ draw: t => this.desenha(t) }) }] }
+  constructor(o, x) { this.o = o; this.x = x; this.vistas = [{ zOrder: () => 'top', renderer: () => ({ draw: t => this.desenha(t) }) }] }
   attached(p) { this.chart = p.chart; this.serie = p.series }
   detached() {}
   updateAllViews() {}
@@ -103,9 +111,10 @@ class Linhas {
     const o = this.o
     t.useBitmapCoordinateSpace(sc => {
       const c = sc.context, r = sc.horizontalPixelRatio, k = sc.verticalPixelRatio, ts = this.chart.timeScale(), W = sc.mediaSize.width, m = ts.options().barSpacing / 2
-      let x1 = ts.timeToCoordinate(o.de), x2 = o.ate != null ? ts.timeToCoordinate(o.ate) : W
-      x1 = x1 == null ? 0 : x1 - m
-      x2 = x2 == null ? W : o.ate != null ? x2 + m : x2
+      let x1 = this.x(o.de), x2 = o.ate != null ? this.x(o.ate) : Infinity
+      if (x1 == null || x2 == null || x2 === -Infinity || x1 === Infinity) return
+      x1 = x1 === -Infinity ? 0 : x1 - m
+      x2 = x2 === Infinity ? W : x2 + m
       if (x2 <= x1) return
       const itens = o.itens.map(it => ({ ...it, y: this.serie.priceToCoordinate(it.preco) })).filter(it => it.y != null)
       c.save()
@@ -141,7 +150,7 @@ class Linhas {
 // lugar, o nome de uma seta encosta-se à esquerda ou à direita dela, ou sobe (desce) uma linha, até duas; o de um ponto
 // passa para o lado do ponto e, se nem assim couber, não se escreve (o ponto e a dica do rato continuam lá)
 class Rotulos {
-  constructor(itens) { this.itens = itens; this.vistas = [{ zOrder: () => 'top', renderer: () => ({ draw: t => this.desenha(t) }) }] }
+  constructor(itens, x) { this.itens = itens; this.x = x; this.vistas = [{ zOrder: () => 'top', renderer: () => ({ draw: t => this.desenha(t) }) }] }
   attached(p) { this.chart = p.chart; this.serie = p.series }
   detached() {}
   updateAllViews() {}
@@ -152,7 +161,7 @@ class Rotulos {
       // as medidas das setas como a biblioteca as faz: o tamanho vem do espaço entre velas, com uma margem, e as da mesma
       // vela empilham-se
       const S = Math.min(Math.max(ts.options().barSpacing, 12), 30), margem = Math.max(S * 0.1, 3), ALT = 14
-      const L = this.itens.map(it => ({ ...it, x: ts.timeToCoordinate(it.time), y: this.serie.priceToCoordinate(it.preco) }))
+      const L = this.itens.map(it => ({ ...it, x: this.x(it.time), y: this.serie.priceToCoordinate(it.preco) }))
         .filter(it => it.x != null && it.y != null && it.x > -80 && it.x < W + 80)
       // primeiro o sítio de cada seta e de cada ponto fica ocupado; depois os nomes, os das setas antes dos dos pontos
       for (const it of L) {
@@ -180,6 +189,25 @@ class Rotulos {
         c.strokeText(it.texto, (l[0] + 2) * r, (l[1] + ALT / 2) * k); c.fillStyle = it.cor; c.fillText(it.texto, (l[0] + 2) * r, (l[1] + ALT / 2) * k)
       }
       c.restore()
+    })
+  }
+}
+
+// 25/10 (o nome do suporte ficava por baixo do «alvo 1»): os nomes das linhas de preço (plano, posições, Fibo), que a
+// biblioteca escreve à direita, dentro do gráfico, ficam marcados antes dos outros nomes; esses fogem deles
+class Reserva {
+  constructor(linhas) { this.linhas = linhas; this.vistas = [{ zOrder: () => 'top', renderer: () => ({ draw: t => this.desenha(t) }) }] }
+  attached(p) { this.serie = p.series }
+  detached() {}
+  updateAllViews() {}
+  paneViews() { return this.vistas }
+  desenha(t) {
+    t.useMediaCoordinateSpace(({ context: c, mediaSize: { width: W } }) => {
+      c.font = '11px -apple-system, sans-serif'
+      for (const l of this.linhas()) {
+        const o = l.options(), y = o.title ? this.serie.priceToCoordinate(o.price) : null
+        if (y != null) { const w = c.measureText(o.title).width + 14; ocupar({ x: W - w, y: y - 8, w, h: 16 }) }
+      }
     })
   }
 }
@@ -225,12 +253,13 @@ function dicaAlvo(p, n, casas) {
 
 export function criarGrafico(el, { pedirHistoria = null } = {}) {
   let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), notas = new Map(), tfAtual = '15m', estK = null, estD = null, estLinhas = [], ultimaVez = null, ultimoPlano = null
-  let n = 0, nVer = 130, mexeu = false   // as velas, as que se veem ao abrir e se ele já mexeu no gráfico
+  let n = 0, mexeu = false, serieVelas = []   // quantas velas, se ele já mexeu no gráfico e as velas como estão na série
   const rot = t => tfAtual === '1d' ? t + 43200 : t   // a vela do dia começa às 17:00 de NY da véspera: mostra-se a data do dia
+  const movel = matchMedia('(max-width: 1000px), (max-height: 520px)')   // o telemóvel, como no estilo.css
   const chart = L.createChart(el, {
     autoSize: true,
     kineticScroll: { touch: true, mouse: false },
-    layout: { background: { type: 'solid', color: 'transparent' }, textColor: P.ct, fontSize: 11, attributionLogo: false,
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: P.ct, fontSize: movel.matches ? 10 : 11, attributionLogo: false,
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },
     rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: 1.2 },   // mais preços na escala (24/10)
@@ -240,9 +269,43 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // está; antes colava ao fecho da vela por baixo do rato (o modo íman, que é o de origem)
     crosshair: { mode: L.CrosshairMode.Normal, vertLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' }, horzLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' } }
   })
+  // 25/10 (1 s): o sítio de uma hora no gráfico. Uma hora sem vela (as dos avisos são de 15 min; no 1 s há segundos sem preço
+  // novo) fica na vela seguinte, como as setas da biblioteca; antes da primeira vela dá -Infinity e depois da última +Infinity
+  const xDe = t => {
+    const ts = chart.timeScale(), x = ts.timeToCoordinate(t), V = serieVelas
+    if (x != null || !V.length) return x
+    if (t < V[0].time) return -Infinity
+    if (t > V.at(-1).time) return Infinity
+    let a = 0, b = V.length - 1
+    while (a < b) { const m = (a + b) >> 1; if (V[m].time < t) a = m + 1; else b = m }
+    return ts.logicalToCoordinate(a)
+  }
+  // 25/10 («tava super longe»; no telemóvel «quero algo mais espaçoso»): no 1 s e no telemóvel a escala do preço segue as velas
+  // que se veem. Cada linha só a alarga até uma altura das velas acima ou abaixo delas: as LT do 4 h, a 180 $ do preço,
+  // achatavam as velas de 1 s numa risca. O que fica mais longe sai do ecrã e volta ao arrastar o gráfico
+  let faixa = null
+  const faixaVelas = () => {
+    const lr = chart.timeScale().getVisibleLogicalRange(), V = serieVelas, u = V.at(-1)
+    if (!lr || !u) return null
+    const k = lr.from + '|' + lr.to + '|' + V.length + '|' + u.high + '|' + u.low
+    if (faixa?.k === k) return faixa
+    let lo = Infinity, hi = -Infinity
+    for (let i = Math.max(0, Math.ceil(lr.from)), f = Math.min(V.length - 1, Math.floor(lr.to)); i <= f; i++) { lo = Math.min(lo, V[i].low); hi = Math.max(hi, V[i].high) }
+    return faixa = { k, lo, hi }
+  }
+  const perto = base => {
+    const r = base()
+    if (!r?.priceRange || !(tfAtual === '1s' || movel.matches)) return r
+    const v = faixaVelas()
+    if (!v || !(v.hi >= v.lo)) return r
+    const h = Math.max(v.hi - v.lo, v.hi * 2e-4), lo = Math.max(r.priceRange.minValue, v.lo - h), hi = Math.min(r.priceRange.maxValue, v.hi + h)
+    return lo <= hi ? { ...r, priceRange: { minValue: lo, maxValue: hi } } : null
+  }
+  // no telemóvel a escala da direita sem o espaço dos milhares (4000,20): fica mais estreita
+  const fmtEixo = p => movel.matches ? p.toFixed(casas).replace('.', ',') : fmt(p, casas)
   const velas = chart.addSeries(L.CandlestickSeries, { upColor: P.gt, downColor: P.rt, borderUpColor: P.gt, borderDownColor: P.rt,
     wickUpColor: G(.7), wickDownColor: R(.7), priceLineColor: '#6f757c' })
-  const linha = (cor, w, estilo = 0) => chart.addSeries(L.LineSeries, { color: cor, lineWidth: w, lineStyle: estilo, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+  const linha = (cor, w, estilo = 0) => chart.addSeries(L.LineSeries, { color: cor, lineWidth: w, lineStyle: estilo, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, autoscaleInfoProvider: perto })
   const verm = linha(R(.9), 2), cinza = linha(C(.8), 1, 2), verde = linha(G(.9), 2), ema = linha(A(.7), 1)
   const ema80 = linha(A(.5), 1, 2)
   // as linhas de tendência (4 h grossa, 1 h fina), com o preço onde passam agora no eixo; tracejadas quando partiram
@@ -251,7 +314,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     if (!linhasLT.has(k)) {
       const [tf, lado] = k.split('|')
       linhasLT.set(k, chart.addSeries(L.LineSeries, { color: lado === 'subida' ? G(.85) : R(.85), lineWidth: tf === '4h' ? 2 : 1, priceLineVisible: false,
-        crosshairMarkerVisible: false, title: 'LT ' + (tf === '4h' ? '4 h' : '1 h'), priceFormat: { type: 'custom', minMove: 1e-5, formatter: p => fmt(p, casas) } }, 0))
+        crosshairMarkerVisible: false, title: 'LT ' + (tf === '4h' ? '4 h' : '1 h'), priceFormat: { type: 'custom', minMove: 1e-5, formatter: fmtEixo }, autoscaleInfoProvider: perto }, 0))
     }
     return linhasLT.get(k)
   }
@@ -371,15 +434,27 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       estK = chart.addSeries(L.LineSeries, { ...op, color: P.at, lastValueVisible: true }, 1)
       estD = chart.addSeries(L.LineSeries, { ...op, color: C(.8), lineStyle: 2, lastValueVisible: false }, 1)
       estLinhas = [[80, R], [20, G]].map(([p, f]) => [estK.createPriceLine({ price: p, color: f(.5), lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' }), f])
-      chart.panes()[0].setStretchFactor(4.5); chart.panes()[1].setStretchFactor(1)
+      chart.panes()[0].setStretchFactor(movel.matches ? 7 : 4.5); chart.panes()[1].setStretchFactor(1)   // no telemóvel mais baixo
     }
     estK.setData(d.estoc.k); estD.setData(d.estoc.d)
     requestAnimationFrame(porTitulo)
   }
   const dica = el.querySelector('#dica')
   // as últimas velas enchem o gráfico, também quando a janela muda de tamanho ou volta a aparecer, até ele mexer no
-  // gráfico (rodinha ou arrastar); duplo clique volta ao início
-  const ajustar = () => { if (n) chart.timeScale().setVisibleLogicalRange({ from: n - nVer, to: n + 6 }) }
+  // gráfico (rodinha ou arrastar); duplo clique volta ao início. No computador são 130 velas de 15 min ou 110 das outras.
+  // 25/10 («tava super longe», «no mobile quero algo mais espaçoso»): no 1 s e no telemóvel contam-se pela largura, para cada
+  // vela ter 12 px no 1 s do computador e 8 px no telemóvel (eram 300 velas de 1 s, e no telemóvel 130 em 300 px)
+  const quantas = () => {
+    const w = (el.clientWidth || 800) - 60   // sem a escala da direita
+    if (tfAtual === '1s' || movel.matches) return Math.max(30, Math.round(w / (movel.matches ? 8 : 12)))
+    return tfAtual === '15m' ? 130 : 110
+  }
+  const ajustar = () => { if (n) chart.timeScale().setVisibleLogicalRange({ from: n - quantas(), to: n + 6 }) }
+  movel.addEventListener('change', () => {
+    chart.applyOptions({ layout: { fontSize: movel.matches ? 10 : 11 } })
+    if (estK) chart.panes()[0].setStretchFactor(movel.matches ? 7 : 4.5)
+    if (!mexeu) ajustar()
+  })
   el.addEventListener('wheel', () => { mexeu = true }, { passive: true })
   el.addEventListener('pointerdown', () => { mexeu = true })
   el.addEventListener('dblclick', () => { mexeu = false; ajustar(); chart.priceScale('right').applyOptions({ autoScale: true }) })
@@ -397,21 +472,21 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
   function mostrar(d0, camadas) {
     ultimaVez = [d0, camadas]
     const d = comHistoria(d0)
-    // 25/10 («quando ta em 1segundo fica super dificil de ver o grafico»): no 1 s só as velas, o plano e as posições. As outras
-    // camadas eram linhas feitas de velas de 1 s ou caixas que, com o preço a mexer cêntimos, enchiam o fundo todo
-    if (d.tf === '1s') camadas = { plano: camadas.plano, posicoes: camadas.posicoes, estrVer: [] }
     const nova = d.simbolo + '|' + d.tf !== chave
     chave = d.simbolo + '|' + d.tf; casas = d.casas; tfAtual = d.tf
     chart.applyOptions({ timeScale: { secondsVisible: d.tf === '1s' } })
-    velas.applyOptions({ priceFormat: { type: 'custom', minMove: 1 / 10 ** casas, formatter: p => fmt(p, casas) } })   // cada painel com o seu formato
-    velas.setData(d.velas)
+    velas.applyOptions({ priceFormat: { type: 'custom', minMove: 1 / 10 ** casas, formatter: fmtEixo } })   // cada painel com o seu formato
+    velas.setData(d.velas); serieVelas = d.velas.slice()
+    // as setas de antes da primeira vela (no 1 s, os avisos de há horas) iam parar à primeira vela
+    const naJanela = m => !serieVelas.length || m.time >= serieVelas[0].time
     const ou = (on, dados) => on ? dados : []
     verm.setData(ou(camadas.sv3, d.sv3.verm)); cinza.setData(ou(camadas.sv3, d.sv3.cinza)); verde.setData(ou(camadas.sv3, d.sv3.verde))
     ema.setData(ou(camadas.ema, d.ema200)); ema80.setData(ou(camadas.ema, d.ema80 || []))
     estocastico(!!camadas.estoc && !!d.estoc, d)
     for (const c of caixas) velas.detachPrimitive(c)
-    caixas = []
-    const junta = o => { const c = new Caixa(o); velas.attachPrimitive(c); caixas.push(c) }
+    caixas = [new Reserva(() => [...linhasPlano, ...linhasPos, ...linhasFibo])]
+    velas.attachPrimitive(caixas[0])
+    const junta = o => { const c = new Caixa(o, xDe); velas.attachPrimitive(c); caixas.push(c) }
     const alinhar = t => t - t % TFS[d.tf]
     // as caixas dos alvos: verde da entrada ao TP3, vermelha da entrada ao stop, da vela do sinal até ao fim (TP3 ou stop;
     // aberta, até à direita); o TP1, o TP2, o TP3 e o stop marcados no preço, na vela em que lá chegou
@@ -426,7 +501,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const alvos = tiposBot.size ? (d.alvos?.lista || []).filter(p => tiposBot.has(p.tipo)) : camadas.alvos && !ev.length ? d.alvos?.lista || [] : [], mAlvos = [], grupos = []
     for (const p of alvos) { const g = grupos.at(-1), u = g?.at(-1); if (u && u.lado === p.lado && p.time - u.time <= 3600) g.push(p); else grupos.push([p]) }
     const fim = alvos.at(-1), rep = grupos.at(-1)?.[0], solto = fim && !fim.fim && rep !== fim && rep.fim ? fim : null, ultimo = solto || rep
-    const juntaL = o => { const c = new Linhas(o); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas)   // 24/10 («às vezes estou em 4445,00 e é 4445,10»): com as duas casas
+    const juntaL = o => { const c = new Linhas(o, xDe); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas)   // 24/10 («às vezes estou em 4445,00 e é 4445,10»): com as duas casas
     const precos = p => [{ preco: p.sl, cor: P.rt, texto: 'stop ' + fp(p.sl) }, { preco: p.entrada, cor: P.at, texto: 'entrada ' + fp(p.entrada) },
       ...p.tps.map((preco, k) => ({ preco, cor: P.gt, texto: 'TP' + (k + 1) + ' ' + fp(preco) + (p.hits[k] ? ' ✓' : '') }))]
     const caixa = (p, de, ate) => {
@@ -479,12 +554,12 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       if (!camadas.sinais) { mAlvos.push(seta(solto)); nota(solto.time, h) }
       pontos(solto, t => t >= solto.time, h)
     }
-    marcasAlvos.setMarkers(mAlvos.sort((a, b) => a.time - b.time))
+    marcasAlvos.setMarkers(mAlvos.filter(naJanela).sort((a, b) => a.time - b.time))
     if (camadas.alvos) quadroAlvos(d.alvos, d.simbolo === 'XAUUSD'); else quadro.style.display = 'none'
     requestAnimationFrame(porQuadro)
     porTempo = new Map()
     if (camadas.sinais) for (const s of d.sinais) porTempo.set(s.time, [...(porTempo.get(s.time) || []), s])
-    marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time) : [])
+    marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).filter(naJanela).sort((a, b) => a.time - b.time) : [])
     // 25/10 («n entendo o que são essas setas, mete o nome por cima»): os avisos do bot na camada Sinais também com o nome,
     // por cima numa venda e por baixo numa compra, e ✓ ou ✗ quando já acabou. Só o tipo (a ponta da seta já diz o lado):
     // com «Venda de teto» em todas, os nomes atropelavam-se onde há muitas
@@ -497,7 +572,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // «Liquidez ✓» de venda saía a vermelho. «ZIMBA FX: todas» (id edney) junta as cinco (liquidez, CHoCH, order block, Wyckoff e Elliott; eram três até 25/10); podem vir várias ao mesmo tempo
     const ver = (camadas.estrVer || []).flatMap(v => v === 'edney' ? ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott'] : [v]), EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
     marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
-      color: corEstr(x), size: 0.8 })).sort((a, b) => a.time - b.time))
+      color: corEstr(x), size: 0.8 })).filter(naJanela).sort((a, b) => a.time - b.time))
     for (const x of [...EL].sort((a, b) => a.time - b.time)) {
       nota(x.time, dicaEstr(x, casas))
       nomeSeta(x.time, x.lado === 'venda', x.curto + (x.fim === 'aberta' ? '' : ganhou(x) ? ' ✓' : ' ✗'), corEstr(x), 0.8)
@@ -507,7 +582,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const pilhas = new Map(), daPilha = it => it.time + '|' + it.cima + '|' + it.tam
     for (const it of rotulos) if (!it.ponto) { it.n = pilhas.get(daPilha(it)) || 0; pilhas.set(daPilha(it), it.n + 1) }
     for (const it of rotulos) if (!it.ponto) it.pilha = pilhas.get(daPilha(it))
-    if (rotulos.length) { const ro = new Rotulos(rotulos); velas.attachPrimitive(ro); caixas.push(ro) }
+    if (rotulos.length) { const ro = new Rotulos(rotulos, xDe); velas.attachPrimitive(ro); caixas.push(ro) }
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
     // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte. 25/10 («mete o TP, a
     // entrada, o TP2, o TP3»): as linhas do TP1 e do TP2 dentro de cada caixa e, na última entrada, todas com o preço escrito,
@@ -539,7 +614,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const pads = camadas.velas ? d.padroes || [] : []
     for (const v of pads) velaPorTempo.set(v.time, [...(velaPorTempo.get(v.time) || []), v])
     marcasVelas.setMarkers(pads.map(v => ({ time: v.time, position: v.lado === 'compra' ? 'belowBar' : 'aboveBar', shape: 'circle', size: 0.5,
-      color: v.confirmada ? (v.lado === 'compra' ? P.gt : P.rt) : P.ct })).sort((a, b) => a.time - b.time))
+      color: v.confirmada ? (v.lado === 'compra' ? P.gt : P.rt) : P.ct })).filter(naJanela).sort((a, b) => a.time - b.time))
     const vistas = new Set()
     if (camadas.linhas) for (const l of d.linhas || []) {
       const k = l.tf + '|' + l.lado, sr = serieLT(k)
@@ -556,7 +631,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       if (p.sl > 0) linhasPos.push(velas.createPriceLine({ price: p.sl, color: P.rt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'stop' }))
       if (p.tp > 0) linhasPos.push(velas.createPriceLine({ price: p.tp, color: P.gt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'TP' }))
     }
-    n = d.velas.length; nVer = d.tf === '15m' ? 130 : d.tf === '1s' ? 150 : 110
+    n = d.velas.length
     if (nova) { mexeu = false; ajustar() }
   }
   // o plano no gráfico: a entrada, o stop e os dois alvos (tracejados, com o nome no eixo)
@@ -589,10 +664,10 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
   // refazer o resto (que se refaz de 30 em 30 s, com a análise)
   function vivo(v) {
     if (tfAtual !== '1s') return
-    const u = velas.data().at(-1)
+    const u = serieVelas.at(-1)
     if (u && v.time < u.time) return
     velas.update(v)
-    if (!u || v.time > u.time) n++
+    if (!u || v.time > u.time) { n++; serieVelas.push(v) } else serieVelas[serieVelas.length - 1] = v
   }
   return { mostrar, plano, tema, grelha, vivo }
 }

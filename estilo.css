@@ -722,7 +722,3 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .eventos .evento.semPrev .prev { display:none }
 /* 25/10: enquanto o gráfico carrega, o tempo marcado fica mais claro */
 #tfs[aria-busy="true"] button.on { opacity:.55 }
-/* 25/10 («quando ta em 1segundo fica super dificil de ver o grafico»): no 1 s só as velas, o plano e as posições; os botões
-   das outras camadas ficam apagados */
-.camadas.so1s > [data-c]:not([data-c="plano"]):not([data-c="posicoes"]) { opacity:.35 }
-

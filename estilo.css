@@ -242,6 +242,14 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
 .evento .prev { color:var(--suave); white-space:nowrap }
 .evento .hora { color:var(--areia); font-weight:700; white-space:nowrap; margin-left:auto }
 .evento.forte { border-color:rgba(204,147,144,.5); background:rgba(204,147,144,.06) } .evento.forte .moeda, .evento.forte .hora { color:var(--rosa) }
+/* 25/10 («quando tiver 1 hora antes das reuniões elas pulsam levemente»): na última hora antes da notícia a caixa pulsa
+   devagar, a borda e o fundo, sem brilho (app.js marca .perto). Com o movimento reduzido fica só a borda mais forte */
+.evento.perto { border-color:rgba(214,195,159,.75) } .evento.forte.perto { border-color:rgba(204,147,144,.85) }
+@media (prefers-reduced-motion: no-preference) {
+  .evento.perto { animation:pulsaEv 2.4s ease-in-out infinite } .evento.forte.perto { animation-name:pulsaEvForte }
+}
+@keyframes pulsaEv { 0%, 100% { border-color:rgba(214,195,159,.35); background-color:rgba(214,195,159,.05) } 50% { border-color:rgba(214,195,159,.8); background-color:rgba(214,195,159,.13) } }
+@keyframes pulsaEvForte { 0%, 100% { border-color:rgba(204,147,144,.5); background-color:rgba(204,147,144,.06) } 50% { border-color:rgba(204,147,144,.9); background-color:rgba(204,147,144,.15) } }
 .eventos { display:flex; flex-direction:column; gap:6px; padding:2px 14px 12px } .eventos .evento { display:flex; font-size:12.5px }
 /* na barra de cima o «.topo .it b» punha a moeda e a hora a branco: a cor de areia (ou rosa nos fortes) ganha aqui */
 .topo .it .evento b.moeda, .topo .it .evento b.hora { color:var(--areia); font-weight:700 }

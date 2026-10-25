@@ -220,7 +220,7 @@ function analise(r) {
   const diaH = ms => { const d = diaDe(ms); return (d === diaDe(Date.now()) ? '' : d === diaDe(Date.now() + 864e5) ? 'amanhã ' : d + ' ') + hhmm(ms).replace(':', 'h') }
   // 25/10: os números da ForexFactory vêm com ponto («4.00%»); aqui com a vírgula, como o resto do Jarvis
   const pt = v => String(v).replace(/(\d)\.(\d)/g, '$1,$2')
-  const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '" title="' + esc(e.titulo + (e.previsao ? ', previsto ' + pt(e.previsao) : '') + (e.anterior ? ', anterior ' + pt(e.anterior) : '')) + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
+  const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '" data-quando="' + e.quando + '" title="' + esc(e.titulo + (e.previsao ? ', previsto ' + pt(e.previsao) : '') + (e.anterior ? ', anterior ' + pt(e.anterior) : '')) + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
     + (e.previsao ? '<span class="prev">previsto ' + esc(pt(e.previsao)) + '</span>' : '') + '<b class="hora num">' + diaH(e.quando) + '</b></span>'
   // 24/10: a grelha do mês (mesCalendario) saiu a pedido dele («mete o anterior, não o das datas»); ficam os eventos
   // 25/10 («tens a certeza?»): com a ForexFactory a recusar, a lista dela fica velha e só entram as dos EUA (da nuvem do
@@ -230,7 +230,15 @@ function analise(r) {
     : '<div class="vazio">' + (semFF ? esc(semFF) + (r.simbolo === 'XAUUSD' ? 'sem notícias dos EUA à vista.' : 'faltam as notícias destas moedas.') : 'Nada de médio ou forte para estas moedas esta semana.') + '</div>')
   // 25/10 («retira isto daqui»): a próxima notícia saiu da barra de cima; fica no cartão do calendário
   for (const ev of $('calendario').querySelectorAll('.evento')) { const p = ev.querySelector('.prev'); if (p && p.scrollWidth > p.clientWidth + 1) ev.classList.add('semPrev') }
+  marcarPerto()
 }
+// 25/10 («quando tiver 1 hora antes das reuniões elas pulsam levemente»): na última hora antes de cada notícia a caixa dela
+// pulsa devagar (estilo.css, .evento.perto); revê-se de 30 em 30 s, sem esperar pelo próximo pedido
+function marcarPerto() {
+  const agora = Date.now()
+  for (const ev of document.querySelectorAll('#calendario .evento[data-quando]')) { const d = +ev.dataset.quando - agora; ev.classList.toggle('perto', d > 0 && d <= 3600e3) }
+}
+setInterval(marcarPerto, 30e3)
 
 const planoTexto = l => { const out = []; for (const x of l) { const u = out[out.length - 1]; if (u && u.l === x) u.n++; else out.push({ l: x, n: 1 }) } return out.map(o => (o.n > 1 ? o.n + ' × ' : '') + fmt(o.l, 2)).join(' + ') }
 function conta(c) {

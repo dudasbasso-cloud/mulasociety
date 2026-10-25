@@ -526,15 +526,36 @@ function placarTP(L) {
   const cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
   // 24/10 («preciso que o gráfico fique maior em termos verticais»): a tabela em duas colunas lado a lado (o BOT e os
   // filtros à esquerda, as outras à direita), para ocupar metade da altura; a descrição de cada uma passa ao passar o rato
-  const linha = e => '<tr title="' + esc(e.autor) + '"><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^ZIMBA FX/, '<span class="ouro laranja">ZIMBA FX</span>') + '</b></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
-    + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
-    + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>'
-  const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + l.map(linha).join('') + '</tbody></table>'
-  const meio = Math.ceil(L.length / 2)
+  // 25/10 («faz assim para não ocupar tanto»): os avisos do bot numa linha só, «BOT», com uma setinha; ao carregar nela
+  // abrem-se por baixo os tipos (com e sem dólar e petróleo, pico, teto, INCRÍVEL e SV3). Fica como ele deixou
+  const filho = e => /^bot-/.test(e.id), F = L.filter(filho), aberto = !!est.botAberto
+  const nome = e => '<b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^ZIMBA FX/, '<span class="ouro laranja">ZIMBA FX</span>') + '</b>'
+  const linha = e => {
+    const grupo = e.id === 'bot' && F.length
+    return '<tr title="' + esc(e.autor) + '"' + (grupo ? ' class="grupo"' : filho(e) ? ' data-de="bot"' + (aberto ? '' : ' hidden') : '') + '><td>'
+      + (grupo ? '<button type="button" class="abreGrupo" aria-expanded="' + aberto + '">' + nome(e) + setaGrupo(aberto) + '</button>' : nome(e)) + '</td>'
+      + '<td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
+      + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
+      + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>'
+  }
+  // as duas colunas dividem-se com o BOT fechado; aberto, os tipos vão logo por baixo dele e só essa coluna cresce
+  const comTipos = l => l.flatMap(e => e.id === 'bot' ? [e, ...F] : [e])
+  const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + comTipos(l).map(linha).join('') + '</tbody></table>'
+  const V = L.filter(e => !filho(e)), meio = Math.ceil(V.length / 2)
   el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 21/10 às 18:00, até 24 h cada</span></div>'
-    + '<div class="placarDuas">' + tabela(L.slice(0, meio)) + tabela(L.slice(meio)) + '</div>'
+    + '<div class="placarDuas">' + tabela(V.slice(0, meio)) + tabela(V.slice(meio)) + '</div>'
   el.hidden = false
 }
+const setaGrupo = aberto => '<svg class="seta" viewBox="0 0 10 10" aria-hidden="true"><path d="' + (aberto ? 'M2 6.5 5 3.5 8 6.5' : 'M2 3.5 5 6.5 8 3.5') + '"/></svg>'
+// carregar na linha do BOT (ou na setinha) abre e fecha os tipos, sem desenhar a tabela outra vez
+$('estrTP').addEventListener('click', e => {
+  const g = e.target.closest('tr.grupo')
+  if (!g) return
+  est.botAberto = !est.botAberto; guardar()
+  const b = g.querySelector('.abreGrupo')
+  b.setAttribute('aria-expanded', est.botAberto); b.querySelector('.seta').outerHTML = setaGrupo(est.botAberto)
+  for (const r of $('estrTP').querySelectorAll('tr[data-de="bot"]')) r.hidden = !est.botAberto
+})
 function estrategiasTP(E) {
   const el = $('estrTP')
   if (!el || !E?.lista?.length) return

@@ -597,3 +597,14 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .mLista button .laranja { color:#d9a47c; font-weight:600 }
 @media (min-width: 1001px) and (min-height: 521px) { .estrBtn { max-width:290px } }
 
+
+/* 25/10 («faz assim para não ocupar tanto»): o BOT numa linha só, que abre os tipos; a setinha diz que abre */
+.estrTP .placar tr.grupo { cursor:pointer }
+.estrTP .abreGrupo { display:inline-flex; align-items:center; gap:6px }
+.estrTP .abreGrupo .seta { flex:none; width:10px; height:10px; fill:none; stroke:var(--suave); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round }
+@media (hover: hover) { .estrTP .placar tr.grupo:hover .seta { stroke:var(--texto) } }
+
+/* 25/10 («melhora estes títulos, estão todos encavalitados e pequenos»): letra maior e o mesmo espaço entre todos; os dois
+   nomes mais compridos ficaram mais curtos (Dólar e Notas) para caberem todos à vista */
+.abas .separadores { justify-content:space-between; gap:12px; padding:8px 14px 0 }
+.abas .separadores > * { font-size:13px; padding:7px 0 9px }

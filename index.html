@@ -59,13 +59,13 @@
       <!-- 22/10 («muitos cartões à direita», «a ordem das coisas»): por baixo do plano, um só cartão com separadores; abre no
            «Agora», o resumo de quatro linhas, e o resto fica a um toque -->
       <div class="card abas">
-        <div class="separadores" id="separadores"><button type="button" data-aba="macro">Dólar/Petróleo</button><button type="button" data-aba="agora">Agora</button><button type="button" data-aba="tendencia">Tendência</button><button type="button" data-aba="estrategias">Estratégias</button><button type="button" data-aba="observacoes">Observações</button><button type="button" data-aba="conversa">Conversa</button></div>
+        <div class="separadores" id="separadores"><button type="button" data-aba="macro">Dólar</button><button type="button" data-aba="agora">Agora</button><button type="button" data-aba="tendencia">Tendência</button><button type="button" data-aba="estrategias">Estratégias</button><button type="button" data-aba="observacoes">Notas</button><button type="button" data-aba="conversa">Conversa</button></div>
         <div class="aba desliza" data-aba="agora"><div class="tit"><span>Agora</span><span class="num" id="vela"></span></div><div class="brief" id="brief"></div><div class="brief" id="conta"></div></div>
         <div class="aba desliza" data-aba="tendencia"><div class="tit"><span>Tendência</span><span>direção pela EMA 200</span></div><div id="tendencia"><div class="vazio">A ler o dia, o 4 h, o 1 h e o 15 min.</div></div></div>
         <div class="aba desliza" data-aba="estrategias"><div class="tit"><span>Estratégias que mandaste</span><span>aplicadas sempre</span></div><div id="estrategias"><div class="vazio">A ler.</div></div></div>
         <!-- 24/10: o dólar e o petróleo, que confirmam (ou não) a entrada e a saída no ouro (app.js, macro) -->
         <div class="aba desliza" data-aba="macro"><div class="tit"><span>Dólar e petróleo</span><span>confirmam o ouro?</span></div><div id="macro"><div class="vazio">A ler.</div></div></div>
-        <div class="aba desliza" data-aba="observacoes"><div class="tit"><span>Observações</span><span id="obsInfo">o que vai acontecendo</span></div><div class="obs" id="obs"></div></div>
+        <div class="aba desliza" data-aba="observacoes"><div class="tit"><span>Notas</span><span id="obsInfo">o que vai acontecendo</span></div><div class="obs" id="obs"></div></div>
         <div class="aba conversa" data-aba="conversa"><div class="tit"><span>Conversa</span><span>o Claude do teu Mac</span></div><div class="conv desliza" id="conversa"></div>
           <form class="entrada" id="pergunta"><input id="texto" placeholder="Escreve a tua pergunta…" autocomplete="off"><button type="submit">enviar</button></form></div>
       </div>

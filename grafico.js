@@ -242,12 +242,12 @@ function dicaEstr(x, casas) {
 // o aviso do bot: os TP por onde passou e como acabou pela regra (TP3, de volta ao TP1 depois do TP2, ou stop)
 const TIPO_ALVO = { teto: ' de teto', pico: ' depois do pico', incrivel: ' INCRÍVEL', sv3: ' do SV3' }
 const CURTO_SINAL = { teto: 'Teto', pico: 'Pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
-function dicaAlvo(p, n, casas) {
+function dicaAlvo(p, n, casas, nome) {
   const quando = t => hora(t) + (data(t) === data(p.t) ? '' : ' de ' + data(t)), e = p.fim?.estado
   const tps = p.hits.map((t, k) => t != null && !(e === 'tp3' && k === 2) ? 'TP' + (k + 1) + ' às ' + quando(t) : null).filter(Boolean).join(' · ')
   const fim = !p.fim ? 'ainda aberto' : '<b style="color:' + (e === 'stop' ? P.rt : P.gt) + '">'
     + ({ tp3: '✓ fechou no TP3', tp1: '✓ saiu no TP1, depois do TP2', stop: '✗ stop' }[e] || e) + ' às ' + quando(p.fim.exato ?? p.fim.t) + '</b>'
-  return '<b>' + (p.lado === 'venda' ? 'Venda' : 'Compra') + (TIPO_ALVO[p.tipo] || '') + (n > 1 ? ' ×' + n : '') + '</b> às ' + hora(p.t) + ' de ' + data(p.t)
+  return '<b>' + (p.lado === 'venda' ? 'Venda' : 'Compra') + (TIPO_ALVO[p.tipo] || (nome ? ' · ' + nome : '')) + (n > 1 ? ' ×' + n : '') + '</b> às ' + hora(p.t) + ' de ' + data(p.t)
     + '<br>entrada ' + fmt(p.entrada, casas) + ' · stop ' + fmt(p.sl, casas) + ' · TP3 ' + fmt(p.tps[2], casas) + (tps ? '<br>' + tps : '') + '<br>' + fim
 }
 
@@ -515,9 +515,12 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const nota = (t, h) => { const l = notas.get(t) || []; if (!l.includes(h)) l.push(h); notas.set(t, l) }
     const porVela = new Map(d.velas.map(v => [v.time, v])), rotulos = []
     const nomeSeta = (time, cima, texto, cor, tam) => { const v = porVela.get(time); if (v) rotulos.push({ time, preco: cima ? v.high : v.low, cima, texto, cor, tam }) }
+    // 25/10 («que estratégia está a ser usada?»): os avisos das estratégias (CHoCH, Liquidez, ...) diziam só «Compra» ou
+    // «Venda». Agora levam o nome curto por cima da seta e o nome todo ao passar o rato; os do BOT SV3 ficam como estavam
+    const estrDe = new Map((d.estrategias?.ids || []).map(x => [x.id, x]))
     const seta = (p, extra = '') => {
       const v = p.lado === 'venda', cor = v ? P.rt : P.gt
-      nomeSeta(p.time, v, (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : '') + extra, cor, 0.7)
+      nomeSeta(p.time, v, (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : TIPO_ALVO[p.tipo] ? '' : ' · ' + (estrDe.get(p.tipo)?.curto || p.tipo)) + extra, cor, 0.7)
       return { time: p.time, position: v ? 'aboveBar' : 'belowBar', shape: v ? 'arrowDown' : 'arrowUp', color: cor, size: 0.7 }
     }
     const pontos = (p, visto, h) => {
@@ -539,7 +542,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       const fd = p.fim && !visto(p.fim.t) ? p.fim : null, n = g.length - (solto && g.includes(solto) ? 1 : 0)
       const depois = corte == null ? '' : fd ? (({ tp1: ' · saiu no TP1', stop: ' · stop' })[fd.estado] ?? ' · TP3') + quando(fd.exato ?? fd.t, p.time)
         : melhor > antes ? ' · TP' + melhor + quando(p.hits[melhor - 1], p.time) : ''
-      const h = dicaAlvo(p, n, casas)
+      const h = dicaAlvo(p, n, casas, estrDe.get(p.tipo)?.nome)
       caixa(p, p.time, ate)
       // as linhas do TP1 e do TP2 dentro da caixa verde; no último sinal, todas com o preço escrito e um ✓ no TP tocado
       // 23/10 («isto fica sempre do lado direito, para não confundir»): os preços do último aviso vão sempre até à direita
@@ -549,7 +552,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       pontos(p, visto, h)
     })
     if (solto) {
-      const h = dicaAlvo(solto, 1, casas)
+      const h = dicaAlvo(solto, 1, casas, estrDe.get(solto.tipo)?.nome)
       caixa(solto, solto.time, null); juntaL({ de: solto.time, ate: null, itens: precos(solto) })
       if (!camadas.sinais) { mAlvos.push(seta(solto)); nota(solto.time, h) }
       pontos(solto, t => t >= solto.time, h)

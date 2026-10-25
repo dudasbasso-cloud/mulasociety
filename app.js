@@ -310,19 +310,32 @@ function marcar() {
 }
 // 24/10 («mete as estratégias mesmo, e eu seleciono para ver só aquela»): uma lista na barra das camadas; a escolhida
 // mostra as entradas dela no gráfico (seta do lado, ✓ se chegou a um TP, ✗ se foi ao stop). Nenhuma = nada
+// 25/10 («a possibilidade de meter as que eu quiser selecionadas»): várias ao mesmo tempo. A linha «ZIMBA FX: todas juntas»
+// (id edney) liga e desliga as três dele; fica ligada quando as três estão. O select escondido só guarda os nomes
+const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock'] }
+const estrEscolhidas = () => [...new Set((est.estrVer || []).flatMap(v => JUNTAS[v] || [v]))]
+est.estrVer = estrEscolhidas()
+function nomeEstr() {
+  const l = estrEscolhidas(), nomes = Object.fromEntries([...$('estrSel').options].filter(o => o.value).map(o => [o.value, o.text.replace(/\s*\(.*\)$/, '')]))
+  const curto = id => (nomes[id] || id).replace(/^ZIMBA FX: /, '')
+  if (!l.length) return ''
+  if (l.length === 3 && JUNTAS.edney.every(id => l.includes(id))) return 'ZIMBA FX: todas juntas'
+  return l.length === 1 ? nomes[l[0]] || l[0] : l.length === 2 ? l.map(curto).join(' + ') : l.length + ' estratégias'
+}
 function escolhaEstr() {
   const el = $('estrSel'), ids = ultimoGrafico?.estrategias?.ids || []
   if (!ids.length) return
-  const juntas = { edney: ['liquidez', 'choch', 'orderblock'] }, n = id => (ultimoGrafico.estrategias.lista || []).filter(x => (juntas[id] || [id]).includes(x.id)).length
-  const html = '<option value="">Estratégia: nenhuma</option>' + ids.flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'EDNEY: todas juntas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
+  const n = id => (ultimoGrafico.estrategias.lista || []).filter(x => (JUNTAS[id] || [id]).includes(x.id)).length
+  const html = '<option value="">Estratégia: nenhuma</option>' + ids.flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'ZIMBA FX: todas juntas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
-  el.value = est.estrVer?.[0] || ''
-  el.classList.toggle('on', !!el.value)
+  el.classList.toggle('on', estrEscolhidas().length > 0)
+  mAtualizar()
 }
-$('estrSel').addEventListener('change', e => {
-  est.estrVer = e.target.value ? [e.target.value] : []; guardar(); escolhaEstr(); mAtualizar()
+function aplicarEstr() {
+  guardar(); escolhaEstr(); mAtualizar()
   if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer })
-})
+}
+$('estrSel').addEventListener('change', e => { est.estrVer = e.target.value ? JUNTAS[e.target.value] || [e.target.value] : []; aplicarEstr() })
 $('tfs').addEventListener('click', e => { const t = e.target.dataset.tf; if (!t || t === est.tf) return; est.tf = t; guardar(); marcar(); carregarGrafico() })
 $('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (!c) return; est.camadas[c] = !est.camadas[c]; guardar(); marcar(); if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer }); grafico.plano(est.camadas.plano ? ultimoPlano : null) })
 
@@ -477,7 +490,7 @@ function placarTP(L) {
   const cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
   // 24/10 («preciso que o gráfico fique maior em termos verticais»): a tabela em duas colunas lado a lado (o BOT e os
   // filtros à esquerda, as outras à direita), para ocupar metade da altura; a descrição de cada uma passa ao passar o rato
-  const linha = e => '<tr title="' + esc(e.autor) + '"><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^EDNEY/, '<span class="ouro laranja">EDNEY</span>') + '</b></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
+  const linha = e => '<tr title="' + esc(e.autor) + '"><td><b>' + esc(e.nome).replace(/^BOT/, '<span class="ouro">BOT</span>').replace(/^ZIMBA FX/, '<span class="ouro laranja">ZIMBA FX</span>') + '</b></td><td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
     + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
     + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>'
   const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + l.map(linha).join('') + '</tbody></table>'
@@ -576,10 +589,10 @@ const SVG = d => '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'
 function mAtualizar() {
   const b = $('mBarra'); if (!b) return
   b.querySelector('.tf .sub').textContent = TFN[est.tf] || est.tf
-  const sel = $('estrSel'), op = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text.replace(/\s*\(\d+\)$/, '') : 'Estratégia'
+  const ne = nomeEstr()
   $('camBtnV').textContent = [...$('camadas').querySelectorAll('[data-c]')].filter(x => est.camadas[x.dataset.c]).length + ' ligadas'
-  $('estrBtnV').textContent = sel.selectedIndex > 0 ? op.replace(/\s*\(.*\)$/, '') : 'nenhuma'; $('estrBtn').classList.toggle('on', sel.selectedIndex > 0)
-  b.querySelector('.estr .sub').textContent = op.replace(/\s*\(.*\)$/, ''); b.querySelector('.estr').classList.toggle('on', sel.selectedIndex > 0)
+  $('estrBtnV').textContent = ne || 'nenhuma'; $('estrBtn').classList.toggle('on', !!ne)
+  b.querySelector('.estr .sub').textContent = ne || 'Estratégia'; b.querySelector('.estr').classList.toggle('on', !!ne)
   $('mLeg').innerHTML = '<b>' + esc($('gNome').textContent) + '</b> · ' + esc(TFN[est.tf] || est.tf) + ' &nbsp;<b class="num">' + esc($('gPx').textContent) + '</b> <span class="num ' + ($('gVar').className.includes('sobe') ? 'sobe' : 'desce') + '">' + esc($('gVar').textContent.replace(' em 24 h', '')) + '</span>'
     + ($('gTimer').textContent ? '<br><span class="estado">' + esc($('gTimer').textContent) + '</span>' : '')
 }
@@ -598,7 +611,7 @@ function mAtualizar() {
   const barra = document.createElement('div'); barra.className = 'mBarra'; barra.id = 'mBarra'
   barra.innerHTML = '<button type="button" class="tf" aria-label="Tempo das velas">' + SVG('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>') + '<span class="sub"></span></button><span class="div"></span>'
     + '<button type="button" class="cam" aria-label="Camadas">' + SVG('<path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/>') + 'Camadas</button><span class="div"></span>'
-    + '<button type="button" class="estr" aria-label="Estratégia no gráfico">' + SVG('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>') + '<span class="sub"></span></button><span class="div"></span>'
+    + '<button type="button" class="estr" aria-label="Estratégias no gráfico">' + SVG('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>') + '<span class="sub"></span></button><span class="div"></span>'
     + '<button type="button" class="cor" aria-label="Cor do gráfico">' + SVG('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>') + 'Cor</button>'
   $('grafico').closest('.card').prepend(barra)
   const leg = document.createElement('div'); leg.className = 'mLeg'; leg.id = 'mLeg'; $('grafico').append(leg)
@@ -614,7 +627,7 @@ function mAtualizar() {
   const desenhar = () => {
     folha.querySelector('.mLista').innerHTML = itens().map((x, k) => x.grupo != null ? '<div class="grupo">' + x.grupo + '</div>'
       : '<button type="button" data-k="' + k + '" class="' + (x.on ? 'on' : '') + '" aria-pressed="' + !!x.on + '">' + (x.amostra ? '<span class="amostra" style="background:' + x.amostra.bg + '"><i style="background:' + x.amostra.sobe + '"></i><i style="background:' + x.amostra.desce + '"></i></span>' : '') + '<span class="esq"><span>' + (x.nomeHtml || esc(x.nome)) + (x.n != null ? ' <span class="n">' + x.n + '</span>' : '') + '</span>' + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span>'
-      + '<span class="dir">' + (x.p != null ? '<span class="p' + (x.p >= 0.5 ? ' sobe' : x.p <= -0.5 ? ' desce' : '') + '">' + (x.p < 0 ? '-' : '+') + fmt(Math.abs(x.p), 1) + ' pips</span>' : '') + '<span class="' + (multi ? 'int' : 'marca-on') + '"></span></span></button>').join('')
+      + '<span class="dir">' + (x.p != null ? '<span class="p' + (x.p >= 0.5 ? ' sobe' : x.p <= -0.5 ? ' desce' : '') + '">' + (x.p < 0 ? '-' : '+') + fmt(Math.abs(x.p), 1) + ' pips</span>' : '') + '<span class="' + (multi && !x.radio ? 'int' : 'marca-on') + '"></span></span></button>').join('')
   }
   const abrir = abrirFolha = (tit, f, fn, m, ancora) => {
     if (ancora) { const r = ancora.getBoundingClientRect(); folha.style.setProperty('--x', Math.min(r.left, innerWidth - 410) + 'px'); folha.style.setProperty('--y', r.bottom + 6 + 'px') }
@@ -636,18 +649,23 @@ function mAtualizar() {
   $('camBtn').addEventListener('click', e => abrir('Camadas no gráfico', listaCam, x => x.b.click(), true, e.currentTarget))
   // a lista das estratégias por grupos, cada uma com o que fez desde 21/10 (o placar), as que mais deram primeiro
   const listaEstr = () => {
-    const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value)
-    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^EDNEY: /, '')
-      return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">EDNEY</span>: todas juntas' : null, v: o.value, on: $('estrSel').value === o.value, p: e?.n ? e.pips : null,
+    const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value), l = estrEscolhidas()
+    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^ZIMBA FX: /, '')
+      return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">ZIMBA FX</span>: todas juntas' : null, v: o.value, on: (JUNTAS[o.value] || [o.value]).every(id => l.includes(id)), p: e?.n ? e.pips : null,
         sub: e ? (e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' : 'sem entradas desde 21/10') : '',
         ordem: o.value === 'edney' ? 1e9 : e?.n ? e.pips : -1e9 } }
-    const ed = ['edney', 'liquidez', 'choch', 'orderblock'], por = l => l.sort((a, b) => b.ordem - a.ordem)
-    return [{ nome: 'Nenhuma', v: '', on: !$('estrSel').value }, { grupo: '<span class="ouro laranja">EDNEY</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
+    const ed = ['edney', ...JUNTAS.edney], por = l => l.sort((a, b) => b.ordem - a.ordem)
+    return [{ nome: 'Nenhuma', v: '', on: !l.length, radio: true }, { grupo: '<span class="ouro laranja">ZIMBA FX</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
       { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value)).map(item))]
   }
-  const escolher = x => { $('estrSel').value = x.v; $('estrSel').dispatchEvent(new Event('change')) }
-  barra.querySelector('.estr').addEventListener('click', () => abrir('Estratégia no gráfico', listaEstr, escolher, false))
-  $('estrBtn').addEventListener('click', e => abrir('Estratégia no gráfico', listaEstr, escolher, false, e.currentTarget))
+  // cada linha liga ou desliga a sua (a folha fica aberta para escolher mais); «Nenhuma» desliga todas
+  const escolher = x => {
+    const l = estrEscolhidas(), ids = JUNTAS[x.v] || [x.v]
+    est.estrVer = !x.v ? [] : x.on ? l.filter(id => !ids.includes(id)) : [...new Set([...l, ...ids])]
+    aplicarEstr()
+  }
+  barra.querySelector('.estr').addEventListener('click', () => abrir('Estratégias no gráfico', listaEstr, escolher, true))
+  $('estrBtn').addEventListener('click', e => abrir('Estratégias no gráfico', listaEstr, escolher, true, e.currentTarget))
   new MutationObserver(mAtualizar).observe($('gPx'), { childList: true, characterData: true, subtree: true })
   new MutationObserver(mAtualizar).observe($('gTimer'), { childList: true, characterData: true, subtree: true })
   mostrar(est.mPainel || 'grafico'); mAtualizar()

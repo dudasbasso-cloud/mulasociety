@@ -34,7 +34,7 @@ const LIMPO = { sv3: true, ema: false, niveis: true, diario: false, asia: false,
 if (est.v !== 2) { est.camadas = { ...LIMPO }; est.v = 2; localStorage.setItem('jarvis', JSON.stringify(est)) }
 est.camadas = { ...LIMPO, ...(est.camadas || {}) }
 const guardar = () => localStorage.setItem('jarvis', JSON.stringify(est))
-const grafico = criarGrafico($('grafico'))
+const grafico = criarGrafico($('grafico'), { pedirHistoria: (s, tf, ate) => api('historico?s=' + s + '&tf=' + tf + '&ate=' + ate) })
 let radarLista = [], ultimoGrafico = null, ultimoPlano = null
 
 // a janela do Jarvis abre grande (o Chrome deixa mexer no tamanho das janelas de app)

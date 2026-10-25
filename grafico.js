@@ -212,7 +212,7 @@ function dicaAlvo(p, n, casas) {
     + '<br>entrada ' + fmt(p.entrada, casas) + ' · stop ' + fmt(p.sl, casas) + ' · TP3 ' + fmt(p.tps[2], casas) + (tps ? '<br>' + tps : '') + '<br>' + fim
 }
 
-export function criarGrafico(el) {
+export function criarGrafico(el, { pedirHistoria = null } = {}) {
   let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), notas = new Map(), tfAtual = '15m', estK = null, estD = null, estLinhas = [], ultimaVez = null, ultimoPlano = null
   const rot = t => tfAtual === '1d' ? t + 43200 : t   // a vela do dia começa às 17:00 de NY da véspera: mostra-se a data do dia
   const chart = L.createChart(el, {
@@ -260,7 +260,48 @@ export function criarGrafico(el) {
     quadro.style.left = '10px'
     quadro.style.top = Math.max(8, H - quadro.offsetHeight - 10) + 'px'
   }
-  chart.timeScale().subscribeVisibleLogicalRangeChange(() => requestAnimationFrame(porQuadro))
+  // 25/10 («preciso que o gráfico tenha mais tempo para trás»): a janela que vem de minuto a minuto continua a mesma; quando ele
+  // chega com o gráfico à ponta esquerda, pedem-se as velas de antes, aos bocados de 2000, e ficam guardadas por símbolo e
+  // tempo. Cada janela nova cola-se a elas pela hora (o que sai da janela fica na história: não há buracos)
+  const historias = new Map(), aPedir = new Set(), semMais = new Set(), PRECOS = ['verm', 'cinza', 'verde', 'ema200', 'ema80'], SERIES = ['velas', ...PRECOS, 'k', 'd']
+  // a diferença do ouro (base) mudou desde que vieram: as velas e as linhas de preço acertam-se pela nova
+  function mudarBase(h, base = 0) {
+    const x = (h.base ?? 0) - base
+    if (x) {
+      h.velas = h.velas.map(v => ({ time: v.time, open: v.open + x, high: v.high + x, low: v.low + x, close: v.close + x }))
+      for (const q of PRECOS) h[q] = h[q].map(p => p.value == null ? p : { time: p.time, value: p.value + x })
+    }
+    h.base = base
+  }
+  function comHistoria(d) {
+    const h = historias.get(d.simbolo + '|' + d.tf)
+    if (!h || !d.velas.length) return d
+    mudarBase(h, d.base)
+    const w0 = d.velas[0].time, cola = (a, b) => { let i = a.length; while (i > 0 && a[i - 1].time >= w0) i--; return [...a.slice(0, i), ...b] }
+    const D = { ...d, velas: cola(h.velas, d.velas), sv3: { verm: cola(h.verm, d.sv3.verm), cinza: cola(h.cinza, d.sv3.cinza), verde: cola(h.verde, d.sv3.verde) },
+      ema200: cola(h.ema200, d.ema200), ema80: cola(h.ema80, d.ema80 || []), estoc: d.estoc && { k: cola(h.k, d.estoc.k), d: cola(h.d, d.estoc.d) } }
+    Object.assign(h, { velas: D.velas, ...D.sv3, ema200: D.ema200, ema80: D.ema80 }, D.estoc && { k: D.estoc.k, d: D.estoc.d })
+    return D
+  }
+  function receberHistoria(r) {
+    const k = r.simbolo + '|' + r.tf, linhaH = a => r.t.map((t, i) => a[i] == null ? { time: t } : { time: t, value: a[i] })
+    aPedir.delete(k)
+    if (r.fim) semMais.add(k)
+    if (!r.t?.length) return
+    const novo = { base: r.base, velas: r.t.map((t, i) => ({ time: t, open: r.o[i], high: r.h[i], low: r.l[i], close: r.c[i] })), ...Object.fromEntries([...PRECOS, 'k', 'd'].map(q => [q, linhaH(r[q])])) }
+    const h = historias.get(k)
+    if (h) { mudarBase(novo, h.base); const t0 = h.velas[0]?.time ?? Infinity; for (const q of SERIES) h[q] = [...novo[q].filter(x => x.time < t0), ...h[q]] }
+    else { historias.set(k, novo); if (historias.size > 6) historias.delete(historias.keys().next().value) }
+    if (k === chave && ultimaVez) mostrar(...ultimaVez)
+  }
+  function talvezHistoria(lr) {
+    if (!lr || lr.from > 30 || !pedirHistoria || !ultimaVez) return
+    const d = ultimaVez[0], k = d.simbolo + '|' + d.tf
+    if (aPedir.has(k) || semMais.has(k) || !d.velas.length) return
+    aPedir.add(k)
+    pedirHistoria(d.simbolo, d.tf, (historias.get(k)?.velas[0] ?? d.velas[0]).time).then(receberHistoria, () => setTimeout(() => aPedir.delete(k), 30e3))
+  }
+  chart.timeScale().subscribeVisibleLogicalRangeChange(lr => { requestAnimationFrame(porQuadro); talvezHistoria(lr) })
   // 23/10 («mete a opção aqui no card de ver o de ontem e hoje»; «preenche o SL com 1 e vermelho»): Tudo (desde o primeiro
   // aviso, é o que abre), Hoje e Ontem no título; a escolha fica até ele mudar
   let vistaAlvos = 'tudo', ultimosAlvos = null
@@ -339,8 +380,9 @@ export function criarGrafico(el) {
     dica.style.top = Math.max(8, p.point.y - 70) + 'px'
   })
 
-  function mostrar(d, camadas) {
-    ultimaVez = [d, camadas]
+  function mostrar(d0, camadas) {
+    ultimaVez = [d0, camadas]
+    const d = comHistoria(d0)
     const nova = d.simbolo + '|' + d.tf !== chave
     chave = d.simbolo + '|' + d.tf; casas = d.casas; tfAtual = d.tf
     velas.applyOptions({ priceFormat: { type: 'custom', minMove: 1 / 10 ** casas, formatter: p => fmt(p, casas) } })   // cada painel com o seu formato

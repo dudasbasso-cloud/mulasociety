@@ -585,7 +585,7 @@ function placarTP(L) {
   const comTipos = l => l.flatMap(e => e.id === 'bot' ? [e, ...F] : [e])
   const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + comTipos(l).map(linha).join('') + '</tbody></table>'
   const V = L.filter(e => !filho(e)), meio = Math.ceil(V.length / 2)
-  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 21/10 às 18:00, até 24 h cada<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
+  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 19/10, até 24 h cada<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
     + '<div class="placarDuas">' + tabela(V.slice(0, meio)) + tabela(V.slice(meio)) + '</div>'
   el.hidden = false
 }
@@ -749,13 +749,13 @@ function mAtualizar() {
   const listaCam = () => CAM.flatMap(([g, d]) => [{ grupo: g }, ...Object.entries(d).map(([c, sub]) => { const b = $('camadas').querySelector('[data-c="' + c + '"]'); return b && { nome: b.textContent, sub, on: !!est.camadas[c], b } }).filter(Boolean)])
   barra.querySelector('.cam').addEventListener('click', () => abrir('Camadas no gráfico', listaCam, x => x.b.click(), true))
   $('camBtn').addEventListener('click', e => abrir('Camadas no gráfico', listaCam, x => x.b.click(), true, e.currentTarget))
-  // a lista das estratégias por grupos, cada uma com o que fez desde 21/10 (o placar), as que mais deram primeiro
+  // a lista das estratégias por grupos, cada uma com o que fez desde 19/10 (o placar), as que mais deram primeiro
   const listaEstr = () => {
     const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value), l = estrEscolhidas()
     const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^(ZIMBA FX|BOT): /, '')
       return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">ZIMBA FX</span>: todas juntas' : o.value === 'bot' ? '<span class="ouro">BOT</span>: todos os avisos' : null, v: o.value, on: (JUNTAS[o.value] || [o.value]).every(id => l.includes(id)), p: e?.n ? e.pips : null,
-        sub: !e ? '' : e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' + (e.abertas ? ' · ' + e.abertas + '\u00a0a\u00a0decorrer' : '')
-          : e.abertas ? e.abertas + ' a decorrer, desde 21/10' : 'sem entradas desde 21/10',
+        sub: !e ? '' : e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 19/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' + (e.abertas ? ' · ' + e.abertas + '\u00a0a\u00a0decorrer' : '')
+          : e.abertas ? e.abertas + ' a decorrer, desde 19/10' : 'sem entradas desde 19/10',
         ordem: o.value === 'zimba' ? 2e9 : o.value === 'edney' || o.value === 'bot' ? 1e9 : e?.n ? e.pips : -1e9 } }
     // 25/10: o modelo completo dos vídeos dele à frente, depois as três peças juntas e cada uma; o Wyckoff e o Elliott também
     // são da lista dele («mete as 5»)

@@ -214,6 +214,7 @@ function dicaAlvo(p, n, casas) {
 
 export function criarGrafico(el, { pedirHistoria = null } = {}) {
   let casas = 2, chave = '', caixas = [], linhasPos = [], linhasFibo = [], porTempo = new Map(), velaPorTempo = new Map(), notas = new Map(), tfAtual = '15m', estK = null, estD = null, estLinhas = [], ultimaVez = null, ultimoPlano = null
+  let n = 0, nVer = 130, mexeu = false   // as velas, as que se veem ao abrir e se ele já mexeu no gráfico
   const rot = t => tfAtual === '1d' ? t + 43200 : t   // a vela do dia começa às 17:00 de NY da véspera: mostra-se a data do dia
   const chart = L.createChart(el, {
     autoSize: true,
@@ -294,8 +295,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     else { historias.set(k, novo); if (historias.size > 6) historias.delete(historias.keys().next().value) }
     if (k === chave && ultimaVez) mostrar(...ultimaVez)
   }
+  // só quando foi ele a arrastar (no telemóvel o gráfico nasce sem largura e a vista dava a ponta esquerda logo ao abrir)
   function talvezHistoria(lr) {
-    if (!lr || lr.from > 30 || !pedirHistoria || !ultimaVez) return
+    if (!lr || !mexeu || !(lr.from < 30) || !pedirHistoria || !ultimaVez) return
     const d = ultimaVez[0], k = d.simbolo + '|' + d.tf
     if (aPedir.has(k) || semMais.has(k) || !d.velas.length) return
     aPedir.add(k)
@@ -364,7 +366,6 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
   const dica = el.querySelector('#dica')
   // as últimas velas enchem o gráfico, também quando a janela muda de tamanho ou volta a aparecer, até ele mexer no
   // gráfico (rodinha ou arrastar); duplo clique volta ao início
-  let n = 0, nVer = 130, mexeu = false
   const ajustar = () => { if (n) chart.timeScale().setVisibleLogicalRange({ from: n - nVer, to: n + 6 }) }
   el.addEventListener('wheel', () => { mexeu = true }, { passive: true })
   el.addEventListener('pointerdown', () => { mexeu = true })

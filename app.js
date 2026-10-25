@@ -216,7 +216,7 @@ function analise(r) {
   // 22/10 («mete tipo assim», com o cartão «Próximos eventos» do Orca): cada evento numa caixa, com a moeda, o nome, o
   // previsto e a hora; os fortes a rosa. A próxima vai também na barra de cima
   const diaH = ms => { const d = diaDe(ms); return (d === diaDe(Date.now()) ? '' : d === diaDe(Date.now() + 864e5) ? 'amanhã ' : d + ' ') + hhmm(ms).replace(':', 'h') }
-  const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
+  const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '" title="' + esc(e.titulo + (e.previsao ? ', previsto ' + e.previsao : '') + (e.anterior ? ', anterior ' + e.anterior : '')) + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
     + (e.previsao ? '<span class="prev">previsto ' + esc(e.previsao) + '</span>' : '') + '<b class="hora num">' + diaH(e.quando) + '</b></span>'
   // 24/10: a grelha do mês (mesCalendario) saiu a pedido dele («mete o anterior, não o das datas»); ficam os eventos
   // 25/10 («tens a certeza?»): com a ForexFactory a recusar, a lista dela fica velha e só entram as dos EUA (da nuvem do
@@ -225,6 +225,7 @@ function analise(r) {
   $('calendario').innerHTML = (r.proximas.length ? '<div class="eventos">' + r.proximas.map(evento).join('') + '</div>' + (semFF && r.simbolo !== 'XAUUSD' ? '<div class="vazio">' + esc(semFF) + 'só aparecem as dos EUA.</div>' : '')
     : '<div class="vazio">' + (semFF ? esc(semFF) + (r.simbolo === 'XAUUSD' ? 'sem notícias dos EUA à vista.' : 'faltam as notícias destas moedas.') : 'Nada de médio ou forte para estas moedas esta semana.') + '</div>')
   // 25/10 («retira isto daqui»): a próxima notícia saiu da barra de cima; fica no cartão do calendário
+  for (const ev of $('calendario').querySelectorAll('.evento')) { const p = ev.querySelector('.prev'); if (p && p.scrollWidth > p.clientWidth + 1) ev.classList.add('semPrev') }
 }
 
 const planoTexto = l => { const out = []; for (const x of l) { const u = out[out.length - 1]; if (u && u.l === x) u.n++; else out.push({ l: x, n: 1 }) } return out.map(o => (o.n > 1 ? o.n + ' × ' : '') + fmt(o.l, 2)).join(' + ') }

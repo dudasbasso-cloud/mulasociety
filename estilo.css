@@ -695,10 +695,11 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
   .lc-grelha { grid-template-columns:minmax(0, 1fr) } .lc-fixo { align-items:flex-start; text-align:left; max-width:none }
   .lc-tab th:nth-child(5), .lc-tab td:nth-child(5) { display:none }
 }
-/* 25/10: no cartão do calendário o nome tem prioridade: o previsto passa para baixo dele (antes cortava o nome em «juros…») */
-.eventos .evento { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; align-items:baseline; gap:1px 10px; padding:5px 12px }
-.eventos .evento .tt { white-space:normal; text-wrap:pretty }
-.eventos .evento .prev { grid-column:2; grid-row:2; font-size:11.5px }
-.eventos .evento .hora { grid-column:3; grid-row:1 }
+/* 25/10 («mete o card do tamanho que tinha antes, e tenta colocar lá isso»): uma linha por evento, com o nome primeiro. O
+   previsto encolhe antes do nome e, se não couber inteiro, sai da linha (app.js); fica no título, ao passar o rato */
+.eventos .evento { gap:6px; padding:4px 10px; font-size:12px; align-items:baseline }
+.eventos .evento .tt { flex:0 1 auto; min-width:0 }
+.eventos .evento .prev { flex:0 50 auto; min-width:0; overflow:hidden; font-size:11px }
+.eventos .evento.semPrev .prev { display:none }
 /* 25/10: enquanto o gráfico carrega, o tempo marcado fica mais claro */
 #tfs[aria-busy="true"] button.on { opacity:.55 }

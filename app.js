@@ -127,7 +127,12 @@ function plano(p, r) {
   // inteiro diz porquê, à mesma altura da ordem: mercado fechado (quando abre e quanto falta) ou em pausa (o lado e a linha)
   const fechado = /^mercado fechado/.test(semVelas()), diaria = /^pausa diária/.test(semVelas())
   if (fechado || diaria || (p.acao !== 'esperar' && !p.agora)) { $('plano').innerHTML = ordemParada(p, r, fechado, diaria); return }
-  if (p.acao === 'esperar') { $('plano').innerHTML = '<div class="acao esperar">ESPERAR</div><div class="pq">' + esc(p.porque) + '</div>'; return }
+  if (p.acao === 'esperar') {
+    const [curto, ...regra] = p.porque.split(': '), px = r.analise?.px
+    $('plano').innerHTML = retangulo('esperar', 'Esperar', curto.replace(/\.$/, ''), linhasOp(px != null ? [['Agora', fmt(px, c)]] : []),
+      regra.length ? comTexto('Porquê', '<p>' + esc(p.porque) + '</p>', 'esperar|' + p.porque) : '')
+    return
+  }
   // 22/10 («mete isto bacano, tem que se ver bem»): a ação num bloco com a cor do lado; os níveis numa escada pela ordem
   // do preço, como no gráfico, com o preço de agora no sítio dele; como entrar e o que fazer no alvo 1 por baixo
   const venda = p.acao === 'vender', px = r.analise?.px
@@ -138,18 +143,27 @@ function plano(p, r) {
     { nome: 'Alvo 2', preco: p.tp2, d: (p.ganho2 != null ? '+' + e(p.ganho2) + ' · ' : '') + fmt(p.rr2, 1) + '×', cl: 'al' },
     ...(px != null ? [{ nome: 'Agora', preco: px, d: '', cl: 'ag' }] : [])
   ].sort((a, b) => b.preco - a.preco)
-  // 23/10 («se não há nenhuma entrada isto deveria estar em pausa»): enquanto espera a linha, o cartão fica em pausa, a
-  // cinzento, com o lado e a linha escritos por baixo; os níveis ficam apagados até ser para entrar
-  const pausa = !p.agora
-  $('plano').innerHTML = '<div class="acaoBloco ' + (pausa ? 'pausa' : venda ? 'vender' : 'comprar') + '"><div class="acao">' + (pausa ? 'EM PAUSA' : venda ? 'VENDER' : 'COMPRAR') + '</div><div class="sub">'
-    + (pausa ? 'sem entrada agora · ' + (venda ? 'vende' : 'compra') + ' só se tocar a ' + (venda ? 'vermelha' : 'verde') + ' (' + fmt(p.entrada, c) + ')'
-      : (venda ? 'short' : 'long') + ', entrar já' + (p.risco ? ' · arriscas ' + e(p.risco.eur) + ' com ' + fmt(p.risco.lote, 2) + ' lotes' : '')) + '</div></div>'
-    + '<div class="escada' + (pausa ? ' apagada' : '') + '">' + niveis.map(n => '<div class="deg ' + n.cl + '"><i></i><span class="n">' + n.nome + '</span><b class="num">' + fmt(n.preco, c) + '</b><span class="d">' + n.d + '</span></div>').join('') + '</div>'
-    // 24/10 («faz com que caibam sem scroll»): como entrar, o alvo 1 e o porquê ficam fechados, a um toque
-    + '<details class="mais comoEntrar"><summary>Como entrar e porquê</summary><div class="nota"><b>Como entrar:</b> ' + esc(p.entradaTexto) + '</div>'
-    + (p.gestao ? '<div class="nota"><b>No alvo 1:</b> ' + esc(p.gestao.replace(/^No alvo 1 /, '')) + '</div>' : '')
-    + '<div class="pq">' + esc(p.porque) + '</div></details>'
+  // (enquanto espera a linha, desde 23/10, é o «Em pausa» do ordemParada). O que arriscas está no stop
+  $('plano').innerHTML = retangulo(venda ? 'vender' : 'comprar', venda ? 'Vender' : 'Comprar', (venda ? 'short' : 'long') + ', entrar já' + (p.risco ? ' · ' + fmt(p.risco.lote, 2) + ' lotes' : ''),
+    '<div class="escada">' + niveis.map(n => '<div class="deg ' + n.cl + '"><i></i><span class="n">' + n.nome + '</span><b class="num">' + fmt(n.preco, c) + '</b><span class="d">' + n.d + '</span></div>').join('') + '</div>',
+    comoEntrar(p))
 }
+
+// 25/10 («quando houver ordens elas têm que caber bem aí nesse retângulo», «se tiveres algum texto faz com que apareça mas
+// com setinha para baixo e aparece tipo um card»): todos os estados da ordem no mesmo retângulo, da mesma altura (fechado, em
+// pausa, esperar e a ordem). O texto fica atrás de uma setinha e abre num cartão por cima do que está por baixo, sem mexer
+// no retângulo; fica aberto quando a análise se atualiza, até mudar a ordem, tocar fora dele ou carregar no Esc
+let txtAberto = null
+const comTexto = (rotulo, html, chave) => '<details class="txtOrdem" data-chave="' + esc(chave) + '"' + (txtAberto === chave ? ' open' : '') + '><summary>' + rotulo
+  + setaGrupo(false) + setaGrupo(true) + '</summary><div class="cartaoTxt">' + html + '</div></details>'
+const comoEntrar = p => comTexto('Como entrar e porquê', '<p><b>Como entrar:</b> ' + esc(p.entradaTexto) + '</p>'
+  + (p.gestao ? '<p><b>No alvo 1:</b> ' + esc(p.gestao.replace(/^No alvo 1 /, '')) + '</p>' : '') + '<p>' + esc(p.porque) + '</p>', p.acao + '|' + p.entrada)
+const retangulo = (cl, tit, sub, corpo, txt = '') => '<div class="ordemParada ' + cl + '"><div class="op-est">' + tit + '</div>'
+  + (sub ? '<div class="op-sub">' + esc(sub) + '</div>' : '') + corpo + txt + '</div>'
+const linhasOp = l => l.length ? '<div class="op-lin">' + l.map(([n, v]) => '<div><span>' + esc(n) + '</span><b class="num">' + v + '</b></div>').join('') + '</div>' : ''
+$('plano').addEventListener('toggle', e => { if (e.target.classList?.contains('txtOrdem')) txtAberto = e.target.open ? e.target.dataset.chave : null }, true)
+document.addEventListener('click', e => { const d = $('plano').querySelector('.txtOrdem[open]'); if (d && !d.contains(e.target)) d.open = false })
+document.addEventListener('keydown', e => { const d = $('plano').querySelector('.txtOrdem[open]'); if (e.key === 'Escape' && d) { d.open = false; d.querySelector('summary').focus() } })
 
 // 22/10 («quero que esta parte do Agora fique bacana e apelativa para ler e perceber»): a barra de onde está o preço entre
 // o suporte e o teto, os dois cenários do «se fechar», e o SV3 e a atenção em destaque. Os números vêm do servidor (resumo,
@@ -407,8 +421,7 @@ function ordemParada(p, r, fechado, diaria) {
     ...(px != null ? [[fechado ? 'Último preço' : 'Agora', fmt(px, c)]] : []),
     ...(linha ? [[(venda ? 'Vende' : 'Compra') + ' se tocar', fmt(p.entrada, c)]] : []),
     ...(linha && px != null ? [['Distância', fmt(Math.abs(p.entrada - px), 1) + (r.simbolo === 'XAUUSD' ? ' pips' : '')]] : [])]
-  return '<div class="ordemParada ' + (fechado ? 'fechado' : 'pausa') + '"><div class="op-est">' + tit + '</div><div class="op-sub">' + esc(sub) + '</div>'
-    + '<div class="op-lin">' + linhas.map(([n, v]) => '<div><span>' + esc(n) + '</span><b class="num">' + v + '</b></div>').join('') + '</div></div>'
+  return retangulo(fechado ? 'fechado' : 'pausa', tit, sub, linhasOp(linhas), !fechado && p.acao !== 'esperar' && p.entradaTexto ? comoEntrar(p) : '')
 }
 setInterval(() => { if (ultimaR && $('plano')?.querySelector('.ordemParada.fechado')) plano(ultimaR.plano, ultimaR) }, 30e3)
 function mercadoFechado(r) {
@@ -499,17 +512,30 @@ function resultado(r) {
   const dia = new Date(r.desde * 1000).toLocaleDateString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit' })
   const sinal = x => (x >= 0 ? '+' : '-') + fmt(Math.abs(x), 0) + ' €', cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
   const linha = (nome, v, nota) => '<div class="l"><span>' + nome + '</span><b class="num' + cor(v) + '">' + sinal(v) + '</b>' + (nota ? '<i>' + nota + '</i>' : '') + '</div>'
-  $('resultadoDica').innerHTML = r.avisos ? '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
+  // 25/10 («como se tivéssemos começado com uma banca de 500 euros dia 21 às 18:00»): a banca de agora e o mais baixo a que desceu
+  const b = r.banca, quando = t => new Date(t * 1000).toLocaleString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(', ', ' às ')
+  const valor = (nome, txt, cls, nota) => '<div class="l"><span>' + nome + '</span><b class="num' + cls + '">' + txt + '</b>' + (nota ? '<i>' + nota + '</i>' : '') + '</div>'
+  const banca = b ? '<div class="tit"><span>A banca</span><span>' + fmt(b.inicio, 0) + ' € a ' + quando(r.desde) + '</span></div>'
+    + valor('Agora', fmt(b.agora, 0) + ' €', cor(b.agora - b.inicio), (b.agora >= b.inicio ? '+' : '') + Math.round(100 * (b.agora - b.inicio) / b.inicio) + ' %. Os avisos fechados pela regra, cada um na hora em que acabou; os abertos ainda não contam')
+    + (b.tMinimo ? valor('O mais baixo', fmt(b.minimo, 0) + ' €', b.minimo < b.inicio / 2 ? ' desce' : '', quando(b.tMinimo) + (b.stops ? '. Com ' + fmt(r.lote, 2) + ' cada stop custou em média ' + fmt(b.stopMedio, 0) + ' €' : '')) : '') : ''
+  $('resultadoDica').innerHTML = r.avisos ? banca + '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
     + linha('Feitos', r.ganhos, 'com a regra: TP no TP3 e, no TP2, o stop passa para o TP1 (quem voltou ao TP1 conta o TP1)')
     + linha('Perdidos', -r.perdas, 'os que bateram no stop antes do TP2')
-    + '<div class="tit"><span>Se fechasses tudo no mesmo TP</span><span>já com os stops</span></div>'
-    + ['TP1', 'TP2', 'TP3'].map((n, i) => linha('Tudo no ' + n, r.porTP[i])).join('')
+    + '<div class="tit"><span>Se fechasses tudo no mesmo TP</span><span>' + (b ? 'a banca, com os stops' : 'já com os stops') + '</span></div>'
+    + ['TP1', 'TP2', 'TP3'].map((n, i) => b ? valor('Tudo no ' + n, fmt(b.inicio + r.porTP[i], 0) + ' €', cor(r.porTP[i]), sinal(r.porTP[i])) : linha('Tudo no ' + n, r.porTP[i])).join('')
     + '<p>' + r.avisos + ' avisos que te chegaram desde ' + dia + (r.abertos ? ', ' + r.abertos + (r.abertos > 1 ? ' ainda abertos' : ' ainda aberto') : '') + '.</p>'
     + (r.pausa ? '<p>Fora da conta: ' + r.pausa.avisos + ' avisos que saíram com os teus avisos em pausa e não te chegaram (davam ' + sinal(r.pausa.ganhos)
       + (r.pausa.perdas >= 0.5 ? ' e ' + sinal(-r.pausa.perdas) : ', sem stops') + ').</p>' : '') : ''
   // 24/10 («podes meter isto noutro sítio ou arquiva»): o card das estratégias de TP fica arquivado (estrategiasTP); no lugar
   // dele, o placar de cada estratégia
   placarTP(r.placar)
+  if (b) {
+    // (curta, para caber a 1440 px com os botões: a data, o lote e a percentagem estão na dica)
+    $('resultado').innerHTML = 'Banca ' + fmt(b.inicio, 0) + ' € → <b class="num' + cor(b.agora - b.inicio) + '">' + fmt(b.agora, 0) + ' €</b>'
+      // 25/10 («em vez disto mete TP1 TP2 TP3»): no lugar do mais baixo, a banca se tivesse fechado tudo no TP1, no TP2 ou no TP3
+      + r.porTP.map((v, i) => ' · TP' + (i + 1) + ' <b class="num' + cor(v) + '">' + fmt(b.inicio + v, 0) + ' €</b>').join('')
+    return
+  }
   $('resultado').innerHTML = 'Desde ' + dia + ' com ' + fmt(r.lote, 2) + ': ' + (r.avisos
     ? '<b class="num sobe">+' + fmt(r.ganhos, 0) + ' €</b> feitos · <b class="num' + (r.perdas >= 0.5 ? ' desce">-' : '">') + fmt(r.perdas, 0) + ' €</b> perdidos'
     : '<b>ainda sem avisos</b>')
@@ -745,6 +771,18 @@ function mAtualizar() {
 // 24/10 («caga no modo claro, mete só a opção do gráfico ser branco»; «mete mais opções tipo de cor»): o botão da barra
 // de cima (e o «Cor» no telemóvel) escolhe a cor do gráfico entre cinco; só o cartão do gráfico muda, o resto do Jarvis
 // fica escuro. Fica guardada. Na troca as transições desligam-se um instante, para mudar de uma vez
+// 25/10 («vês estas linhas? faz algo deste tipo, com e sem linhas»): ao lado do «Gráfico», a grelha atrás das velas, com ou
+// sem linhas; no telemóvel fica na folha da cor. Fica guardada
+const grelhaOpc = (() => {
+  const b = $('grelhaBtn'), OPC = [{ id: 'com', nome: 'Com linhas', sub: 'a grelha atrás das velas' }, { id: 'sem', nome: 'Sem linhas', sub: 'o fundo liso, só as velas' }]
+  let atual = 'com'; try { atual = localStorage.getItem('jarvis-grelha') || 'com' } catch {}
+  const aplicar = id => { atual = id; b.innerHTML = 'Grelha <b>' + (id === 'sem' ? 'Sem linhas' : 'Com linhas') + '</b>' + SVG('<path d="m7 10 5 5 5-5"/>'); grafico.grelha(id !== 'sem') }
+  const escolher = x => { aplicar(x.id); try { localStorage.setItem('jarvis-grelha', x.id) } catch {} }
+  const lista = () => OPC.map(o => ({ ...o, grelha: true, on: o.id === atual }))
+  b.addEventListener('click', e => abrirFolha('Linhas do gráfico', lista, escolher, false, e.currentTarget))
+  aplicar(atual)
+  return { lista, escolher }
+})()
 const TEMAS = [
   { id: 'escuro', nome: 'Escuro', sub: 'o de sempre, com as cores suaves', bg: '#16191c', sobe: '#9cb894', desce: '#cc9390' },
   { id: 'noite', nome: 'Noite', sub: 'o escuro do TradingView', bg: '#131722', sobe: '#26a69a', desce: '#ef5350' },
@@ -768,7 +806,7 @@ const TEMAS = [
   }
   const lista = () => TEMAS.map(t => ({ id: t.id, nome: t.nome, sub: t.sub, on: (html.dataset.graf || 'escuro') === t.id, amostra: t }))
   b.addEventListener('click', e => abrirFolha('Cor do gráfico', lista, escolher, false, e.currentTarget))
-  $('mBarra')?.querySelector('.cor')?.addEventListener('click', () => abrirFolha('Cor do gráfico', lista, escolher, false))
+  $('mBarra')?.querySelector('.cor')?.addEventListener('click', () => abrirFolha('Cor do gráfico', () => [...lista(), { grupo: 'Linhas' }, ...grelhaOpc.lista()], x => x.grelha ? grelhaOpc.escolher(x) : escolher(x), false))
   let guardado = 'escuro'; try { guardado = localStorage.getItem('jarvis-grafico') || 'escuro' } catch {}
   aplicar(guardado)
 }

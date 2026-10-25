@@ -110,15 +110,24 @@ class Linhas {
       c.save()
       c.lineWidth = r; c.setLineDash([4 * r, 3 * r])
       for (const it of itens) { c.strokeStyle = it.cor; c.beginPath(); c.moveTo(x1 * r, Math.round(it.y * k) + 0.5); c.lineTo(x2 * r, Math.round(it.y * k) + 0.5); c.stroke() }
-      // os nomes: por ordem de altura, pelo menos 15 px entre eles, e o grupo centrado nas linhas
+      // os nomes: por ordem de altura, pelo menos 15 px entre eles, e o grupo centrado nas linhas. 25/10 (os preços da
+      // Liquidez à direita): quando bate noutro nome, o grupo muda de sítio inteiro; cada nome a fugir sozinho baralhava a
+      // ordem numa caixa pequena (o TP2 ia parar 40 pips acima do TP3)
       const rot = itens.filter(it => it.texto).sort((a, b) => a.y - b.y), GAP = 15
       rot.forEach((it, n) => { it.yr = n && it.y - rot[n - 1].yr < GAP ? rot[n - 1].yr + GAP : it.y })
       const desvio = rot.length ? rot.reduce((s, it) => s + it.y - it.yr, 0) / rot.length : 0
       c.setLineDash([]); c.font = (11 * r) + 'px -apple-system, sans-serif'; c.textBaseline = 'middle'
+      for (const it of rot) { it.w = c.measureText(it.texto).width; it.x = x2 - it.w / r - 6 }
+      // (procura até 30 px acima ou abaixo; sem lugar, fica à altura certa)
+      const lugar = (it, dy) => ({ x: it.x - 4, y: it.yr + desvio + dy - 7.5, w: it.w / r + 8, h: 15 }), bate = dy => rot.some(it => ocupado(lugar(it, dy)))
+      let dy = 0
+      for (let n = 1; n <= 10 && bate(dy); n++) dy = (n % 2 ? 1 : -1) * Math.ceil(n / 2) * 6
+      if (bate(dy)) dy = 0
       for (const it of rot) {
-        const w = c.measureText(it.texto).width, x = x2 - w / r - 6, y = lugarLivre(x - 4, it.yr + desvio - 7.5, w / r + 8, 15) + 7.5
-        c.fillStyle = P.rotulo; c.fillRect((x - 4) * r, (y - 7.5) * k, w + 8 * r, 15 * k)
-        c.fillStyle = it.cor; c.fillText(it.texto, x * r, y * k)
+        const q = lugar(it, dy)
+        ocupar(q)
+        c.fillStyle = P.rotulo; c.fillRect(q.x * r, q.y * k, it.w + 8 * r, 15 * k)
+        c.fillStyle = it.cor; c.fillText(it.texto, it.x * r, (q.y + 7.5) * k)
       }
       c.restore()
     })
@@ -225,7 +234,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: 1.2 },   // mais preços na escala (24/10)
     timeScale: { borderColor: '#23272c', timeVisible: true, secondsVisible: false, rightOffset: 8, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: (t, tipo) => tipo <= 2 ? data(rot(t)) : hora(t) },
     localization: { locale: 'pt-PT', timeFormatter: t => tfAtual === '1d' ? data(rot(t)) : data(t) + ' ' + hora(t) },
-    crosshair: { vertLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' }, horzLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' } }
+    // 25/10 («tenho o rato mais abaixo e ele só assimila acima»): a cruz segue o rato e a escala da direita diz o preço onde ele
+    // está; antes colava ao fecho da vela por baixo do rato (o modo íman, que é o de origem)
+    crosshair: { mode: L.CrosshairMode.Normal, vertLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' }, horzLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' } }
   })
   const velas = chart.addSeries(L.CandlestickSeries, { upColor: P.gt, downColor: P.rt, borderUpColor: P.gt, borderDownColor: P.rt,
     wickUpColor: G(.7), wickDownColor: R(.7), priceLineColor: '#6f757c' })
@@ -396,19 +407,6 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     caixas = []
     const junta = o => { const c = new Caixa(o); velas.attachPrimitive(c); caixas.push(c) }
     const alinhar = t => t - t % TFS[d.tf]
-    if (camadas.asia && d.asia && (d.tf === '15m' || d.tf === '1h'))
-      junta({ de: alinhar(d.asia.de), ate: alinhar(d.asia.ate), hi: d.asia.hi, lo: d.asia.lo, fundo: A(0.05), borda: A(0.55), tracejado: true, texto: 'caixa da Ásia', cor: P.at, esq: true })
-    // o mapa do diário: caixas a toda a largura, tracejadas, por baixo dos níveis do dia
-    if (camadas.diario) for (const z of d.diario || []) {
-      const cor = z.lado === 'venda' ? P.r : z.lado === 'compra' ? P.g : P.a
-      junta({ hi: z.hi, lo: z.lo, fundo: 'rgba(' + cor + ',0.06)', borda: 'rgba(' + cor + ',0.45)', tracejado: true, esq: true, cor: 'rgb(' + cor + ')',
-        texto: 'diário · ' + ({ major: 'Major Key', swing: 'swing', intradia: 'intradía' }[z.tipo] || z.tipo) + ' · ' + z.toques + (z.toques === 1 ? ' toque' : ' toques') })
-    }
-    if (camadas.niveis) for (const z of d.zonas) {
-      const meia = 0.6 * 10 ** -(casas === 2 ? 0 : casas - 1)
-      junta({ hi: Math.max(z.hi, z.mid + meia), lo: Math.min(z.lo, z.mid - meia), fundo: z.tipo === 'teto' ? R(0.13) : G(0.13),
-        texto: z.tipo + ' ' + fmt(z.mid, casas === 2 ? 1 : casas) + ' · ' + z.nome, cor: z.tipo === 'teto' ? P.rt : P.gt })
-    }
     // as caixas dos alvos: verde da entrada ao TP3, vermelha da entrada ao stop, da vela do sinal até ao fim (TP3 ou stop;
     // aberta, até à direita); o TP1, o TP2, o TP3 e o stop marcados no preço, na vela em que lá chegou
     // 23/10 («tá tudo bugado», «uma em cima da outra? antes tava mais clean», «a box deveria estar bem colocada»): cada caixa
@@ -500,14 +498,30 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
     // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte. 25/10 («mete o TP, a
     // entrada, o TP2, o TP3»): as linhas do TP1 e do TP2 dentro de cada caixa e, na última entrada, todas com o preço escrito,
-    // com ✓ nos TP a que chegou (TP3: os três; saiu no TP1: o TP1 e o TP2). Até à direita só enquanto está aberta; depois de
-    // fechar acabam com a caixa (uma entrada de há dias deixava os preços dela soltos à direita)
+    // com ✓ nos TP a que chegou (TP3: os três; saiu no TP1: o TP1 e o TP2). 25/10 («mete isto à direita, se não fica
+    // difícil»): os preços da última entrada vão sempre até à direita do gráfico, mesmo já fechada, como os do último aviso
+    // do bot; no meio das velas não se liam
     const feitos = x => x.fim === 'tp3' ? 3 : x.fim === 'tp1' ? 2 : 0
     EL.forEach((x, i) => {
       const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate, ult = i === EL.length - 1
       caixa(x, x.time, ate)
-      juntaL({ de: x.time, ate: ult && x.fim === 'aberta' ? null : ate, itens: ult ? precos({ ...x, hits: [0, 1, 2].map(k => k < feitos(x) || null) }) : [0, 1].map(k => ({ preco: x.tps[k], cor: G(0.45) })) })
+      juntaL({ de: x.time, ate: ult ? null : ate, itens: ult ? precos({ ...x, hits: [0, 1, 2].map(k => k < feitos(x) || null) }) : [0, 1].map(k => ({ preco: x.tps[k], cor: G(0.45) })) })
     })
+    // 25/10 (os preços da Liquidez à direita): as caixas da Ásia, do diário e dos níveis juntam-se depois dos avisos e das
+    // entradas: desenham-se a seguir e os nomes delas é que sobem ou descem, os preços da entrada ficam colados à direita
+    if (camadas.asia && d.asia && (d.tf === '15m' || d.tf === '1h'))
+      junta({ de: alinhar(d.asia.de), ate: alinhar(d.asia.ate), hi: d.asia.hi, lo: d.asia.lo, fundo: A(0.05), borda: A(0.55), tracejado: true, texto: 'caixa da Ásia', cor: P.at, esq: true })
+    // o mapa do diário: caixas a toda a largura, tracejadas, por baixo dos níveis do dia
+    if (camadas.diario) for (const z of d.diario || []) {
+      const cor = z.lado === 'venda' ? P.r : z.lado === 'compra' ? P.g : P.a
+      junta({ hi: z.hi, lo: z.lo, fundo: 'rgba(' + cor + ',0.06)', borda: 'rgba(' + cor + ',0.45)', tracejado: true, esq: true, cor: 'rgb(' + cor + ')',
+        texto: 'diário · ' + ({ major: 'Major Key', swing: 'swing', intradia: 'intradía' }[z.tipo] || z.tipo) + ' · ' + z.toques + (z.toques === 1 ? ' toque' : ' toques') })
+    }
+    if (camadas.niveis) for (const z of d.zonas) {
+      const meia = 0.6 * 10 ** -(casas === 2 ? 0 : casas - 1)
+      junta({ hi: Math.max(z.hi, z.mid + meia), lo: Math.min(z.lo, z.mid - meia), fundo: z.tipo === 'teto' ? R(0.13) : G(0.13),
+        texto: z.tipo + ' ' + fmt(z.mid, casas === 2 ? 1 : casas) + ' · ' + z.nome, cor: z.tipo === 'teto' ? P.rt : P.gt })
+    }
     velaPorTempo = new Map()
     const pads = camadas.velas ? d.padroes || [] : []
     for (const v of pads) velaPorTempo.set(v.time, [...(velaPorTempo.get(v.time) || []), v])
@@ -542,10 +556,13 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     for (const [preco, cor, titulo] of [[p.entrada, P.at, 'entrada'], [p.sl, P.rt, 'stop'], [p.tp1, P.gt, 'alvo 1'], [p.tp2, P.gt, 'alvo 2']])
       linhasPlano.push(velas.createPriceLine({ price: preco, color: cor, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: titulo }))
   }
+  // 25/10 («vês estas linhas? faz algo deste tipo, com e sem linhas»): as linhas da grelha atrás das velas, ligadas ou não
+  let comGrelha = true
+  function grelha(on) { comGrelha = on; chart.applyOptions({ grid: { vertLines: { visible: on }, horzLines: { visible: on } } }) }
     // 24/10 (modo claro): troca a paleta, pinta de novo o que já está no gráfico e redesenha as caixas e as marcas
   function tema(nome) {
     P = CORES[nome === true ? 'branco' : nome] || CORES.escuro
-    chart.applyOptions({ layout: { textColor: P.texto, panes: { separatorColor: P.borda } }, grid: { vertLines: { color: P.grelha }, horzLines: { color: P.grelha } },
+    chart.applyOptions({ layout: { textColor: P.texto, panes: { separatorColor: P.borda } }, grid: { vertLines: { color: P.grelha, visible: comGrelha }, horzLines: { color: P.grelha, visible: comGrelha } },
       rightPriceScale: { borderColor: P.borda }, timeScale: { borderColor: P.borda },
       crosshair: { vertLine: { color: P.mira, labelBackgroundColor: P.etiqueta }, horzLine: { color: P.mira, labelBackgroundColor: P.etiqueta } } })
     velas.applyOptions({ upColor: P.vs, downColor: P.vd, borderUpColor: P.vs, borderDownColor: P.vd, wickUpColor: P.pu, wickDownColor: P.pd, priceLineColor: P.linhaPreco })
@@ -555,5 +572,5 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     if (ultimaVez) mostrar(...ultimaVez)
     plano(ultimoPlano)
   }
-  return { mostrar, plano, tema }
+  return { mostrar, plano, tema, grelha }
 }

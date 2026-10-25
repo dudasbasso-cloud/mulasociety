@@ -615,3 +615,31 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .estrTP .decorrer { display:inline-flex; align-items:center; gap:2px; margin-right:7px; color:var(--suave); font-size:10.5px }
 .estrTP .relogio { flex:none; width:9px; height:9px; fill:none; stroke:currentColor; stroke-width:1.2; stroke-linecap:round; stroke-linejoin:round }
 .estrTP .legDecorrer { display:inline-flex; align-items:center; gap:3px; margin-left:10px }
+/* 25/10 («quando houver ordens elas têm que caber bem aí nesse retângulo»): a ordem, o esperar e a pausa no retângulo do
+   mercado fechado, da mesma altura; o texto fica atrás de uma setinha e abre num cartão por cima (app.js, comTexto) */
+.plano .ordemParada.vender { border-left-color:var(--rosa) } .ordemParada.vender .op-est { color:var(--rosa) }
+.plano .ordemParada.comprar { border-left-color:var(--salva) } .ordemParada.comprar .op-est { color:var(--salva) }
+.plano .ordemParada.esperar { border-left-color:var(--areia) } .ordemParada.esperar .op-est { color:var(--areia) }
+.ordemParada .op-sub { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden }
+.ordemParada .escada { margin:8px 0 0 }
+.ordemParada .deg { line-height:1.2 }
+.txtOrdem { position:relative; margin-top:9px }
+.txtOrdem summary { display:inline-flex; align-items:center; gap:6px; list-style:none; cursor:pointer; color:var(--suave); font-size:12px }
+.txtOrdem summary::-webkit-details-marker { display:none }
+.txtOrdem .seta { flex:none; width:10px; height:10px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round }
+.txtOrdem .seta + .seta, .txtOrdem[open] .seta:first-of-type { display:none }
+.txtOrdem[open] .seta + .seta { display:block }
+@media (hover: hover) { .txtOrdem summary:hover { color:var(--texto) } }
+.txtOrdem .cartaoTxt { position:absolute; z-index:30; top:calc(100% + 8px); left:-17px; right:-14px; padding:2px 14px 12px; background:var(--painel2); border:1px solid var(--borda); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.5); font-size:12px; line-height:1.45; color:var(--suave) }
+.txtOrdem .cartaoTxt p { margin:10px 0 0 }
+.txtOrdem .cartaoTxt b { color:var(--texto); font-weight:600 }
+/* 25/10: a barra de cima nunca empurra os botões para fora; se não couber, a frase da banca corta-se no fim (a dica tem tudo)
+   e os espaços vazios (sem sessão nem notícia) não ocupam lugar */
+.topo > * { flex:none }
+.topo > #resultado { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis }
+.topo > .it:empty { display:none }
+/* 25/10: com o cartão estreito (a 1440 px), o cinzento do que cada linha junta pode ir para duas linhas; numa só, a tabela
+   da direita passava do cartão e o «Pips» ficava cortado */
+.estrTP { container-type:inline-size }
+@container (max-width: 950px) { .estrTP .placar .partes { white-space:normal } }
+.estrTP .placar .partes { display:block }

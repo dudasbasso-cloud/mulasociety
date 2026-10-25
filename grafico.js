@@ -447,14 +447,21 @@ export function criarGrafico(el) {
       nomeSeta(x.time, x.lado === 'venda', x.curto + (x.fim === 'aberta' ? '' : ganhou(x) ? ' ✓' : ' ✗'), corEstr(x), 0.8)
     }
     // as setas da mesma vela empilham-se (como na biblioteca): cada nome sabe quantas há e vai para fora da pilha. No
-    // telemóvel não há nomes, só a seta e o ponto (24/10, «vê o TradingView»)
+    // telemóvel também (25/10, «no telemóvel mete como antes, parece que só tem as setas, não tem o nome do CHoCH»)
     const pilhas = new Map(), daPilha = it => it.time + '|' + it.cima + '|' + it.tam
     for (const it of rotulos) if (!it.ponto) { it.n = pilhas.get(daPilha(it)) || 0; pilhas.set(daPilha(it), it.n + 1) }
     for (const it of rotulos) if (!it.ponto) it.pilha = pilhas.get(daPilha(it))
-    if (rotulos.length && !matchMedia('(max-width:1000px),(max-height:520px)').matches) { const ro = new Rotulos(rotulos); velas.attachPrimitive(ro); caixas.push(ro) }
+    if (rotulos.length) { const ro = new Rotulos(rotulos); velas.attachPrimitive(ro); caixas.push(ro) }
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
-    // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte
-    EL.forEach((x, i) => { const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate; caixa(x, x.time, ate) })
+    // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte. 25/10 («mete o TP, a
+    // entrada, o TP2, o TP3»): as linhas do TP1 e do TP2 dentro de cada caixa e, na última entrada, todas com o preço escrito
+    // até à direita, como no último aviso do bot, com ✓ nos TP a que chegou (TP3: os três; saiu no TP1: o TP1 e o TP2)
+    const feitos = x => x.fim === 'tp3' ? 3 : x.fim === 'tp1' ? 2 : 0
+    EL.forEach((x, i) => {
+      const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate, ult = i === EL.length - 1
+      caixa(x, x.time, ate)
+      juntaL({ de: x.time, ate: ult ? null : ate, itens: ult ? precos({ ...x, hits: [0, 1, 2].map(k => k < feitos(x) || null) }) : [0, 1].map(k => ({ preco: x.tps[k], cor: G(0.45) })) })
+    })
     velaPorTempo = new Map()
     const pads = camadas.velas ? d.padroes || [] : []
     for (const v of pads) velaPorTempo.set(v.time, [...(velaPorTempo.get(v.time) || []), v])

@@ -262,7 +262,8 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     layout: { background: { type: 'solid', color: 'transparent' }, textColor: P.ct, fontSize: movel.matches ? 10 : 11, attributionLogo: false,
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },
-    rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: 1.2 },   // mais preços na escala (24/10)
+    // mais preços na escala (24/10); no telemóvel menos, para não se amontoarem com as etiquetas (25/10)
+    rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: movel.matches ? 2.5 : 1.2 },
     timeScale: { borderColor: '#23272c', timeVisible: true, secondsVisible: false, rightOffset: 8, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: (t, tipo) => tipo <= 2 ? data(rot(t)) : tipo === 4 ? horaS(t) : hora(t) },
     localization: { locale: 'pt-PT', timeFormatter: t => tfAtual === '1d' ? data(rot(t)) : data(t) + ' ' + (tfAtual === '1s' ? horaS(t) : hora(t)) },
     // 25/10 («tenho o rato mais abaixo e ele só assimila acima»): a cruz segue o rato e a escala da direita diz o preço onde ele
@@ -451,7 +452,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
   }
   const ajustar = () => { if (n) chart.timeScale().setVisibleLogicalRange({ from: n - quantas(), to: n + 6 }) }
   movel.addEventListener('change', () => {
-    chart.applyOptions({ layout: { fontSize: movel.matches ? 10 : 11 } })
+    chart.applyOptions({ layout: { fontSize: movel.matches ? 10 : 11 }, rightPriceScale: { tickMarkDensity: movel.matches ? 2.5 : 1.2 } })
     if (estK) chart.panes()[0].setStretchFactor(movel.matches ? 7 : 4.5)
     if (!mexeu) ajustar()
   })

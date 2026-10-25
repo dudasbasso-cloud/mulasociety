@@ -471,7 +471,7 @@ setInterval(() => {
   let fim = fimVela.inicio + dur
   while (fim <= agora) fim += dur
   const s = Math.floor(fim - agora), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = String(s % 60).padStart(2, '0')
-  el.innerHTML = 'vela fecha em<b>' + (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + ss + '</b>'
+  el.innerHTML = 'vela fecha em <b>' + (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + ss + '</b>'   // com o espaço: a legenda do telemóvel copia o texto («em4:41»)
   el.classList.toggle('quase', s <= 60)
 }, 1000)
 

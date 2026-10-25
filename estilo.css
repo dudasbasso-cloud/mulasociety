@@ -163,7 +163,7 @@ button { font:inherit; color:inherit; background:none; border:0; padding:0; curs
 .amigo #topoRobo, .amigo #topoConta, .amigo #conta, .amigo .card:has(#opcoes), .amigo .conversa, .amigo [data-c="posicoes"] { display:none !important }
 /* o relógio da vela, ao lado dos tempos do gráfico */
 .timer { margin-left:auto; font-size:13px; color:var(--fraco); font-variant-numeric:tabular-nums }
-.timer b { font-size:16px; font-weight:600; color:#e8e6e1; margin-left:6px }
+.timer b { font-size:16px; font-weight:600; color:#e8e6e1; margin-left:2px }
 .timer.quase b { color:#d6c39f }
 .alvos .hoje { margin:1px 0 8px; font-size:12px }
 .alvos .hoje b { font-weight:600 } .alvos .hoje .v { color:#9cb894 } .alvos .hoje .r { color:#cc9390 }
@@ -446,7 +446,11 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
   body[data-m="grafico"] [data-painel="grafico"], body[data-m="estrategias"] [data-painel="estrategias"], body[data-m="ordem"] [data-painel="ordem"],
   body[data-m="noticias"] [data-painel="noticias"] { display:flex !important; flex-direction:column; position:absolute; inset:0; overflow:auto; max-height:none; padding-top:env(safe-area-inset-top) }
   body[data-m="analise"] [data-painel="analise"] { display:flex !important; flex-direction:column; overflow:auto }
-  body[data-m="analise"] .card.abas { position:absolute; inset:0 0 46% 0; padding-top:env(safe-area-inset-top) } body[data-m="analise"] [data-painel="analise"]:not(.abas) { position:absolute; inset:54% 0 0 0; border-top:1px solid var(--borda) }
+  /* 25/10 («melhora as cenas no mobile»): o calendário fica só com a altura que precisa e a análise com o resto (era meio
+     ecrã cada: a análise cortada a meio e o calendário com espaço vazio por baixo) */
+  body[data-m="analise"] .grelha { display:flex; flex-direction:column }
+  body[data-m="analise"] .card.abas { flex:1 1 0; min-height:0; padding-top:env(safe-area-inset-top) }
+  body[data-m="analise"] [data-painel="analise"]:not(.abas) { flex:0 0 auto; max-height:46%; border-top:1px solid var(--borda) }
   body[data-m="estrategias"] #estrTP { display:block !important }
   [data-painel="grafico"] { background:var(--bg) }
   [data-painel="grafico"] .cab, .alvos, .legenda { display:none !important }
@@ -481,7 +485,8 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
   .estrTP .placarDuas .placar:first-child { width:100% }
   .estrTP .placarDuas .placar + .placar thead { display:none }
   .estrTP .placarDuas .placar { table-layout:fixed }
-  .estrTP .placarDuas .placar td:first-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  /* 25/10: os nomes inteiros, em duas linhas se for preciso («Fora do equilíbrio, seman…» não se lia no telemóvel) */
+  .estrTP .placarDuas .placar td:first-child { white-space:normal; overflow-wrap:break-word; text-wrap:pretty }
   .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:118px }
   .estrTP .placarDuas .placar th:nth-child(n+3), .estrTP .placarDuas .placar td:nth-child(n+3) { width:52px }
   .estrTP .placarDuas .placar th:last-child, .estrTP .placarDuas .placar td:last-child { width:62px }
@@ -489,7 +494,7 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
 @media (max-width: 760px) {
   .estrTP .placar th:nth-child(4), .estrTP .placar td:nth-child(4) { display:none }
   .estrTP .tit span + span { display:none }
-  .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:86px }
+  .estrTP .placarDuas .placar th:nth-child(2), .estrTP .placarDuas .placar td:nth-child(2) { width:70px }
 }
 /* deitado: separadores mais baixos, só o ícone com o nome ao lado, para o gráfico ficar com a altura */
 @media (max-height: 520px) {

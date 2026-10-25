@@ -544,11 +544,12 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
   .estrBtn { max-width:240px }
 }
 /* 24/10 («está desalinhado»): as camadas ficam na mesma linha do tempo e da estratégia, à direita, quando cabem; quando
-   não cabem descem para a linha de baixo alinhadas à esquerda, por baixo do «Ouro» (o app.js marca .sozinha) */
+   não cabem descem para a linha de baixo (o app.js marca .sozinha). 25/10 («estes filtro tem que ficar sempre do lado
+   direito»): também lá em baixo ficam à direita */
 @media (min-width: 1001px) and (min-height: 521px) {
   .cab { align-items:center }
   .camadas { flex:0 1 auto; flex-basis:auto; margin-left:auto; align-self:center }
-  .camadas.sozinha { flex-basis:100%; margin-left:0; justify-content:flex-start }
+  .camadas.sozinha { flex-basis:100%; margin-left:0; justify-content:flex-end }
 }
 
 /* 24/10 («caga no modo claro, mete só a opção do gráfico ser branco»; «mete mais opções tipo de cor»): o resto do Jarvis

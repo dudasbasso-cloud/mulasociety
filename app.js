@@ -798,7 +798,7 @@ function mAtualizar() {
   mostrar(est.mPainel || 'grafico'); mAtualizar()
 }
 
-// 24/10 («está desalinhado»): se as camadas não cabem na linha de cima, descem e alinham à esquerda
+// 24/10 («está desalinhado»): se as camadas não cabem na linha de cima, descem; 25/10: sempre à direita
 {
   const c = $('camadas'), t = $('tfs')
   const ver = () => { c.classList.remove('sozinha'); if (c.getBoundingClientRect().top >= t.getBoundingClientRect().bottom) c.classList.add('sozinha') }

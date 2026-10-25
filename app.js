@@ -340,7 +340,7 @@ function marcar() {
 // (id bot) liga os quatro tipos
 const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott'], bot: ['bot-pico', 'bot-teto', 'bot-incrivel', 'bot-sv3'] }
 const BOT_ESTR = [{ id: 'bot', nome: 'BOT: todos os avisos' }, { id: 'bot-pico', nome: 'BOT: venda depois do pico' }, { id: 'bot-teto', nome: 'BOT: venda de teto' },
-  { id: 'bot-incrivel', nome: 'BOT: INCRÍVEL' }, { id: 'bot-sv3', nome: 'BOT: SV3' }]
+  { id: 'bot-incrivel', nome: 'BOT: INCRÍVEL' }, { id: 'bot-sv3', nome: 'BOT: linhas do SV3' }]
 const estrEscolhidas = () => [...new Set((est.estrVer || []).flatMap(v => JUNTAS[v] || [v]))]
 est.estrVer = estrEscolhidas()
 function nomeEstr() {

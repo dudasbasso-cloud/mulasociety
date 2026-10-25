@@ -210,7 +210,9 @@ function analise(r) {
   $('brief').innerHTML = r.resumo?.length === 1 && r.resumo[0].rotulo === 'Mercado' ? mercadoFechado(r) : r.resumo?.length ? agoraVisual(r.resumo, casasTexto(r.simbolo)) : ''
   const nome = r.simbolo === 'XAUUSD' ? 'ouro' : r.simbolo
   $('noticias').innerHTML = r.setas.length ? r.setas.map(x => '<div class="noticia"><div class="q"><span class="num">' + diaHora(x.quando) + '</span><span class="chip ' + (x.dir > 0 ? 'sobe">▲' : 'desce">▼') + x.grau + ' ' + esc(r.simbolo) + '</span></div><div class="tx">' + esc(x.texto) + '</div>' + (x.porque ? '<div class="pq">' + esc(x.porque) + '</div>' : '') + depoisTxt(x.depois, r.simbolo) + '</div>').join('')
-    : '<div class="vazio">Sem setas para ' + esc(nome) + ' nos últimos 3 dias.</div>'
+    // 25/10 («e aqui nada?»): as setas vêm do card Mercado do Orca; com as notícias dele desligadas não chegam novas
+    : '<div class="vazio">' + (r.pausa ? 'As notícias do Orca estão desligadas, por isso não chegam setas novas' + (r.ultimaSeta ? ' (a última foi a ' + diaDe(r.ultimaSeta) + ', às ' + hhmm(r.ultimaSeta) + ')' : '')
+      + '. Para voltarem, liga as notícias no botão em baixo na barra lateral do Orca.' : 'Sem setas para ' + esc(nome) + ' nos últimos 3 dias.') + '</div>'
   // 22/10 («mete tipo assim», com o cartão «Próximos eventos» do Orca): cada evento numa caixa, com a moeda, o nome, o
   // previsto e a hora; os fortes a rosa. A próxima vai também na barra de cima
   const diaH = ms => { const d = diaDe(ms); return (d === diaDe(Date.now()) ? '' : d === diaDe(Date.now() + 864e5) ? 'amanhã ' : d + ' ') + hhmm(ms).replace(':', 'h') }

@@ -218,8 +218,10 @@ function analise(r) {
   // 22/10 («mete tipo assim», com o cartão «Próximos eventos» do Orca): cada evento numa caixa, com a moeda, o nome, o
   // previsto e a hora; os fortes a rosa. A próxima vai também na barra de cima
   const diaH = ms => { const d = diaDe(ms); return (d === diaDe(Date.now()) ? '' : d === diaDe(Date.now() + 864e5) ? 'amanhã ' : d + ' ') + hhmm(ms).replace(':', 'h') }
-  const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '" title="' + esc(e.titulo + (e.previsao ? ', previsto ' + e.previsao : '') + (e.anterior ? ', anterior ' + e.anterior : '')) + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
-    + (e.previsao ? '<span class="prev">previsto ' + esc(e.previsao) + '</span>' : '') + '<b class="hora num">' + diaH(e.quando) + '</b></span>'
+  // 25/10: os números da ForexFactory vêm com ponto («4.00%»); aqui com a vírgula, como o resto do Jarvis
+  const pt = v => String(v).replace(/(\d)\.(\d)/g, '$1,$2')
+  const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '" title="' + esc(e.titulo + (e.previsao ? ', previsto ' + pt(e.previsao) : '') + (e.anterior ? ', anterior ' + pt(e.anterior) : '')) + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
+    + (e.previsao ? '<span class="prev">previsto ' + esc(pt(e.previsao)) + '</span>' : '') + '<b class="hora num">' + diaH(e.quando) + '</b></span>'
   // 24/10: a grelha do mês (mesCalendario) saiu a pedido dele («mete o anterior, não o das datas»); ficam os eventos
   // 25/10 («tens a certeza?»): com a ForexFactory a recusar, a lista dela fica velha e só entram as dos EUA (da nuvem do
   // ouro); no ouro chegam, nos pares diz-se que faltam as das outras moedas
@@ -444,7 +446,8 @@ function mercadoFechado(r) {
 function semVelas() {
   const ny = horaEm('America/New_York'), lx = horaEm('Europe/Lisbon'), dif = ((lx.h - ny.h + 24) % 24)
   const as18 = String((18 + dif) % 24).padStart(2, '0') + ':00'   // as 18:00 de Nova Iorque na hora de Lisboa
-  if (ny.dia === 'Sat' || (ny.dia === 'Fri' && ny.h >= 17) || (ny.dia === 'Sun' && ny.h < 18)) return 'mercado fechado, abre domingo às ' + as18
+  // 25/10: ao domingo «abre hoje», ao sábado «abre amanhã» (no domingo dizia «abre domingo às 22:00»)
+  if (ny.dia === 'Sat' || (ny.dia === 'Fri' && ny.h >= 17) || (ny.dia === 'Sun' && ny.h < 18)) return 'mercado fechado, abre ' + (lx.dia === 'Sun' ? 'hoje' : lx.dia === 'Sat' ? 'amanhã' : 'domingo') + ' às ' + as18
   if (ny.h === 17) return 'pausa diária, volta às ' + as18
   return 'sem velas novas'
 }
@@ -695,7 +698,9 @@ async function carregarMacro() {
   const m = await api('macro').catch(() => null), el = $('macro')
   if (!m) { el.innerHTML = '<div class="vazio">Não consegui ler o dólar e o petróleo. Tento outra vez daqui a um minuto.</div>'; return }
   const o = m.ouro, cl = { compra: 'sobe', venda: 'desce' }[o.estado] || 'areia'
-  el.innerHTML = '<div class="mc-ouro ' + o.estado + '"><span class="mc-rot">Para o ouro</span><b class="' + cl + '">' + ({ compra: 'Confirmam compras', venda: 'Confirmam vendas', misto: 'Não confirmam', sem: 'Sem dados' }[o.estado]) + '</b><span class="mc-tx">' + esc(o.texto) + '</span></div>'
+  // 25/10 («melhorar o ux dos cards»): o título já diz «Confirmam compras»; por baixo fica só o porquê, sem o repetir
+  const porque = o.texto.replace(/^Confirmam (compras|vendas) no ouro: (.)/, (x, l, c) => c.toUpperCase())
+  el.innerHTML = '<div class="mc-ouro ' + o.estado + '"><span class="mc-rot">Para o ouro</span><b class="' + cl + '">' + ({ compra: 'Confirmam compras', venda: 'Confirmam vendas', misto: 'Não confirmam', sem: 'Sem dados' }[o.estado]) + '</b><span class="mc-tx">' + esc(porque) + '</span></div>'
     + m.ativos.map(a => a.erro ? '<div class="mc-at"><div class="mc-n">' + esc(a.nome) + '</div><div class="vazio">Sem dados agora.</div></div>'
       : '<div class="mc-at"><div class="mc-l1"><span class="mc-n">' + esc(a.nome) + '</span><b class="num">' + fmt(a.px, a.casas) + '</b><span class="num ' + (a.var24h >= 0 ? 'sobe' : 'desce') + '">' + (a.var24h >= 0 ? '+' : '') + fmt(a.var24h, 2) + '% em 24 h</span></div>'
         + '<div class="mc-l2"><span class="' + (a.lado === 'sobe' ? 'sobe' : 'desce') + '">' + (a.lado === 'sobe' ? '▲ a subir' : '▼ a descer') + '</span><span class="suave num">' + (a.mov1h >= 0 ? '+' : '') + fmt(a.mov1h, a.casas) + ' na última hora' + (a.parado ? ' · mercado parado' : '') + '</span></div>'
@@ -796,6 +801,17 @@ function mAtualizar() {
   new MutationObserver(mAtualizar).observe($('gPx'), { childList: true, characterData: true, subtree: true })
   new MutationObserver(mAtualizar).observe($('gTimer'), { childList: true, characterData: true, subtree: true })
   mostrar(est.mPainel || 'grafico'); mAtualizar()
+}
+
+// 25/10 («melhorar o ux dos cards»): as abas da direita e o calendário deslizam sem barra; quando há mais por baixo (ou por
+// cima) a ponta esbate-se, para se ver que continua (estilo.css, .mais-baixo e .mais-cima)
+{
+  const ver = el => { el.classList.toggle('mais-cima', el.scrollTop > 1); el.classList.toggle('mais-baixo', el.scrollTop + el.clientHeight < el.scrollHeight - 1) }
+  const ro = new ResizeObserver(es => es.forEach(e => ver(e.target)))
+  for (const el of [...document.querySelectorAll('.abas .aba'), $('calendario')]) {
+    el.addEventListener('scroll', () => ver(el), { passive: true }); ro.observe(el)
+    new MutationObserver(() => ver(el)).observe(el, { childList: true, subtree: true, characterData: true })
+  }
 }
 
 // 24/10 («está desalinhado»): se as camadas não cabem na linha de cima, descem; 25/10: sempre à direita

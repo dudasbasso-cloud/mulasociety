@@ -382,6 +382,11 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
 /* 24/10 («o calendário consegue ficar um pouco maior, só para quando houver 3 ou 4 acontecimentos») */
 .calendario #calendario { min-height:150px }
 
+/* 25/10 («melhorar o ux dos cards»): o que desliza sem barra esbate-se na ponta quando há mais (app.js marca as classes) */
+.mais-baixo { -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 28px), transparent); mask-image:linear-gradient(to bottom, #000 calc(100% - 28px), transparent) }
+.mais-cima { -webkit-mask-image:linear-gradient(to top, #000 calc(100% - 20px), transparent); mask-image:linear-gradient(to top, #000 calc(100% - 20px), transparent) }
+.mais-cima.mais-baixo { -webkit-mask-image:linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 28px), transparent); mask-image:linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 28px), transparent) }
+
 /* 24/10: a ordem parada (mercado fechado ou em pausa) ocupa o cartão todo, à altura da ordem */
 .plano .ordemParada { min-height:214px; display:flex; flex-direction:column; justify-content:center; border-left:3px solid var(--fraco); background:rgba(255,255,255,.03); border-radius:8px; padding:14px 14px 12px }
 .plano .ordemParada.fechado { border-left-color:var(--areia) }

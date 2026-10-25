@@ -9,7 +9,7 @@ const fmt = (v, c = 1) => { if (v == null || Number.isNaN(+v)) return '-'; const
 const casasTexto = s => s === 'XAUUSD' ? 1 : /JPY/.test(s) ? 3 : 5
 const pipDe = s => s === 'XAUUSD' ? 0.1 : /JPY/.test(s) ? 0.01 : 0.0001
 let ultimoPlacar = []
-const TFN = { '15m': '15 min', '1h': '1 h', '4h': '4 h', '1d': 'dia' }, FIBO = { 0.382: '38,2', 0.5: '50', 0.618: '61,8' }
+const TFN = { '1s': '1 s', '15m': '15 min', '1h': '1 h', '4h': '4 h', '1d': 'dia' }, FIBO = { 0.382: '38,2', 0.5: '50', 0.618: '61,8' }
 let ultimaR = null   // a última análise, para a contagem do mercado fechado no Agora
 const hhmm = ms => new Date(ms).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit' })
 const diaDe = ms => new Date(ms).toLocaleDateString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit' })
@@ -339,7 +339,9 @@ $('brief').addEventListener('toggle', e => { if (e.target.tagName === 'DETAILS')
 function marcar() {
   for (const s of document.querySelectorAll('.legenda [data-c]')) s.style.display = est.camadas[s.dataset.c] ? '' : 'none'
   $('legEma').textContent = 'EMA 200 ' + (est.tf === '1d' ? 'do diário' : 'de ' + TFN[est.tf])
-  for (const s of $('tfs').children) { const on = s.dataset.tf === est.tf; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on) }
+  // 25/10 («mete ai 1 segundo»): o 1 s só no ouro e só no Jarvis do Mac (o preço de segundo em segundo não vai à nuvem)
+  for (const s of $('tfs').children) { const on = s.dataset.tf === est.tf; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on)
+    if (s.dataset.tf === '1s') s.hidden = est.simbolo !== 'XAUUSD' || document.documentElement.classList.contains('amigo') }
   for (const s of $('camadas').children) { const on = !!est.camadas[s.dataset.c]; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on) }
   escolhaEstr()
   mAtualizar()
@@ -412,7 +414,7 @@ $('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (
 // fechar, a contar do início da última vela do gráfico (as de 4 h e do dia começam às 17:00 de Nova Iorque, como no MT5).
 // Fica no canto de cima à direita do gráfico (onde ele marcou). Sem velas novas, diz porquê pela hora de Nova Iorque: a pausa
 // diária do ouro (17:00 às 18:00 lá, 22:00 às 23:00 em Lisboa) ou o fim de semana (de sexta às 17:00 a domingo às 18:00).
-const DURACAO = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 }
+const DURACAO = { '1s': 1, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 }
 let fimVela = null
 const horaEm = (zona, d = new Date()) => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zona, weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(d).map(x => [x.type, x.value])); return { dia: p.weekday, h: +p.hour % 24, m: +p.minute } }
 // 24/10 («podia estar mais bem conseguido», o «Mercado: Fechado.» do Agora): com o mercado fechado, o Agora diz quando abre
@@ -463,6 +465,8 @@ setInterval(() => {
   const el = $('gTimer')
   if (!fimVela) { el.textContent = ''; return }
   const agora = Date.now() / 1000, dur = DURACAO[fimVela.tf]
+  // no de 1 s não há contagem: diz «ao vivo» enquanto chegam preços
+  if (fimVela.tf === '1s') { el.textContent = agora - fimVela.inicio < 15 ? 'ao vivo' : semVelas(); el.classList.remove('quase'); return }
   if (agora - fimVela.inicio > 2 * dur + 300) { el.textContent = semVelas(); el.classList.remove('quase'); return }
   let fim = fimVela.inicio + dur
   while (fim <= agora) fim += dur
@@ -494,7 +498,7 @@ async function carregar() {
   marcar()
   await Promise.allSettled([api('analise?s=' + est.simbolo).then(analise), carregarGrafico()])
 }
-async function selecionar(s) { est.simbolo = s; guardar(); radar(radarLista); maquina(null); await carregar() }
+async function selecionar(s) { est.simbolo = s; if (s !== 'XAUUSD' && est.tf === '1s') est.tf = '15m'; guardar(); radar(radarLista); maquina(null); await carregar() }
 
 // em pausa (o botão do Orca), o ponto lá em cima diz «em pausa» em vez de «ligado»
 let pausado = false
@@ -509,6 +513,10 @@ function ligar() {
     else if (tipo === 'conta') conta(dados)
     else if (tipo === 'obs') observacao(dados)
     else if (tipo === 'forca') forca(dados)
+    // o preço de segundo em segundo: no gráfico de 1 s acaba a última vela ou junta a seguinte, e o preço lá em cima anda com ele
+    else if (tipo === 'segundo' && est.tf === '1s' && est.simbolo === 'XAUUSD' && ultimoGrafico?.tf === '1s') {
+      grafico.vivo(dados); fimVela = { inicio: dados.time, tf: '1s' }; $('gPx').textContent = fmt(dados.close, casasTexto('XAUUSD'))
+    }
   }
 }
 

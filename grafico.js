@@ -4,9 +4,10 @@
 // de forex (começam às 17:00 de Nova Iorque, na véspera).
 const L = window.LightweightCharts
 const LX = 'Europe/Lisbon', NB = ' '
-const TFS = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 }
+const TFS = { '1s': 1, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 }
 const fmt = (v, c) => { const s = Math.abs(v).toFixed(c).split('.'); return (v < 0 ? '-' : '') + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, NB) + (s[1] ? ',' + s[1] : '') }
 const hora = t => new Date(t * 1000).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit' })
+const horaS = t => new Date(t * 1000).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const data = t => new Date(t * 1000).toLocaleDateString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit' })
 const NOMES = { teto: 'venda no teto', sv3: 'SV3', pico: 'venda depois do pico', incrivel: 'INCRÍVEL' }
 // 24/10 («ainda está feio»): as cores do gráfico vêm de uma paleta. No escuro, as nossas (rosa velho, verde salva, areia);
@@ -233,8 +234,8 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       panes: { separatorColor: '#23272c', separatorHoverColor: 'rgba(255,255,255,0.04)', enableResize: false } },
     grid: { vertLines: { color: 'rgba(255,255,255,0.035)' }, horzLines: { color: 'rgba(255,255,255,0.035)' } },
     rightPriceScale: { borderColor: '#23272c', scaleMargins: { top: 0.08, bottom: 0.06 }, tickMarkDensity: 1.2 },   // mais preços na escala (24/10)
-    timeScale: { borderColor: '#23272c', timeVisible: true, secondsVisible: false, rightOffset: 8, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: (t, tipo) => tipo <= 2 ? data(rot(t)) : hora(t) },
-    localization: { locale: 'pt-PT', timeFormatter: t => tfAtual === '1d' ? data(rot(t)) : data(t) + ' ' + hora(t) },
+    timeScale: { borderColor: '#23272c', timeVisible: true, secondsVisible: false, rightOffset: 8, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: (t, tipo) => tipo <= 2 ? data(rot(t)) : tipo === 4 ? horaS(t) : hora(t) },
+    localization: { locale: 'pt-PT', timeFormatter: t => tfAtual === '1d' ? data(rot(t)) : data(t) + ' ' + (tfAtual === '1s' ? horaS(t) : hora(t)) },
     // 25/10 («tenho o rato mais abaixo e ele só assimila acima»): a cruz segue o rato e a escala da direita diz o preço onde ele
     // está; antes colava ao fecho da vela por baixo do rato (o modo íman, que é o de origem)
     crosshair: { mode: L.CrosshairMode.Normal, vertLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' }, horzLine: { color: '#3a4047', labelBackgroundColor: '#2a2f35' } }
@@ -398,6 +399,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const d = comHistoria(d0)
     const nova = d.simbolo + '|' + d.tf !== chave
     chave = d.simbolo + '|' + d.tf; casas = d.casas; tfAtual = d.tf
+    chart.applyOptions({ timeScale: { secondsVisible: d.tf === '1s' } })
     velas.applyOptions({ priceFormat: { type: 'custom', minMove: 1 / 10 ** casas, formatter: p => fmt(p, casas) } })   // cada painel com o seu formato
     velas.setData(d.velas)
     const ou = (on, dados) => on ? dados : []
@@ -551,7 +553,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       if (p.sl > 0) linhasPos.push(velas.createPriceLine({ price: p.sl, color: P.rt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'stop' }))
       if (p.tp > 0) linhasPos.push(velas.createPriceLine({ price: p.tp, color: P.gt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'TP' }))
     }
-    n = d.velas.length; nVer = d.tf === '15m' ? 130 : 110
+    n = d.velas.length; nVer = d.tf === '15m' ? 130 : d.tf === '1s' ? 300 : 110
     if (nova) { mexeu = false; ajustar() }
   }
   // o plano no gráfico: a entrada, o stop e os dois alvos (tracejados, com o nome no eixo)
@@ -580,5 +582,14 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     if (ultimaVez) mostrar(...ultimaVez)
     plano(ultimoPlano)
   }
-  return { mostrar, plano, tema, grelha }
+  // 25/10 («mete ai 1 segundo»): no gráfico de 1 s o preço de cada segundo acaba a última vela ou junta a seguinte, sem
+  // refazer o resto (que se refaz de 30 em 30 s, com a análise)
+  function vivo(v) {
+    if (tfAtual !== '1s') return
+    const u = velas.data().at(-1)
+    if (u && v.time < u.time) return
+    velas.update(v)
+    if (!u || v.time > u.time) n++
+  }
+  return { mostrar, plano, tema, grelha, vivo }
 }

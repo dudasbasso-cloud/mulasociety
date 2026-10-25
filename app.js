@@ -217,9 +217,12 @@ function analise(r) {
   const evento = e => '<span class="evento' + (e.impacto === 'High' ? ' forte' : '') + '"><b class="moeda">' + esc(e.moeda) + '</b><span class="tt">' + esc(e.titulo) + '</span>'
     + (e.previsao ? '<span class="prev">previsto ' + esc(e.previsao) + '</span>' : '') + '<b class="hora num">' + diaH(e.quando) + '</b></span>'
   // 24/10: a grelha do mês (mesCalendario) saiu a pedido dele («mete o anterior, não o das datas»); ficam os eventos
-  $('calendario').innerHTML = (r.proximas.length ? '<div class="eventos">' + r.proximas.map(evento).join('') + '</div>' : '<div class="vazio">Nada de médio ou forte para estas moedas esta semana.</div>')
-  const p = r.proximas[0]
-  $('proxima').innerHTML = p ? evento(p) : ''
+  // 25/10 («tens a certeza?»): com a ForexFactory a recusar, a lista dela fica velha e só entram as dos EUA (da nuvem do
+  // ouro); no ouro chegam, nos pares diz-se que faltam as das outras moedas
+  const calVelho = r.calendarioLido != null && Date.now() - r.calendarioLido > 3 * 3600e3, semFF = calVelho ? 'A ForexFactory não responde desde ' + diaHora(r.calendarioLido) + ': ' : ''
+  $('calendario').innerHTML = (r.proximas.length ? '<div class="eventos">' + r.proximas.map(evento).join('') + '</div>' + (semFF && r.simbolo !== 'XAUUSD' ? '<div class="vazio">' + esc(semFF) + 'só aparecem as dos EUA.</div>' : '')
+    : '<div class="vazio">' + (semFF ? esc(semFF) + (r.simbolo === 'XAUUSD' ? 'sem notícias dos EUA à vista.' : 'faltam as notícias destas moedas.') : 'Nada de médio ou forte para estas moedas esta semana.') + '</div>')
+  // 25/10 («retira isto daqui»): a próxima notícia saiu da barra de cima; fica no cartão do calendário
 }
 
 const planoTexto = l => { const out = []; for (const x of l) { const u = out[out.length - 1]; if (u && u.l === x) u.n++; else out.push({ l: x, n: 1 }) } return out.map(o => (o.n > 1 ? o.n + ' × ' : '') + fmt(o.l, 2)).join(' + ') }
@@ -360,7 +363,8 @@ function aplicarEstr() {
   if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer })
 }
 $('estrSel').addEventListener('change', e => { est.estrVer = e.target.value ? JUNTAS[e.target.value] || [e.target.value] : []; aplicarEstr() })
-$('tfs').addEventListener('click', e => { const t = e.target.dataset.tf; if (!t || t === est.tf) return; est.tf = t; guardar(); marcar(); carregarGrafico() })
+// 25/10 («estas funções de tempo não funcionam»): carregar no tempo que já está marcado também refaz o gráfico
+$('tfs').addEventListener('click', e => { const t = e.target.dataset.tf; if (!t) return; est.tf = t; guardar(); marcar(); carregarGrafico() })
 // 25/10 («há aqui umas que penso que não estão a funcionar»): ao ligar uma camada que agora não tem nada para desenhar, uma
 // linha por cima do gráfico diz porquê (some ao fim de 5 s)
 const notaCam = Object.assign(document.createElement('div'), { className: 'notaCam' })
@@ -451,11 +455,20 @@ setInterval(() => {
   el.classList.toggle('quase', s <= 60)
 }, 1000)
 
-let graficoEm = 0
-async function carregarGrafico() {
+let graficoEm = 0, pedidoGrafico = 0
+// 25/10 («estas funções de tempo não funcionam»): com o servidor a reiniciar, o pedido falhava e o gráfico ficava no tempo
+// anterior até 2 min depois. Agora tenta outra vez (1,5 s, 3 s, 6 s, 12 s) e, enquanto carrega, o tempo marcado fica claro
+async function carregarGrafico(tentativa = 0) {
+  const s = est.simbolo, tf = est.tf, eu = ++pedidoGrafico, atual = () => eu === pedidoGrafico && s === est.simbolo && tf === est.tf
+  $('tfs').setAttribute('aria-busy', 'true')
+  let d
+  try { d = await api('grafico?s=' + s + '&tf=' + tf) } catch (e) {
+    console.warn('gráfico', e)
+    if (atual() && tentativa < 4) { setTimeout(() => { if (atual()) carregarGrafico(tentativa + 1) }, 1500 * 2 ** tentativa); return }
+  }
+  if (eu === pedidoGrafico) $('tfs').removeAttribute('aria-busy')
+  if (!d || !atual()) return
   try {
-    const s = est.simbolo, tf = est.tf, d = await api('grafico?s=' + s + '&tf=' + tf)
-    if (s !== est.simbolo || tf !== est.tf) return
     ultimoGrafico = d; grafico.mostrar(d, { ...est.camadas, estrVer: est.estrVer }); escolhaEstr(); graficoEm = Date.now()
     fimVela = d.velas.length ? { inicio: d.velas.at(-1).time, tf: d.tf } : null
   } catch (e) { console.warn('gráfico', e) }

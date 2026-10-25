@@ -236,7 +236,6 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 .evento .hora { color:var(--areia); font-weight:700; white-space:nowrap; margin-left:auto }
 .evento.forte { border-color:rgba(204,147,144,.5); background:rgba(204,147,144,.06) } .evento.forte .moeda, .evento.forte .hora { color:var(--rosa) }
 .eventos { display:flex; flex-direction:column; gap:6px; padding:2px 14px 12px } .eventos .evento { display:flex; font-size:12.5px }
-#proxima .evento { font-size:13px; padding:3px 12px }
 /* na barra de cima o «.topo .it b» punha a moeda e a hora a branco: a cor de areia (ou rosa nos fortes) ganha aqui */
 .topo .it .evento b.moeda, .topo .it .evento b.hora { color:var(--areia); font-weight:700 }
 .topo .it .evento.forte b.moeda, .topo .it .evento.forte b.hora { color:var(--rosa) }
@@ -696,3 +695,10 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
   .lc-grelha { grid-template-columns:minmax(0, 1fr) } .lc-fixo { align-items:flex-start; text-align:left; max-width:none }
   .lc-tab th:nth-child(5), .lc-tab td:nth-child(5) { display:none }
 }
+/* 25/10: no cartão do calendário o nome tem prioridade: o previsto passa para baixo dele (antes cortava o nome em «juros…») */
+.eventos .evento { display:grid; grid-template-columns:auto minmax(0, 1fr) auto; align-items:baseline; gap:1px 10px; padding:5px 12px }
+.eventos .evento .tt { white-space:normal; text-wrap:pretty }
+.eventos .evento .prev { grid-column:2; grid-row:2; font-size:11.5px }
+.eventos .evento .hora { grid-column:3; grid-row:1 }
+/* 25/10: enquanto o gráfico carrega, o tempo marcado fica mais claro */
+#tfs[aria-busy="true"] button.on { opacity:.55 }

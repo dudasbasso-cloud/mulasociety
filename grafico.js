@@ -373,8 +373,10 @@ export function criarGrafico(el) {
     // 1 h depois do anterior) fazem uma caixa só («Venda ×3» na dica); o quadro continua a contar cada aviso. Quando chega outro
     // aviso com a caixa ainda aberta, ela acaba na vela antes do novo; o que fez depois vê-se ao passar o rato.
     // Se o último aviso ainda está aberto e a caixa do grupo dele já fechou, ganha a sua caixa na vela dele.
-    // com uma estratégia escolhida, só as caixas dela
-    const alvos = camadas.alvos && !(camadas.estrVer || []).length ? d.alvos?.lista || [] : [], mAlvos = [], grupos = []
+    // com uma estratégia escolhida, só as caixas dela. 25/10 («deveria estar nesses filtros»): os avisos do bot também se
+    // escolhem na lista, por tipo (bot-teto, bot-pico, ...); escolhidos, só esses aparecem, mesmo com a camada Alvos desligada
+    const ev = camadas.estrVer || [], tiposBot = new Set(ev.filter(v => v.startsWith('bot-')).map(v => v.slice(4)))
+    const alvos = tiposBot.size ? (d.alvos?.lista || []).filter(p => tiposBot.has(p.tipo)) : camadas.alvos && !ev.length ? d.alvos?.lista || [] : [], mAlvos = [], grupos = []
     for (const p of alvos) { const g = grupos.at(-1), u = g?.at(-1); if (u && u.lado === p.lado && p.time - u.time <= 3600) g.push(p); else grupos.push([p]) }
     const fim = alvos.at(-1), rep = grupos.at(-1)?.[0], solto = fim && !fim.fim && rep !== fim && rep.fim ? fim : null, ultimo = solto || rep
     const juntaL = o => { const c = new Linhas(o); velas.attachPrimitive(c); caixas.push(c) }, fp = x => fmt(x, casas)   // 24/10 («às vezes estou em 4445,00 e é 4445,10»): com as duas casas

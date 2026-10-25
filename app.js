@@ -312,21 +312,27 @@ function marcar() {
 // mostra as entradas dela no gráfico (seta do lado, ✓ se chegou a um TP, ✗ se foi ao stop). Nenhuma = nada
 // 25/10 («a possibilidade de meter as que eu quiser selecionadas»): várias ao mesmo tempo. A linha «ZIMBA FX: todas juntas»
 // (id edney) liga e desliga as três dele; fica ligada quando as três estão. O select escondido só guarda os nomes
-const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock'] }
+// 25/10 («deveria estar nesses filtros»): os avisos do bot também, por tipo, com os nomes do placar; «todos os avisos»
+// (id bot) liga os quatro tipos
+const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock'], bot: ['bot-pico', 'bot-teto', 'bot-incrivel', 'bot-sv3'] }
+const BOT_ESTR = [{ id: 'bot', nome: 'BOT: todos os avisos' }, { id: 'bot-pico', nome: 'BOT: venda depois do pico' }, { id: 'bot-teto', nome: 'BOT: venda de teto' },
+  { id: 'bot-incrivel', nome: 'BOT: INCRÍVEL' }, { id: 'bot-sv3', nome: 'BOT: SV3' }]
 const estrEscolhidas = () => [...new Set((est.estrVer || []).flatMap(v => JUNTAS[v] || [v]))]
 est.estrVer = estrEscolhidas()
 function nomeEstr() {
   const l = estrEscolhidas(), nomes = Object.fromEntries([...$('estrSel').options].filter(o => o.value).map(o => [o.value, o.text.replace(/\s*\(.*\)$/, '')]))
-  const curto = id => (nomes[id] || id).replace(/^ZIMBA FX: /, '')
+  const curto = id => (nomes[id] || id).replace(/^(ZIMBA FX|BOT): /, '')
   if (!l.length) return ''
   if (l.length === 3 && JUNTAS.edney.every(id => l.includes(id))) return 'ZIMBA FX: todas juntas'
-  return l.length === 1 ? nomes[l[0]] || l[0] : l.length === 2 ? l.map(curto).join(' + ') : l.length + ' estratégias'
+  if (l.length === 4 && JUNTAS.bot.every(id => l.includes(id))) return 'BOT: todos os avisos'
+  return l.length === 1 ? nomes[l[0]] || l[0] : l.length === 2 ? (l.every(id => id.startsWith('bot-')) ? 'BOT: ' : '') + l.map(curto).join(' + ') : l.length + ' estratégias'
 }
 function escolhaEstr() {
   const el = $('estrSel'), ids = ultimoGrafico?.estrategias?.ids || []
   if (!ids.length) return
-  const n = id => (ultimoGrafico.estrategias.lista || []).filter(x => (JUNTAS[id] || [id]).includes(x.id)).length
-  const html = '<option value="">Estratégia: nenhuma</option>' + ids.flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'ZIMBA FX: todas juntas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
+  const n = id => /^bot/.test(id) ? (ultimoGrafico.alvos?.lista || []).filter(p => (JUNTAS[id] || [id]).includes('bot-' + p.tipo)).length
+    : (ultimoGrafico.estrategias.lista || []).filter(x => (JUNTAS[id] || [id]).includes(x.id)).length
+  const html = '<option value="">Estratégia: nenhuma</option>' + [...(ultimoGrafico.alvos ? BOT_ESTR : []), ...ids].flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'ZIMBA FX: todas juntas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
   el.classList.toggle('on', estrEscolhidas().length > 0)
   mAtualizar()
@@ -650,14 +656,16 @@ function mAtualizar() {
   // a lista das estratégias por grupos, cada uma com o que fez desde 21/10 (o placar), as que mais deram primeiro
   const listaEstr = () => {
     const P = Object.fromEntries(ultimoPlacar.map(e => [e.id, e])), ops = [...$('estrSel').options].filter(o => o.value), l = estrEscolhidas()
-    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^ZIMBA FX: /, '')
-      return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">ZIMBA FX</span>: todas juntas' : null, v: o.value, on: (JUNTAS[o.value] || [o.value]).every(id => l.includes(id)), p: e?.n ? e.pips : null,
-        sub: e ? (e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' : 'sem entradas desde 21/10') : '',
-        ordem: o.value === 'zimba' ? 2e9 : o.value === 'edney' ? 1e9 : e?.n ? e.pips : -1e9 } }
+    const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^(ZIMBA FX|BOT): /, '')
+      return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">ZIMBA FX</span>: todas juntas' : o.value === 'bot' ? '<span class="ouro">BOT</span>: todos os avisos' : null, v: o.value, on: (JUNTAS[o.value] || [o.value]).every(id => l.includes(id)), p: e?.n ? e.pips : null,
+        sub: !e ? '' : e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' + (e.abertas ? ' · ' + e.abertas + '\u00a0a\u00a0decorrer' : '')
+          : e.abertas ? e.abertas + ' a decorrer, desde 21/10' : 'sem entradas desde 21/10',
+        ordem: o.value === 'zimba' ? 2e9 : o.value === 'edney' || o.value === 'bot' ? 1e9 : e?.n ? e.pips : -1e9 } }
     // 25/10: o modelo completo dos vídeos dele à frente, depois as três peças juntas e cada uma
-    const ed = ['zimba', 'edney', ...JUNTAS.edney], por = l => l.sort((a, b) => b.ordem - a.ordem)
-    return [{ nome: 'Nenhuma', v: '', on: !l.length, radio: true }, { grupo: '<span class="ouro laranja">ZIMBA FX</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
-      { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value)).map(item))]
+    const ed = ['zimba', 'edney', ...JUNTAS.edney], bt = ['bot', ...JUNTAS.bot], por = l => l.sort((a, b) => b.ordem - a.ordem), B = ops.filter(o => bt.includes(o.value))
+    return [{ nome: 'Nenhuma', v: '', on: !l.length, radio: true }, ...(B.length ? [{ grupo: '<span class="ouro">BOT</span>' }, ...por(B.map(item))] : []),
+      { grupo: '<span class="ouro laranja">ZIMBA FX</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
+      { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value) && !bt.includes(o.value)).map(item))]
   }
   // cada linha liga ou desliga a sua (a folha fica aberta para escolher mais); «Nenhuma» desliga todas
   const escolher = x => {

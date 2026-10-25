@@ -691,8 +691,9 @@ function mAtualizar() {
         sub: !e ? '' : e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' + (e.abertas ? ' · ' + e.abertas + '\u00a0a\u00a0decorrer' : '')
           : e.abertas ? e.abertas + ' a decorrer, desde 21/10' : 'sem entradas desde 21/10',
         ordem: o.value === 'zimba' ? 2e9 : o.value === 'edney' || o.value === 'bot' ? 1e9 : e?.n ? e.pips : -1e9 } }
-    // 25/10: o modelo completo dos vídeos dele à frente, depois as três peças juntas e cada uma
-    const ed = ['zimba', 'edney', ...JUNTAS.edney], bt = ['bot', ...JUNTAS.bot], por = l => l.sort((a, b) => b.ordem - a.ordem), B = ops.filter(o => bt.includes(o.value))
+    // 25/10: o modelo completo dos vídeos dele à frente, depois as três peças juntas e cada uma; o Wyckoff e o Elliott também
+    // são da lista dele («mete as 5»)
+    const ed = ['zimba', 'edney', ...JUNTAS.edney, 'wyckoff', 'elliott'], bt = ['bot', ...JUNTAS.bot], por = l => l.sort((a, b) => b.ordem - a.ordem), B = ops.filter(o => bt.includes(o.value))
     return [{ nome: 'Nenhuma', v: '', on: !l.length, radio: true }, ...(B.length ? [{ grupo: '<span class="ouro">BOT</span>' }, ...por(B.map(item))] : []),
       { grupo: '<span class="ouro laranja">ZIMBA FX</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
       { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value) && !bt.includes(o.value)).map(item))]

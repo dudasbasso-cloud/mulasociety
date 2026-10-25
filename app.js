@@ -36,6 +36,8 @@ est.camadas = { ...LIMPO, ...(est.camadas || {}) }
 const guardar = () => localStorage.setItem('jarvis', JSON.stringify(est))
 const grafico = criarGrafico($('grafico'), { pedirHistoria: (s, tf, ate) => api('historico?s=' + s + '&tf=' + tf + '&ate=' + ate) })
 let radarLista = [], ultimoGrafico = null, ultimoPlano = null, fechado = false
+// o lote e o câmbio do /api/resultado (os € dos avisos a decorrer) e o último preço que se lhes aplicou
+let valorLote = null, pxAbertos = null
 
 // a janela do Jarvis abre grande (o Chrome deixa mexer no tamanho das janelas de app)
 if (window.outerWidth < 1300) { try { window.resizeTo(Math.min(screen.availWidth, 1680), Math.min(screen.availHeight, 1050)); window.moveTo(screen.availLeft || 0, screen.availTop || 0) } catch {} }
@@ -126,6 +128,10 @@ function plano(p, r) {
   // 24/10 («um de pausa e outro de mercado fechado, mas que ocupem esse tamanho do card»): sem entrada para fazer, o cartão
   // inteiro diz porquê, à mesma altura da ordem: mercado fechado (quando abre e quanto falta) ou em pausa (o lado e a linha)
   const fechado = /^mercado fechado/.test(semVelas()), diaria = /^pausa diária/.test(semVelas())
+  // 25/10 («quantas tenho a decorrer? mete ali em cima as entradas, tipo TP e SL, onde diz em pausa»): com avisos abertos e sem
+  // ordem para fazer agora, o retângulo mostra-os; o que o SV3 espera fica numa linha por baixo
+  const ab = avisosAbertos()
+  if (ab.length && (fechado || diaria || p.acao === 'esperar' || !p.agora)) { $('plano').innerHTML = decorrer(ab, p, r, fechado, diaria); resultadosAbertos(r.analise?.px); return }
   if (fechado || diaria || (p.acao !== 'esperar' && !p.agora)) { $('plano').innerHTML = ordemParada(p, r, fechado, diaria); return }
   if (p.acao === 'esperar') {
     const [curto, ...regra] = p.porque.split(': '), px = r.analise?.px
@@ -146,7 +152,57 @@ function plano(p, r) {
   // (enquanto espera a linha, desde 23/10, é o «Em pausa» do ordemParada). O que arriscas está no stop
   $('plano').innerHTML = retangulo(venda ? 'vender' : 'comprar', venda ? 'Vender' : 'Comprar', (venda ? 'short' : 'long') + ', entrar já' + (p.risco ? ' · ' + fmt(p.risco.lote, 2) + ' lotes' : ''),
     '<div class="escada">' + niveis.map(n => '<div class="deg ' + n.cl + '"><i></i><span class="n">' + n.nome + '</span><b class="num">' + fmt(n.preco, c) + '</b><span class="d">' + n.d + '</span></div>').join('') + '</div>',
-    comoEntrar(p))
+    comoEntrar(p)) + (ab.length ? '<div class="ab-cap">A decorrer<span class="ab-lote"></span></div>' + listaAbertos(ab, c) : '')
+  resultadosAbertos(px)
+}
+
+// os avisos do bot ainda abertos (os que foram para o Telegram, como no quadro dos Alvos), os mais novos primeiro. Os iguais
+// (o mesmo lado e os mesmos preços, até 1 h uns dos outros) juntam-se num só, «×2», como no gráfico
+const CURTO_AVISO = { teto: 'Teto', pico: 'Pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
+function avisosAbertos() {
+  const g = ultimoGrafico
+  if (est.simbolo !== 'XAUUSD' || g?.simbolo !== 'XAUUSD') return []
+  const nomes = new Map((g.estrategias?.ids || []).map(x => [x.id, x.nome])), curtos = new Map((g.estrategias?.ids || []).map(x => [x.id, x.curto])), out = []
+  for (const p of (g.alvos?.lista || []).filter(p => !p.fim)) {
+    const u = out.find(o => o.lado === p.lado && o.entrada === p.entrada && o.sl === p.sl && Math.abs(o.t - p.t) <= 3600), nome = nomes.get(p.tipo) || CURTO_AVISO[p.tipo] || p.tipo
+    if (u) { u.n++; u.nomes.push(nome) } else out.push({ ...p, n: 1, curto: CURTO_AVISO[p.tipo] || curtos.get(p.tipo) || p.tipo, nomes: [nome] })
+  }
+  return out.sort((a, b) => b.t - a.t)
+}
+// cada aviso: o lado e o nome, a hora, quanto vai agora (resultadosAbertos) e os preços: a entrada, o stop (no TP1 depois do
+// TP2, pela regra) e os três TP, com ✓ nos que já tocou
+// (os nomes dos preços só uma vez, em cima: com um nome por aviso o cartão empurrava para fora o dos separadores)
+const listaAbertos = (l, c) => '<div class="ab-lista"><div class="ab-tit"><span>Entrada</span><span>Stop</span><span>TP1</span><span>TP2</span><span>TP3</span></div>' + l.map(p => {
+  const v = p.lado === 'venda', moveu = p.hits[1] != null
+  const niv = (x, cl, ok) => '<b class="num ' + cl + '">' + fmt(x, c) + (ok ? '<i>✓</i>' : '') + '</b>'
+  return '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para o TP1' : '')) + '">'
+    + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
+    + '<span class="ab-h num">' + diaHora(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
+    + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu ? p.tps[0] : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
+}).join('') + '</div>'
+function decorrer(l, p, r, fechado, diaria) {
+  const c = casasTexto(r.simbolo), px = r.analise?.px, n = l.reduce((s, x) => s + x.n, 0), linha = p.acao !== 'esperar' && p.entrada != null
+  const sv3 = fechado ? 'Mercado fechado, ' + semVelas().replace(/^mercado fechado, /, '') : diaria ? 'Pausa diária, ' + semVelas().replace(/^pausa diária, /, '')
+    : p.acao === 'esperar' ? 'SV3: esperar. ' + p.porque.split(': ')[0].replace(/\.$/, '')
+    : 'SV3 em pausa: ' + (linha ? (p.acao === 'vender' ? 'vende' : 'compra') + ' se tocar ' + fmt(p.entrada, c) + (px != null ? ', a ' + fmt(Math.abs(p.entrada - px), 1) + ' pips' : '') : 'sem entrada agora')
+  return '<div class="ordemParada decorrer"><div class="op-est">A decorrer</div><div class="op-sub">' + n + (n === 1 ? ' aviso do bot' : ' avisos do bot')
+    + (px != null ? ' · agora <b class="num ab-px">' + fmt(px, c) + '</b>' : '') + '<span class="ab-lote"></span></div>' + listaAbertos(l, c) + '<div class="ab-sv3">' + esc(sv3) + '</div>'
+    + (!fechado && p.acao !== 'esperar' && p.entradaTexto ? comoEntrar(p) : '') + '</div>'
+}
+// quanto vai cada aviso aberto, ao preço de agora (de segundo em segundo no Mac). 25/10 («mete também o valor como se
+// tivesse metido 0,32 lote»): e em €, com o lote dele; 1 $ no ouro com 1 lote são 100 $. O amigo não tem o lote: só pips
+function resultadosAbertos(px) {
+  if (px == null) return
+  pxAbertos = px
+  const v = valorLote
+  for (const el of $('plano').querySelectorAll('.ab[data-entrada]')) {
+    const d = (el.dataset.lado === 'venda' ? 1 : -1) * (+el.dataset.entrada - px), r = el.querySelector('.ab-r'), s = d >= 0 ? '+' : '-'
+    r.textContent = s + fmt(Math.abs(d), 1) + ' pips' + (v ? ' · ' + s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : '')
+    r.className = 'ab-r num ' + (d >= 0 ? 'sobe' : 'desce')
+  }
+  const a = $('plano').querySelector('.ab-px')
+  if (a) a.textContent = fmt(px, casasTexto('XAUUSD'))
+  for (const n of $('plano').querySelectorAll('.ab-lote')) n.textContent = v ? ' · € com ' + fmt(v.lote, 2) + ' lote' : ''
 }
 
 // 25/10 («quando houver ordens elas têm que caber bem aí nesse retângulo», «se tiveres algum texto faz com que apareça mas
@@ -490,6 +546,7 @@ async function carregarGrafico(tentativa = 0) {
   if (!d || !atual()) return
   try {
     ultimoGrafico = d; grafico.mostrar(d, { ...est.camadas, estrVer: est.estrVer }); escolhaEstr()
+    if (ultimaR && d.simbolo === 'XAUUSD' && ultimaR.simbolo === 'XAUUSD') plano(ultimaR.plano, ultimaR)   // os avisos abertos vêm com o gráfico
     fimVela = d.velas.length ? { inicio: d.velas.at(-1).time, tf: d.tf } : null
   } catch (e) { console.warn('gráfico', e) }
 }
@@ -517,7 +574,7 @@ function ligar() {
     // ele. 25/10 («o gráfico de 15 min tem que mexer»): também nos outros tempos do ouro, na vela de agora
     else if (tipo === 'segundo' && est.simbolo === 'XAUUSD' && ultimoGrafico?.simbolo === 'XAUUSD' && ultimoGrafico.tf === est.tf) {
       const t = grafico.vivo(dados)
-      if (t != null) { fimVela = { inicio: t, tf: est.tf }; $('gPx').textContent = fmt(dados.close, casasTexto('XAUUSD')) }
+      if (t != null) { fimVela = { inicio: t, tf: est.tf }; $('gPx').textContent = fmt(dados.close, casasTexto('XAUUSD')); resultadosAbertos(dados.close) }
     }
   }
 }
@@ -548,6 +605,8 @@ if (!AMIGO) api('opcoes').then(opcoes, () => opcoes({}))
 // demorava e quase não se via.
 function resultado(r) {
   if (!r) return
+  valorLote = r.lote && r.eurusd ? { lote: r.lote, eurusd: r.eurusd } : null
+  resultadosAbertos(pxAbertos)
   const dia = new Date(r.desde * 1000).toLocaleDateString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit' })
   const sinal = x => (x >= 0 ? '+' : '-') + fmt(Math.abs(x), 0) + ' €', cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
   const linha = (nome, v, nota) => '<div class="l"><span>' + nome + '</span><b class="num' + cor(v) + '">' + sinal(v) + '</b>' + (nota ? '<i>' + nota + '</i>' : '') + '</div>'

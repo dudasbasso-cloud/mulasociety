@@ -14,7 +14,9 @@ body { background:var(--bg); color:var(--texto); font:13px/1.45 -apple-system, B
 .topo .dir { margin-left:auto; display:flex; gap:20px; align-items:center }
 .ponto { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--fraco); margin-right:6px; vertical-align:1px }
 .ponto.on { background:var(--salva) } .ponto.erro { background:var(--rosa) } .ponto.pausa { background:var(--areia) }
-.grelha { flex:1; min-height:0; display:grid; grid-template-columns:232px minmax(520px, 1fr) 326px; gap:18px }
+/* 25/10 («aumentar um pouco estes cards na horizontal, diminuis um pouco o gráfico»): a coluna da direita vai até 372 px; em
+   ecrãs estreitos cede primeiro ela, até aos 326 de antes, e o gráfico nunca fica abaixo dos 520 */
+.grelha { flex:1; min-height:0; display:grid; grid-template-columns:232px minmax(520px, 1fr) minmax(326px, 372px); gap:18px }
 .col { display:flex; flex-direction:column; gap:14px; min-height:0; min-width:0 }
 .col.dir { overflow:auto }
 .card { background:var(--painel); border:1px solid var(--borda); border-radius:10px }
@@ -727,3 +729,26 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .eventos .evento.semPrev .prev { display:none }
 /* 25/10: enquanto o gráfico carrega, o tempo marcado fica mais claro */
 #tfs[aria-busy="true"] button.on { opacity:.55 }
+/* 25/10 («quantas tenho a decorrer? mete ali em cima as entradas, tipo TP e SL, onde diz em pausa»): os avisos abertos no
+   retângulo da ordem, cada um com a entrada, o stop e os três TP; o que o SV3 espera numa linha por baixo */
+.plano .ordemParada.decorrer { border-left-color:var(--areia); justify-content:flex-start }
+.ordemParada.decorrer .op-est { color:var(--areia) }
+.ordemParada .op-sub .ab-px { color:var(--texto); font-weight:600 }
+.ab-lista { margin-top:10px; display:grid }
+.ab-cap { margin-top:14px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco) }
+.ab-cap .ab-lote { text-transform:none; letter-spacing:0 }
+.ab-tit, .ab-niv { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:4px }
+.ab-tit span { font-size:10.5px; color:var(--fraco) }
+.ab { padding:6px 0 7px; border-bottom:1px solid var(--borda) }
+.ab-cab { display:flex; align-items:baseline; gap:6px; font-size:12.5px; white-space:nowrap }
+.ab-cab > span:first-child { font-weight:600 }
+.ab-cab .ab-n { color:var(--texto); overflow:hidden; text-overflow:ellipsis; min-width:0 }
+.ab-cab .ab-h { color:var(--fraco); font-size:11.5px }
+.ab-cab .ab-r { margin-left:auto; font-size:13px; font-weight:600 }
+.ab-niv { margin-top:3px }
+.ab-niv b { font-size:12.5px; font-weight:600; color:var(--texto); white-space:nowrap }
+.ab-niv b.st { color:var(--rosa) } .ab-niv b.tp, .ab-niv b.st.movido { color:var(--salva) }
+.ab-niv b i { font-style:normal; font-size:10px; margin-left:1px }
+/* o cartão dos separadores nunca desaparece: com muitos avisos abertos, a coluna corre */
+.col.dir .abas { min-height:200px }
+.ab-sv3 { margin-top:9px; font-size:12px; line-height:1.4; color:var(--suave) }

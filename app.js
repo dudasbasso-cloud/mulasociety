@@ -447,7 +447,7 @@ function mercadoFechado(r) {
   const t = reabreEm(), a = r.analise, c = casasTexto(r.simbolo), falta = t ? t - Date.now() : null
   const h = falta != null ? Math.floor(falta / 3600e3) : null, m = falta != null ? Math.floor(falta % 3600e3 / 60e3) : null
   const pausa = /pausa/.test(semVelas())
-  return '<div class="mf"><div class="mf-rot">Mercado</div><div class="mf-est">' + (pausa ? 'Em pausa' : 'Fechado') + '</div>'
+  return '<div class="mf"><div class="mf-est">' + (pausa ? 'Em pausa' : 'Fechado') + '</div>'
     + '<div class="mf-sub">' + esc(semVelas().replace(/^mercado fechado, /, '').replace(/^pausa diária, /, '')) + (h != null && !pausa ? ' · daqui a <b class="num">' + (h ? h + ' h ' : '') + m + ' min</b>' : '') + '</div>'
     + (a ? '<div class="mf-px"><span class="suave">Último preço</span><b class="num">' + fmt(a.px, c) + '</b><span class="num ' + (a.var24h >= 0 ? 'sobe' : 'desce') + '">' + (a.var24h >= 0 ? '+' : '') + fmt(a.var24h, 1) + '%</span></div>' : '') + '</div>'
 }

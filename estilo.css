@@ -58,6 +58,9 @@ button { font:inherit; color:inherit; background:none; border:0; padding:0; curs
 /* desde 23/10 as notícias estão à esquerda e o gráfico ocupa a coluna do meio toda */
 #grafico { flex:1; min-height:300px; margin:0 6px; position:relative }
 .paneTit { position:absolute; left:6px; top:3px; z-index:3; font-size:11px; color:var(--fraco); pointer-events:none }
+/* 25/10: porque é que uma camada ligada não desenha nada (app.js, notaCamada) */
+.notaCam { position:absolute; left:10px; top:8px; z-index:6; max-width:calc(100% - 100px); padding:6px 10px; background:#1d2126; border:1px solid var(--borda); border-radius:6px; font-size:12px; line-height:1.4; color:var(--texto); pointer-events:none; opacity:0; transition:opacity .15s }
+.notaCam.on { opacity:1 }
 #dica { position:absolute; z-index:5; display:none; pointer-events:none; background:#1d2126; border:1px solid var(--borda); border-radius:6px; padding:7px 9px; font-size:12px; max-width:300px; line-height:1.45 }
 .legenda { display:flex; flex-wrap:wrap; gap:6px 16px; padding:2px 14px 10px; font-size:11.5px; color:var(--suave) }
 .legenda i { display:inline-block; width:14px; height:2px; vertical-align:3px; margin-right:6px }
@@ -111,6 +114,7 @@ button { font:inherit; color:inherit; background:none; border:0; padding:0; curs
 .tend .terra { color:var(--areia); font-size:11px }
 .tnota { padding:8px 14px 12px; border-top:1px solid var(--borda); font-size:12px; color:var(--suave) } .tnota div + div { margin-top:4px }
 .tnota b { color:var(--texto); font-weight:500 }
+.fecho { padding:2px 14px 8px; font-size:11.5px; color:var(--suave) }   /* a leitura do fecho, com o mercado fechado */
 /* força das divisas: barras cinzentas a partir do meio, o valor com cor */
 .forca .m { display:grid; grid-template-columns:34px 1fr 52px 46px; align-items:center; gap:8px; padding:4px 14px; font-size:12px }
 .forca .m .n { font-weight:600 } .forca .m .v { text-align:right } .forca .m .c { text-align:right; color:var(--fraco); font-size:11px }
@@ -559,13 +563,13 @@ html[data-graf="noite"] .cardGraf { --bg:#131722; --painel:#131722; --painel2:#1
   background:#131722; border-color:#2a2e39; color:var(--texto) }
 html[data-graf="noite"] .cardGraf .seg, html[data-graf="noite"] .cardGraf .estrBtn { background:#1e222d; border-color:#2a2e39 }
 html[data-graf="noite"] .cardGraf .seg > .on { background:#2a2e39 }
-html[data-graf="noite"] .cardGraf #dica, html[data-graf="noite"] .cardGraf .alvos { background:rgba(30,34,45,.96); border-color:#2a2e39 }
+html[data-graf="noite"] .cardGraf #dica, html[data-graf="noite"] .cardGraf .alvos, html[data-graf="noite"] .cardGraf .notaCam { background:rgba(30,34,45,.96); border-color:#2a2e39 }
 /* Preto e branco */
 html[data-graf="preto"] .cardGraf { --bg:#000; --painel:#000; --painel2:#0e0e0e; --borda:#222; --texto:#ececec; --suave:#8f8f8f; --fraco:#6f6f6f;
   background:#000; border-color:#222; color:var(--texto) }
 html[data-graf="preto"] .cardGraf .seg, html[data-graf="preto"] .cardGraf .estrBtn { background:#0e0e0e; border-color:#222 }
 html[data-graf="preto"] .cardGraf .seg > .on { background:#262626 }
-html[data-graf="preto"] .cardGraf #dica, html[data-graf="preto"] .cardGraf .alvos { background:rgba(14,14,14,.96); border-color:#262626 }
+html[data-graf="preto"] .cardGraf #dica, html[data-graf="preto"] .cardGraf .alvos, html[data-graf="preto"] .cardGraf .notaCam { background:rgba(14,14,14,.96); border-color:#262626 }
 /* Branco: o claro do TradingView */
 html[data-graf="branco"] .cardGraf { --bg:#ffffff; --painel:#ffffff; --painel2:#f7f8fa; --borda:#e0e3eb; --texto:#131722; --suave:#6a6d78; --fraco:#8b8e99;
   --areia:#b07a1a; --salva:#1d8a7a; --rosa:#d0504c; background:#fff; border-color:#e0e3eb; color:var(--texto); color-scheme:light }
@@ -574,7 +578,7 @@ html[data-graf="branco"] .cardGraf .seg > .on { background:#fff; color:var(--tex
 html[data-graf="branco"] .cardGraf .estrBtn { background:#fff; border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.09), 0 1px 2px rgba(19,23,34,.07) }
 html[data-graf="branco"] .cardGraf .estrBtn:hover { background:#f7f8fa }
 html[data-graf="branco"] .cardGraf .estrBtn.on { box-shadow:0 0 0 1px rgba(176,122,26,.4), 0 1px 2px rgba(19,23,34,.07) }
-html[data-graf="branco"] .cardGraf #dica, html[data-graf="branco"] .cardGraf .alvos { background:rgba(255,255,255,.96); border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.07), 0 10px 28px -6px rgba(19,23,34,.18) }
+html[data-graf="branco"] .cardGraf #dica, html[data-graf="branco"] .cardGraf .alvos, html[data-graf="branco"] .cardGraf .notaCam { background:rgba(255,255,255,.96); border-color:transparent; box-shadow:0 0 0 1px rgba(19,23,34,.07), 0 10px 28px -6px rgba(19,23,34,.18) }
 html[data-graf="branco"] .cardGraf .alvos .barra { background:rgba(19,23,34,.07) }
 html[data-graf="branco"] .cardGraf .mBarra button:active { background:rgba(19,23,34,.05) }
 /* Papel: fundo creme com as nossas cores suaves, mais fundas */
@@ -584,7 +588,7 @@ html[data-graf="papel"] .cardGraf .seg { background:#ece5d6; border-color:transp
 html[data-graf="papel"] .cardGraf .seg > .on { background:#fbf8f2; color:var(--texto); box-shadow:0 1px 2px rgba(60,45,25,.14), 0 0 0 1px rgba(60,45,25,.05) }
 html[data-graf="papel"] .cardGraf .estrBtn { background:#fbf8f2; border-color:transparent; box-shadow:0 0 0 1px rgba(60,45,25,.12), 0 1px 2px rgba(60,45,25,.08) }
 html[data-graf="papel"] .cardGraf .estrBtn:hover { background:#f3eee3 }
-html[data-graf="papel"] .cardGraf #dica, html[data-graf="papel"] .cardGraf .alvos { background:rgba(251,248,242,.96); border-color:transparent; box-shadow:0 0 0 1px rgba(60,45,25,.08), 0 10px 28px -6px rgba(60,45,25,.18) }
+html[data-graf="papel"] .cardGraf #dica, html[data-graf="papel"] .cardGraf .alvos, html[data-graf="papel"] .cardGraf .notaCam { background:rgba(251,248,242,.96); border-color:transparent; box-shadow:0 0 0 1px rgba(60,45,25,.08), 0 10px 28px -6px rgba(60,45,25,.18) }
 html[data-graf="papel"] .cardGraf .alvos .barra { background:rgba(60,45,25,.08) }
 html[data-graf="papel"] .cardGraf .mBarra button:active { background:rgba(60,45,25,.06) }
 html[data-graf] .cardGraf .timer b { color:var(--texto) }

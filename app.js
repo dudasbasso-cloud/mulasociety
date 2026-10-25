@@ -35,7 +35,7 @@ if (est.v !== 2) { est.camadas = { ...LIMPO }; est.v = 2; localStorage.setItem('
 est.camadas = { ...LIMPO, ...(est.camadas || {}) }
 const guardar = () => localStorage.setItem('jarvis', JSON.stringify(est))
 const grafico = criarGrafico($('grafico'), { pedirHistoria: (s, tf, ate) => api('historico?s=' + s + '&tf=' + tf + '&ate=' + ate) })
-let radarLista = [], ultimoGrafico = null, ultimoPlano = null
+let radarLista = [], ultimoGrafico = null, ultimoPlano = null, fechado = false
 
 // a janela do Jarvis abre grande (o Chrome deixa mexer no tamanho das janelas de app)
 if (window.outerWidth < 1300) { try { window.resizeTo(Math.min(screen.availWidth, 1680), Math.min(screen.availHeight, 1050)); window.moveTo(screen.availLeft || 0, screen.availTop || 0) } catch {} }
@@ -74,6 +74,9 @@ $('radar').addEventListener('click', e => {
 
 // a tendência nos quatro tempos: a direção pela EMA 200 (e a terra de ninguém), o SV3 e o estocástico de cada um; por baixo,
 // o Fibonacci de 4 h, o ATR de cada tempo e o horário de liquidez
+// 25/10: com o mercado fechado a leitura é a do fecho (servidor/arranque.mjs, leituraNoFecho); diz-se de quando é, para não
+// parecer de agora
+const doFecho = t => t?.noFecho ? '<div class="fecho">Mercado fechado: é a leitura do fecho, ' + esc(new Date(t.noFecho * 1000).toLocaleString('pt-PT', { timeZone: LX, weekday: 'long', hour: '2-digit', minute: '2-digit' }).replace(', ', ' às ')) + '.</div>' : ''
 function tendencia(t) {
   if (!t) { $('tendencia').innerHTML = '<div class="vazio">Sem leitura técnica para este símbolo agora.</div>'; return }
   const c = casasTexto(t.simbolo), ouro = t.simbolo === 'XAUUSD', nada = '<span class="suave">-</span>'
@@ -88,7 +91,7 @@ function tendencia(t) {
   const fib = f ? '<div>Fibonacci de 4 h' + (f.provisorio ? ' (swing ainda a fazer-se)' : '') + ': ' + f.niveis.map(n => FIBO[n.r] + NB + '%' + NB + '<b class="num">' + fmt(n.p, c) + '</b>').join(' · ') + '</div>' : ''
   const atr = '<div>ATR: ' + ['15m', '1h', '4h', '1d'].filter(k => a[k]).map(k => TFN[k].replace(' ', NB) + NB + '<b class="num">' + (ouro ? fmt(a[k], 1) + NB + '$' : Math.round(a[k] / pipDe(t.simbolo)) + NB + 'pips') + '</b>').join(' · ') + '</div>'
   const lq = t.liquidez ? '<div>' + (t.liquidez.dentro ? 'Dentro do horário de liquidez, até às ' + t.liquidez.ate + '.' : 'Fora do horário de liquidez (' + t.liquidez.de + ' às ' + t.liquidez.ate + ').') + '</div>' : ''
-  $('tendencia').innerHTML = '<table class="tend"><tr><th>Tempo</th><th>Direção</th><th>SV3</th><th>Estoc.</th></tr>' + linhas + '</table><div class="tnota">' + fib + atr + lq + '</div>'
+  $('tendencia').innerHTML = doFecho(t) + '<table class="tend"><tr><th>Tempo</th><th>Direção</th><th>SV3</th><th>Estoc.</th></tr>' + linhas + '</table><div class="tnota">' + fib + atr + lq + '</div>'
 }
 
 // a força das divisas: barras cinzentas a partir do meio, o valor de 24 h com cor e o de 5 dias ao lado
@@ -104,9 +107,9 @@ function forca(f) {
 $('forca').addEventListener('click', e => { const b = e.target.closest('b[data-s]'); if (b && b.dataset.s !== est.simbolo) selecionar(b.dataset.s) })
 
 // as estratégias que ele mandou: o estado numa frase, os passos (✓ feito, ○ à espera, ✗ cancelou) e a medição
-function estrategias(l) {
+function estrategias(l, t) {
   const negrito = t => esc(t).replace(/(\d[\d\u00a0\u202f]*,\d+|\d{1,2}:\d\d)/g, '<b class="num">$1</b>')
-  $('estrategias').innerHTML = l?.length ? l.map(e => '<div class="estr"><div class="en"><b>' + esc(e.nome) + '</b> <span class="suave">' + esc(e.autor) + '</span></div>'
+  $('estrategias').innerHTML = l?.length ? doFecho(t) + l.map(e => '<div class="estr"><div class="en"><b>' + esc(e.nome) + '</b> <span class="suave">' + esc(e.autor) + '</span></div>'
     + '<div class="ee' + (e.sinal ? ' sinal' : '') + '">' + negrito(e.estado) + '</div>'
     + (e.passos || []).map(p => '<div class="ep ' + (p.ok ? 'ok' : p.aviso ? 'nao' : '') + '">' + (p.ok ? '✓' : p.aviso ? '✗' : '○') + ' ' + negrito(p.texto) + '</div>').join('')
     + (e.outro ? '<div class="ec">' + negrito(e.outro) + '</div>' : '') + (e.contexto ? '<div class="ec">' + negrito(e.contexto) + '</div>' : '') + (e.proxima && !e.sinal ? '<div class="ec">Próxima caixa: ' + esc(e.proxima) + '.</div>' : '')
@@ -176,9 +179,10 @@ function agoraVisual(l, c) {
 
 function analise(r) {
   if (!r || r.simbolo !== est.simbolo) return
+  fechado = !!r.analise?.fechado
   plano(r.plano, r)
   tendencia(r.tecnica)
-  estrategias(r.tecnica?.estrategias)
+  estrategias(r.tecnica?.estrategias, r.tecnica)
   const a = r.analise, c = casasTexto(r.simbolo)
   $('gNome').textContent = a?.nome || r.simbolo
   $('gPx').textContent = a ? fmt(a.px, c) : ''
@@ -343,7 +347,33 @@ function aplicarEstr() {
 }
 $('estrSel').addEventListener('change', e => { est.estrVer = e.target.value ? JUNTAS[e.target.value] || [e.target.value] : []; aplicarEstr() })
 $('tfs').addEventListener('click', e => { const t = e.target.dataset.tf; if (!t || t === est.tf) return; est.tf = t; guardar(); marcar(); carregarGrafico() })
-$('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (!c) return; est.camadas[c] = !est.camadas[c]; guardar(); marcar(); if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer }); grafico.plano(est.camadas.plano ? ultimoPlano : null) })
+// 25/10 («há aqui umas que penso que não estão a funcionar»): ao ligar uma camada que agora não tem nada para desenhar, uma
+// linha por cima do gráfico diz porquê (some ao fim de 5 s)
+const notaCam = Object.assign(document.createElement('div'), { className: 'notaCam' })
+$('grafico').appendChild(notaCam)
+const longo = d => d.tf === '4h' || d.tf === '1d'
+const VAZIA = {
+  niveis: d => !d.zonas?.length && 'nenhum teto nem suporte perto do preço',
+  diario: d => !d.diario?.length && 'sem zonas do diário',
+  asia: d => longo(d) ? 'a caixa só se vê no 15 min e no 1 h' : !d.asia && 'sem caixa da Ásia',
+  fibo: d => !d.fibo && 'sem Fibonacci de 4 h',
+  linhas: d => d.tf === '1d' ? 'no dia não há linhas de tendência' : !d.linhas?.length && 'nenhuma linha de tendência',
+  velas: d => !d.padroes?.length && 'nenhuma vela de confirmação nas últimas 150 velas',
+  sinais: d => longo(d) ? 'os sinais são de 15 min: veem-se no 15 min e no 1 h' : !d.sinais?.length && 'nenhum sinal nestas velas',
+  alvos: d => longo(d) ? 'os avisos são de 15 min: veem-se no 15 min e no 1 h' : !d.alvos?.lista?.length && 'nenhum aviso nestas velas',
+  plano: () => !ultimoPlano && (fechado ? 'o mercado está fechado' : 'agora não há plano de entrada'),
+  posicoes: d => !d.posicoes?.length && 'não tens nenhuma posição aberta'
+}
+let notaAte = 0
+function notaCamada(c) {
+  const porque = est.camadas[c] && ultimoGrafico && VAZIA[c]?.(ultimoGrafico)
+  clearTimeout(notaAte)
+  if (!porque) { notaCam.classList.remove('on'); return }
+  notaCam.textContent = ($('camadas').querySelector('[data-c="' + c + '"]')?.textContent || c) + ': ' + porque + '.'
+  notaCam.classList.add('on')
+  notaAte = setTimeout(() => notaCam.classList.remove('on'), 5000)
+}
+$('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (!c) return; est.camadas[c] = !est.camadas[c]; guardar(); marcar(); if (ultimoGrafico) grafico.mostrar(ultimoGrafico, { ...est.camadas, estrVer: est.estrVer }); grafico.plano(est.camadas.plano ? ultimoPlano : null); notaCamada(c) })
 
 // o relógio da vela (22/10, «preciso do timer lá em cima de mudança de candle»): quanto falta para a vela do tempo escolhido
 // fechar, a contar do início da última vela do gráfico (as de 4 h e do dia começam às 17:00 de Nova Iorque, como no MT5).

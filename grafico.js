@@ -666,13 +666,20 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     plano(ultimoPlano)
   }
   // 25/10 («mete ai 1 segundo»): no gráfico de 1 s o preço de cada segundo acaba a última vela ou junta a seguinte, sem
-  // refazer o resto (que se refaz de 30 em 30 s, com a análise)
+  // refazer o resto (que se refaz com a análise). 25/10 («o gráfico de 15 min tem que mexer»): nos outros tempos o preço de
+  // cada segundo acaba a vela de agora (máximo, mínimo e fecho) ou abre a seguinte. Devolve a hora da última vela
   function vivo(v) {
-    if (tfAtual !== '1s') return
     const u = serieVelas.at(-1)
-    if (u && v.time < u.time) return
-    velas.update(v)
-    if (!u || v.time > u.time) { n++; serieVelas.push(v) } else serieVelas[serieVelas.length - 1] = v
+    if (!u || v.time < u.time) return null
+    let w = v
+    if (tfAtual !== '1s') {
+      const dur = TFS[tfAtual], px = v.close
+      w = v.time < u.time + dur ? { time: u.time, open: u.open, high: Math.max(u.high, px), low: Math.min(u.low, px), close: px }
+        : { time: u.time + Math.floor((v.time - u.time) / dur) * dur, open: px, high: px, low: px, close: px }
+    }
+    velas.update(w)
+    if (w.time > u.time) { n++; serieVelas.push(w) } else serieVelas[serieVelas.length - 1] = w
+    return w.time
   }
   return { mostrar, plano, tema, grelha, vivo }
 }

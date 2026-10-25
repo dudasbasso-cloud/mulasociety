@@ -513,9 +513,11 @@ function ligar() {
     else if (tipo === 'conta') conta(dados)
     else if (tipo === 'obs') observacao(dados)
     else if (tipo === 'forca') forca(dados)
-    // o preço de segundo em segundo: no gráfico de 1 s acaba a última vela ou junta a seguinte, e o preço lá em cima anda com ele
-    else if (tipo === 'segundo' && est.tf === '1s' && est.simbolo === 'XAUUSD' && ultimoGrafico?.tf === '1s') {
-      grafico.vivo(dados); fimVela = { inicio: dados.time, tf: '1s' }; $('gPx').textContent = fmt(dados.close, casasTexto('XAUUSD'))
+    // o preço de segundo em segundo: no gráfico de 1 s acaba a última vela ou junta a seguinte, e o preço lá em cima anda com
+    // ele. 25/10 («o gráfico de 15 min tem que mexer»): também nos outros tempos do ouro, na vela de agora
+    else if (tipo === 'segundo' && est.simbolo === 'XAUUSD' && ultimoGrafico?.simbolo === 'XAUUSD' && ultimoGrafico.tf === est.tf) {
+      const t = grafico.vivo(dados)
+      if (t != null) { fimVela = { inicio: t, tf: est.tf }; $('gPx').textContent = fmt(dados.close, casasTexto('XAUUSD')) }
     }
   }
 }

@@ -535,7 +535,7 @@ function placarTP(L) {
     return '<tr title="' + esc(e.autor) + '"' + (grupo ? ' class="grupo"' : filho(e) ? ' data-de="bot"' + (aberto ? '' : ' hidden') : '') + '><td>'
       + (grupo ? '<button type="button" class="abreGrupo" aria-expanded="' + aberto + '">' + nome(e) + setaGrupo(aberto) + '</button>' : nome(e))
       + (e.partes ? ' <span class="partes">' + esc(e.partes) + '</span>' : '') + '</td>'
-      + '<td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
+      + '<td class="num">' + (e.abertas ? '<span class="decorrer" title="' + e.abertas + (e.abertas > 1 ? ' entradas ainda a decorrer' : ' entrada ainda a decorrer') + '">' + RELOGIO + e.abertas + '</span>' : '') + e.n + '</td>'
       + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
       + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>'
   }
@@ -543,10 +543,12 @@ function placarTP(L) {
   const comTipos = l => l.flatMap(e => e.id === 'bot' ? [e, ...F] : [e])
   const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + comTipos(l).map(linha).join('') + '</tbody></table>'
   const V = L.filter(e => !filho(e)), meio = Math.ceil(V.length / 2)
-  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 21/10 às 18:00, até 24 h cada</span></div>'
+  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 21/10 às 18:00, até 24 h cada<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
     + '<div class="placarDuas">' + tabela(V.slice(0, meio)) + tabela(V.slice(meio)) + '</div>'
   el.hidden = false
 }
+// 25/10 («tenta meter isto de outra forma»): as entradas a decorrer com um relógio pequeno e o número, em vez de «a decorrer +2»
+const RELOGIO = '<svg class="relogio" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4"/><path d="M5 3v2.2l1.4 1"/></svg>'
 const setaGrupo = aberto => '<svg class="seta" viewBox="0 0 10 10" aria-hidden="true"><path d="' + (aberto ? 'M2 6.5 5 3.5 8 6.5' : 'M2 3.5 5 6.5 8 3.5') + '"/></svg>'
 // carregar na linha do BOT (ou na setinha) abre e fecha os tipos, sem desenhar a tabela outra vez
 $('estrTP').addEventListener('click', e => {

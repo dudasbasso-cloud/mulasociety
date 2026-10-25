@@ -609,4 +609,9 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .abas .separadores { justify-content:space-between; gap:12px; padding:8px 14px 0 }
 .abas .separadores > * { font-size:13px; padding:7px 0 9px }
 /* 25/10 («quando for estratégias unificadas mete à frente a cinza»): as que cada linha junta, a cinzento à frente do nome */
-.estrTP .placar .partes { color:var(--suave); font-weight:400 }
+.estrTP .placar .partes { color:var(--suave); font-weight:400; font-size:10px; white-space:nowrap }
+/* 25/10 («tenta meter isto de outra forma, e diminuir as letras cinza para que caiba na mesma linha»): as entradas a decorrer
+   com um relógio e o número, a cinzento; a legenda vai no título do quadro */
+.estrTP .decorrer { display:inline-flex; align-items:center; gap:2px; margin-right:7px; color:var(--suave); font-size:10.5px }
+.estrTP .relogio { flex:none; width:9px; height:9px; fill:none; stroke:currentColor; stroke-width:1.2; stroke-linecap:round; stroke-linejoin:round }
+.estrTP .legDecorrer { display:inline-flex; align-items:center; gap:3px; margin-left:10px }

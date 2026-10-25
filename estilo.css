@@ -197,10 +197,12 @@ button { font:inherit; color:inherit; background:none; border:0; padding:0; curs
 /* a máquina do tempo saiu do ecrã (22/10) */
 .maq[hidden] { display:none !important }
 
-/* 22/10 («mete texturas tipo o meu Orca»): a mesma textura em relevo do tema do Orca (ruído fractal com luz difusa, cinzenta e
-   leve, ~/orca-tema/tema.css) por cima do fundo e, mais leve, nos cartões. As cores do Jarvis ficam as mesmas. */
-:root { --textura:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='r' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch' result='n'/%3E%3CfeDiffuseLighting in='n' lighting-color='%23fff' surfaceScale='2.6' result='l'%3E%3CfeDistantLight azimuth='225' elevation='52'/%3E%3C/feDiffuseLighting%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E"); --textura-leve:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='r' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch' result='n'/%3E%3CfeDiffuseLighting in='n' lighting-color='%23fff' surfaceScale='2.6' result='l'%3E%3CfeDistantLight azimuth='225' elevation='52'/%3E%3C/feDiffuseLighting%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 .09'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E") }
-body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 100%); background-size:220px 220px, auto; background-attachment:fixed, fixed }
+/* 22/10 («mete texturas tipo o meu Orca»): a textura em relevo do tema do Orca (~/orca-tema/tema.css) no fundo. */
+/* 25/10 («melhora a textura, podes usar a mesma que temos aqui no Orca»): a janela do Jarvis desenha com o motor do Safari,
+   que fazia o mesmo SVG mais liso. Agora é a textura do Orca já desenhada pelo Chrome (textura.png, a 2x), em cima do
+   mesmo fundo do Orca (modelo «black»), sem o brilho azul do quadro */
+:root { --textura:url("textura.png") }
+body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 100%); background-size:220px 220px, auto; background-attachment:fixed, fixed }
 /* 22/10 («há sítios que não é preciso»): os cartões ficam lisos; a textura só no fundo, à volta deles, como no Orca */
 /* 22/10 («mete isto mais na minha cara»): a barra de cima numa faixa lisa por cima da textura, as horas grandes com os
    segundos e a hora do gráfico dele por baixo, e a sessão aberta a cor de areia */
@@ -226,6 +228,11 @@ body { background:var(--textura), linear-gradient(180deg, #121417 0%, #0d0f11 10
 #separadores [data-aba="conversa"], .abas .aba.conversa { display:none !important }
 /* 22/10 («tá feio, mete tipo ORDEM»): o título do cartão do plano é «Ordem» e os títulos nunca partem em duas linhas */
 .tit span:first-child { white-space:nowrap } .tit span + span { text-align:right }
+/* 25/10: o pausa e play das notícias, no título delas (só no Mac dele; o amigo não o vê) */
+.pausaNot { display:inline-grid; place-items:center; width:24px; height:24px; margin:-6px -7px -6px 4px; vertical-align:middle; padding:0; border:0; border-radius:6px; background:none; color:var(--suave); cursor:pointer; transition:color .15s }
+.pausaNot svg { width:12px; height:12px; fill:currentColor }
+.pausaNot:hover { color:var(--texto) } .pausaNot:focus-visible { outline:2px solid var(--suave); outline-offset:1px } .pausaNot:disabled { opacity:.5; cursor:default }
+.pausaNot[hidden], html.amigo .pausaNot { display:none }
 /* 22/10 («retira»): sem a sessão («entre sessões», «Londres aberta») na barra de cima */
 #sessoes { display:none !important }
 /* 22/10 («mete tipo assim»): os eventos do calendário em caixas, como o cartão «Próximos eventos» do Orca */

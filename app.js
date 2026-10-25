@@ -211,8 +211,10 @@ function analise(r) {
   const nome = r.simbolo === 'XAUUSD' ? 'ouro' : r.simbolo
   $('noticias').innerHTML = r.setas.length ? r.setas.map(x => '<div class="noticia"><div class="q"><span class="num">' + diaHora(x.quando) + '</span><span class="chip ' + (x.dir > 0 ? 'sobe">▲' : 'desce">▼') + x.grau + ' ' + esc(r.simbolo) + '</span></div><div class="tx">' + esc(x.texto) + '</div>' + (x.porque ? '<div class="pq">' + esc(x.porque) + '</div>' : '') + depoisTxt(x.depois, r.simbolo) + '</div>').join('')
     // 25/10 («e aqui nada?»): as setas vêm do card Mercado do Orca; com as notícias dele desligadas não chegam novas
-    : '<div class="vazio">' + (r.pausa ? 'As notícias do Orca estão desligadas, por isso não chegam setas novas' + (r.ultimaSeta ? ' (a última foi a ' + diaDe(r.ultimaSeta) + ', às ' + hhmm(r.ultimaSeta) + ')' : '')
-      + '. Para voltarem, liga as notícias no botão em baixo na barra lateral do Orca.' : 'Sem setas para ' + esc(nome) + ' nos últimos 3 dias.') + '</div>'
+    // 25/10: com o botão de pausa aqui em cima e a pausa sozinha do fim de semana (pausaAuto)
+    : '<div class="vazio">' + (r.pausa ? (r.pausaAuto ? 'Ao fim de semana, com o mercado fechado, as notícias param sozinhas para não gastarem créditos' : 'As notícias estão em pausa, por isso não chegam setas novas') + (r.ultimaSeta ? ' (a última foi a ' + diaDe(r.ultimaSeta) + ', às ' + hhmm(r.ultimaSeta) + ')' : '')
+      + (r.pausaAuto ? '. Voltam meia hora antes de o mercado abrir' + (AMIGO ? '.' : ', ou já, no ▶ aqui em cima.') : AMIGO ? '.' : '. Para voltarem, carrega no ▶ aqui em cima.')
+      : 'Sem setas para ' + esc(nome) + ' nos últimos 3 dias.') + '</div>'
   // 22/10 («mete tipo assim», com o cartão «Próximos eventos» do Orca): cada evento numa caixa, com a moeda, o nome, o
   // previsto e a hora; os fortes a rosa. A próxima vai também na barra de cima
   const diaH = ms => { const d = diaDe(ms); return (d === diaDe(Date.now()) ? '' : d === diaDe(Date.now() + 864e5) ? 'amanhã ' : d + ' ') + hhmm(ms).replace(':', 'h') }
@@ -631,6 +633,25 @@ const verPausa = q => {
   if (!!q.pausa === pausado) return
   pausado = !!q.pausa
   $('ligacao').innerHTML = pausado ? '<span class="ponto pausa"></span>em pausa' : '<span class="ponto on"></span>ligado'
+  pintarPausa()
+}
+// 25/10 («adiciona aqui o play pause mas apenas eu é que o posso usar»): no título das notícias, o mesmo pausa e play do botão
+// do Orca (pára as notícias, o que gasta créditos, e as voltas do Jarvis). Na entrada do amigo não aparece nem tem rota
+const bPausa = $('pausaNot')
+function pintarPausa() {
+  if (AMIGO) return
+  const t = pausado ? 'Retomar as notícias e o Jarvis' : 'Pausar as notícias e o Jarvis, para não gastarem créditos'
+  bPausa.innerHTML = pausado ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.8v14.4c0 .8.9 1.3 1.6.9l11-7.2c.6-.4.6-1.4 0-1.8l-11-7.2C8.9 3.5 8 4 8 4.8Z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1.2"/><rect x="14" y="4.5" width="4" height="15" rx="1.2"/></svg>'
+  bPausa.title = t; bPausa.setAttribute('aria-label', t); bPausa.hidden = false
+}
+if (!AMIGO) {
+  pintarPausa()
+  bPausa.addEventListener('click', async () => {
+    bPausa.disabled = true
+    try { verPausa(await post('pausa', { pausa: !pausado })); api('analise?s=' + est.simbolo).then(d => { if (d.simbolo === est.simbolo) analise(d) }, () => {}) }
+    catch {} finally { bPausa.disabled = false }
+  })
 }
 // em pausa não chegam eventos: o gráfico (com as caixas dos avisos) e a barra de cima refazem-se de 2 em 2 min
 api('ping').then(p => { const v0 = p.versao; verPausa(p); setInterval(() => api('ping').then(q => {

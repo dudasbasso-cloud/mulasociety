@@ -21,6 +21,7 @@
     <div class="it" id="resultado"></div>
     <div class="dir">
       <div class="it" id="topoRobo" hidden></div>
+      <button type="button" class="temaBtn" id="lucrosBtn" aria-haspopup="dialog" hidden>Lucros</button>
       <button type="button" class="temaBtn" id="temaBtn" aria-haspopup="dialog">Gráfico</button>
       <button type="button" class="temaBtn" id="grelhaBtn" aria-haspopup="dialog">Grelha</button>
       <div class="it" id="topoConta"></div>
@@ -80,6 +81,14 @@
   <nav class="mNav" id="mNav" aria-label="Painéis"><button type="button" data-m="grafico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v18M17 3v18"/><rect x="5" y="7" width="4" height="8" rx="1"/><rect x="15" y="9" width="4" height="7" rx="1"/></svg>Gráfico</button><button type="button" data-m="estrategias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Estratégias</button><button type="button" data-m="ordem"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Ordem</button><button type="button" data-m="analise"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Análise</button><button type="button" data-m="noticias"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Notícias</button></nav>
 </div>
 <div class="dicaTopo" id="resultadoDica" hidden></div>
+<!-- 25/10: o separador «Lucros» (app.js), por cima do ecrã -->
+<div class="lucros" id="lucros" hidden>
+  <div class="lucrosFundo" data-fecha></div>
+  <section class="lucrosCaixa" role="dialog" aria-modal="true" aria-labelledby="lucrosTit">
+    <header class="lucrosCab"><h2 id="lucrosTit">Lucros</h2><button type="button" class="lucrosFechar" id="lucrosFechar" data-fecha aria-label="Fechar">×</button></header>
+    <div id="lucrosCorpo"></div>
+  </section>
+</div>
 <script type="module" src="app.js"></script>
 </body>
 </html>

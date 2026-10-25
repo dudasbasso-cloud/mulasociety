@@ -811,3 +811,78 @@ const TEMAS = [
   aplicar(guardado)
 }
 
+
+// 25/10 («podes fazer uma aba lá em cima para eu verificar os meus lucros [...] com a estratégia a seguir neste momento, se
+// tou a mover o SL para a zona de profit, e o que temos que fazer depois para arriscarmos mais»): o separador «Lucros», por
+// cima do ecrã. A banca de 500 € a seguir os avisos do bot que te chegaram, com as tuas regras e a fase lucro (lucros.mjs).
+// O botão da barra diz o lucro de hoje; na página do amigo não aparece (lá não há /api/lucros)
+{
+  const caixa = $('lucros'), btn = $('lucrosBtn'), corpo = $('lucrosCorpo'), c = casasTexto('XAUUSD')
+  let r = null, aberto = false
+  const eur = v => (v >= 0.5 ? '+' : v <= -0.5 ? '-' : '') + fmt(Math.abs(v), 0) + NB + '€', cl = v => v >= 0.5 ? ' sobe' : v <= -0.5 ? ' desce' : ''
+  const quando = t => new Date(t * 1000).toLocaleString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(', ', ' às ')
+  const hora = t => new Date(t * 1000).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit' })
+  const diaNome = d => new Date(d + 'T12:00:00Z').toLocaleDateString('pt-PT', { timeZone: LX, weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '')
+  const NOME = { teto: 'Venda de teto', pico: 'Venda depois do pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
+  const nomeAviso = e => (NOME[e.tipo] || e.tipo) + (e.tipo === 'teto' || e.tipo === 'pico' ? '' : ', ' + e.lado)
+  const tp = (e, n) => e.entrada + (e.lado === 'venda' ? -1 : 1) * n * Math.abs(e.entrada - e.sl)
+  const PORQUE = { outra: 'chegou com outra aberta', perda: 'o dia já tinha parado nos -200 €', metade: 'o dia já tinha parado (metade do melhor)' }
+  // o que fazer agora na entrada aberta: a regra de hoje (no TP2 o stop passa para o TP1) ou, na fase lucro, deixar correr
+  const agora = e => e.k >= 2 ? (e.corre ? 'Chegou ao TP' + e.k + ': passa o stop para o TP' + (e.k - 1) + ' (' + fmt(tp(e, e.k - 1), c) + ') e deixa correr.'
+      : 'Chegou ao TP2: passa o stop para o TP1 (' + fmt(tp(e, 1), c) + ').')
+    : e.k === 1 ? 'Chegou ao TP1: o stop fica onde está (' + fmt(e.sl, c) + ') até ao TP2.' : 'Ainda não chegou ao TP1: o stop fica em ' + fmt(e.sl, c) + '.'
+  function desenhar() {
+    if (!r) return
+    const h = r.hoje, g = r.regras, dias = r.dias.slice(-7), maior = Math.max(1, ...dias.map(d => Math.abs(d.eur)))
+    const feitos = r.dias.filter(d => Math.abs(d.eur) >= 0.5), melhor = feitos.length ? feitos.reduce((a, d) => d.eur > a.eur ? d : a) : null
+    const pior = feitos.length ? feitos.reduce((a, d) => d.eur < a.eur ? d : a) : null
+    const linha = (n, v) => '<div class="lc-lin"><span>' + n + '</span><b class="num">' + v + '</b></div>'
+    const hoje = '<div class="lc-card"><div class="tit"><span>Hoje</span><span>' + esc(diaNome(h.dia)) + '</span></div>'
+      + '<div class="lc-grande num' + cl(h.eur) + '">' + eur(h.eur) + '</div><div class="lc-fase' + (h.parou ? ' parou' : h.fase ? ' lucro' : '') + '">'
+      + (h.parou ? 'O dia parou' : h.fase ? 'Fase lucro' : 'Fase normal') + '</div>'
+      + (h.fase || h.parou ? '' : '<div class="lc-barra" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, 100 * h.eur / g.limiar)).toFixed(1) + '%"></i></div>')
+      + linha('A próxima entrada arrisca', fmt(h.proximoRisco, 0) + NB + '€') + (h.fase || h.parou ? '' : linha('Falta para a fase lucro', fmt(h.faltam, 0) + NB + '€'))
+      + linha(h.pico >= g.limiar ? 'O dia pára se descer a' : 'O dia pára aos', eur(h.chao)) + linha('Entradas hoje', h.entradas) + '</div>'
+    const abertas = r.abertas.length ? r.abertas.map(e => '<div class="lc-ordem"><div class="lc-o-tit"><b class="' + (e.lado === 'venda' ? 'desce' : 'sobe') + '">' + esc(nomeAviso(e)) + '</b><span>'
+        + hora(e.t) + (e.corre ? ' · a deixar correr' : '') + '</span></div>'
+      + '<div class="lc-o-niv num">entrada ' + fmt(e.entrada, c) + ' · stop ' + fmt(e.sl, c) + ' · ' + fmt(e.lote, 2) + ' lotes, arrisca ' + fmt(e.risco, 0) + NB + '€</div>'
+      + '<div class="lc-o-tps num">' + Array.from({ length: e.corre ? Math.max(3, e.k + 1) : 3 }, (_, i) => i + 1).map(n => '<span class="' + (e.k >= n ? 'ok' : '') + '">TP' + n + ' ' + fmt(tp(e, n), c) + (e.k >= n ? ' ✓' : '') + '</span>').join('') + '</div>'
+      + '<div class="lc-o-agora">' + esc(agora(e)) + '</div></div>').join('')
+      : '<p class="lc-vazio">Nenhuma entrada aberta.' + (h.parou ? ' Hoje já não entra mais nenhuma.' : ' A próxima:') + '</p>' + (h.parou ? '' : '<div class="lc-passos"><span>Arrisca</span><span>'
+        + (h.fase ? 'até ' : '') + fmt(h.proximoRisco, 0) + NB + '€ (o lote ajusta-se ao stop' + (h.fase ? ', no máximo ' + fmt(g.maxLote, 2) : '') + ')</span><span>No TP2</span><span>o stop passa para o TP1</span>'
+        + (h.fase ? '<span>Depois</span><span>o stop sobe de TP em TP, sem TP no fim</span>' : '<span>No TP3</span><span>fecha tudo</span>') + '</div>')
+    const osDias = '<div class="lc-card"><div class="tit"><span>Os dias</span><span>o que fechou em cada um</span></div>'
+      + (dias.length ? dias.map(d => '<div class="lc-dia"><span>' + esc(diaNome(d.dia)) + '</span><i aria-hidden="true"><b style="width:' + (100 * Math.abs(d.eur) / maior).toFixed(1) + '%"></b></i><b class="num' + cl(d.eur) + '">' + eur(d.eur) + '</b></div>').join('')
+        + '<div class="lc-rodape">' + (melhor ? 'Melhor: ' + esc(diaNome(melhor.dia)) + ', <b class="num' + cl(melhor.eur) + '">' + eur(melhor.eur) + '</b>' : '')
+        + (pior && pior !== melhor ? ' · pior: ' + esc(diaNome(pior.dia)) + ', <b class="num' + cl(pior.eur) + '">' + eur(pior.eur) + '</b>' : '') + '</div>'
+        : '<p class="lc-vazio">Ainda sem dias fechados.</p>') + '</div>'
+    const seguir = h.parou ? 'Hoje já parou' + (h.parou === 'perda' ? ' (chegou aos ' + eur(g.parar) + ')' : ' (desceu a metade do melhor do dia)') + '. Amanhã recomeça na fase normal, com ' + fmt(g.risco, 0) + ' € de risco por entrada.'
+      : h.fase ? 'Estás na fase lucro. A próxima entrada pode arriscar até ' + fmt(h.proximoRisco, 0) + ' € (metade do lucro do dia; o lote não passa de ' + fmt(g.maxLote, 2) + ') e deixa correr: o stop sobe de TP em TP e não há TP no fim. Se o dia descer a ' + fmt(h.chao, 0) + ' €, pára.'
+      : 'Faltam ' + fmt(h.faltam, 0) + ' € para a fase lucro. Quando o dia fechar ' + eur(g.limiar) + ', a entrada seguinte pode arriscar até metade do lucro do dia e deixar correr; o dia pára se descer a metade do melhor, para nunca acabar abaixo disso.'
+    const aSeguir = '<div class="lc-card"><div class="tit"><span>A seguir</span></div><p class="lc-txt">' + esc(seguir) + '</p>'
+      + '<p class="lc-nota">Nos 58 dias antes (336 avisos refeitos vela a vela), a regra de hoje deu -195 € e a fase lucro +2 346 €. Mas a fase lucro só aconteceu 8 vezes: ainda não está provada.</p></div>'
+    const L = [...r.entradas].reverse().slice(0, 12)
+    const tabela = '<div class="lc-card lc-largo"><div class="tit"><span>As entradas</span><span>' + r.entradas.filter(e => e.tomada).length + ' de ' + r.entradas.length + ' avisos' + (r.entradas.length > L.length ? ', as últimas ' + L.length : '') + '</span></div>'
+      + (L.length ? '<table class="lc-tab"><thead><tr><th>Quando</th><th>Aviso</th><th class="d">Lote</th><th class="d">Risco</th><th>Fase</th><th class="d">Resultado</th></tr></thead><tbody>'
+        + L.map(e => '<tr' + (e.tomada ? '' : ' class="saltou"') + '><td class="num">' + quando(e.t) + '</td><td>' + esc(nomeAviso(e)) + '</td>'
+          + (e.tomada ? '<td class="num d">' + fmt(e.lote, 2) + '</td><td class="num d">' + fmt(e.risco, 0) + NB + '€</td><td>' + (e.fase ? 'lucro' : 'normal') + '</td><td class="num d' + (e.fim ? cl(e.fim.eur) : '') + '">' + (e.fim ? eur(e.fim.eur) : 'aberta') + '</td>'
+            : '<td colspan="4">não entrou: ' + PORQUE[e.porque] + '</td>') + '</tr>').join('') + '</tbody></table>' : '<p class="lc-vazio">Ainda sem avisos.</p>') + '</div>'
+    corpo.innerHTML = '<div class="lc-topo"><div><div class="lc-rot">Banca</div><div class="lc-banca num">' + fmt(g.inicio, 0) + NB + '€ → <b class="' + cl(r.banca.agora - g.inicio).trim() + '">' + fmt(r.banca.agora, 0) + NB + '€</b></div>'
+      + '<div class="lc-sub">Desde ' + quando(r.desde) + ', com as tuas regras: uma entrada de cada vez, ' + fmt(g.risco, 0) + ' € de risco em cada, o dia pára aos ' + eur(g.parar) + '.</div></div>'
+      + '<div class="lc-fixo"><span>Com ' + fmt(r.fixo.lote, 2) + ' fixo em todos os avisos (a barra de cima)</span><b class="num' + cl(r.fixo.agora - g.inicio) + '">' + fmt(r.fixo.agora, 0) + NB + '€</b></div></div>'
+      + '<div class="lc-grelha">' + hoje + '<div class="lc-card"><div class="tit"><span>Ordem aberta</span><span>o que fazer agora</span></div>' + abertas + '</div>' + osDias + aSeguir + tabela + '</div>'
+  }
+  async function carregar() {
+    try { r = await api('lucros') } catch { return }
+    btn.hidden = false
+    btn.innerHTML = 'Lucros <b class="num' + cl(r.hoje.eur) + '">' + eur(r.hoje.eur) + ' hoje</b>'
+    if (aberto) desenhar()
+  }
+  const fundo = on => { for (const el of document.body.children) if (el !== caixa && el.tagName !== 'SCRIPT') el.inert = on }
+  function abrir() { aberto = true; desenhar(); caixa.hidden = false; fundo(true); $('lucrosFechar').focus(); carregar() }
+  function fechar() { aberto = false; caixa.hidden = true; fundo(false); btn.focus() }
+  btn.addEventListener('click', abrir)
+  caixa.addEventListener('click', e => { if (e.target.closest('[data-fecha]')) fechar() })
+  addEventListener('keydown', e => { if (e.key === 'Escape' && aberto) fechar() })
+  carregar(); setInterval(carregar, 60e3)
+}

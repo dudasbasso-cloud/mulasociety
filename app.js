@@ -653,8 +653,9 @@ function mAtualizar() {
     const item = o => { const e = P[o.value], m = o.text.match(/^(.*?)\s*\((\d+)\)$/), nome = (m ? m[1] : o.text).replace(/^ZIMBA FX: /, '')
       return { nome, nomeHtml: o.value === 'edney' ? '<span class="laranja">ZIMBA FX</span>: todas juntas' : null, v: o.value, on: (JUNTAS[o.value] || [o.value]).every(id => l.includes(id)), p: e?.n ? e.pips : null,
         sub: e ? (e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 21/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' : 'sem entradas desde 21/10') : '',
-        ordem: o.value === 'edney' ? 1e9 : e?.n ? e.pips : -1e9 } }
-    const ed = ['edney', ...JUNTAS.edney], por = l => l.sort((a, b) => b.ordem - a.ordem)
+        ordem: o.value === 'zimba' ? 2e9 : o.value === 'edney' ? 1e9 : e?.n ? e.pips : -1e9 } }
+    // 25/10: o modelo completo dos vídeos dele à frente, depois as três peças juntas e cada uma
+    const ed = ['zimba', 'edney', ...JUNTAS.edney], por = l => l.sort((a, b) => b.ordem - a.ordem)
     return [{ nome: 'Nenhuma', v: '', on: !l.length, radio: true }, { grupo: '<span class="ouro laranja">ZIMBA FX</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
       { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value)).map(item))]
   }

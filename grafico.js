@@ -454,13 +454,14 @@ export function criarGrafico(el) {
     if (rotulos.length) { const ro = new Rotulos(rotulos); velas.attachPrimitive(ro); caixas.push(ro) }
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
     // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte. 25/10 («mete o TP, a
-    // entrada, o TP2, o TP3»): as linhas do TP1 e do TP2 dentro de cada caixa e, na última entrada, todas com o preço escrito
-    // até à direita, como no último aviso do bot, com ✓ nos TP a que chegou (TP3: os três; saiu no TP1: o TP1 e o TP2)
+    // entrada, o TP2, o TP3»): as linhas do TP1 e do TP2 dentro de cada caixa e, na última entrada, todas com o preço escrito,
+    // com ✓ nos TP a que chegou (TP3: os três; saiu no TP1: o TP1 e o TP2). Até à direita só enquanto está aberta; depois de
+    // fechar acabam com a caixa (uma entrada de há dias deixava os preços dela soltos à direita)
     const feitos = x => x.fim === 'tp3' ? 3 : x.fim === 'tp1' ? 2 : 0
     EL.forEach((x, i) => {
       const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate, ult = i === EL.length - 1
       caixa(x, x.time, ate)
-      juntaL({ de: x.time, ate: ult ? null : ate, itens: ult ? precos({ ...x, hits: [0, 1, 2].map(k => k < feitos(x) || null) }) : [0, 1].map(k => ({ preco: x.tps[k], cor: G(0.45) })) })
+      juntaL({ de: x.time, ate: ult && x.fim === 'aberta' ? null : ate, itens: ult ? precos({ ...x, hits: [0, 1, 2].map(k => k < feitos(x) || null) }) : [0, 1].map(k => ({ preco: x.tps[k], cor: G(0.45) })) })
     })
     velaPorTempo = new Map()
     const pads = camadas.velas ? d.padroes || [] : []

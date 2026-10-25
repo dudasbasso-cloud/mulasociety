@@ -635,7 +635,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       if (p.tp > 0) linhasPos.push(velas.createPriceLine({ price: p.tp, color: P.gt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'TP' }))
     }
     n = d.velas.length
-    if (nova) { mexeu = false; ajustar() }
+    // 25/10 («tás a abrir o gráfico de 1 s sempre assim, tem que ser maior»): ao arrastar a régua do preço a escala fica à mão,
+    // e o 1 s abria com a dos 15 min (3 960 a 4 026, as velas numa risca). Cada gráfico abre com a escala automática
+    if (nova) { mexeu = false; chart.priceScale('right').applyOptions({ autoScale: true }); ajustar() }
   }
   // o plano no gráfico: a entrada, o stop e os dois alvos (tracejados, com o nome no eixo)
   let linhasPlano = []

@@ -608,3 +608,5 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
    nomes mais compridos ficaram mais curtos (Dólar e Notas) para caberem todos à vista */
 .abas .separadores { justify-content:space-between; gap:12px; padding:8px 14px 0 }
 .abas .separadores > * { font-size:13px; padding:7px 0 9px }
+/* 25/10 («quando for estratégias unificadas mete à frente a cinza»): as que cada linha junta, a cinzento à frente do nome */
+.estrTP .placar .partes { color:var(--suave); font-weight:400 }

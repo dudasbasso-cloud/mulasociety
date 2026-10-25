@@ -315,10 +315,10 @@ function marcar() {
 // 24/10 («mete as estratégias mesmo, e eu seleciono para ver só aquela»): uma lista na barra das camadas; a escolhida
 // mostra as entradas dela no gráfico (seta do lado, ✓ se chegou a um TP, ✗ se foi ao stop). Nenhuma = nada
 // 25/10 («a possibilidade de meter as que eu quiser selecionadas»): várias ao mesmo tempo. A linha «ZIMBA FX: todas juntas»
-// (id edney) liga e desliga as três dele; fica ligada quando as três estão. O select escondido só guarda os nomes
+// (id edney) liga e desliga as cinco dele (eram três até 25/10); fica ligada quando estão todas. O select escondido só guarda os nomes
 // 25/10 («deveria estar nesses filtros»): os avisos do bot também, por tipo, com os nomes do placar; «todos os avisos»
 // (id bot) liga os quatro tipos
-const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock'], bot: ['bot-pico', 'bot-teto', 'bot-incrivel', 'bot-sv3'] }
+const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott'], bot: ['bot-pico', 'bot-teto', 'bot-incrivel', 'bot-sv3'] }
 const BOT_ESTR = [{ id: 'bot', nome: 'BOT: todos os avisos' }, { id: 'bot-pico', nome: 'BOT: venda depois do pico' }, { id: 'bot-teto', nome: 'BOT: venda de teto' },
   { id: 'bot-incrivel', nome: 'BOT: INCRÍVEL' }, { id: 'bot-sv3', nome: 'BOT: SV3' }]
 const estrEscolhidas = () => [...new Set((est.estrVer || []).flatMap(v => JUNTAS[v] || [v]))]
@@ -327,7 +327,7 @@ function nomeEstr() {
   const l = estrEscolhidas(), nomes = Object.fromEntries([...$('estrSel').options].filter(o => o.value).map(o => [o.value, o.text.replace(/\s*\(.*\)$/, '')]))
   const curto = id => (nomes[id] || id).replace(/^(ZIMBA FX|BOT): /, '')
   if (!l.length) return ''
-  if (l.length === 3 && JUNTAS.edney.every(id => l.includes(id))) return 'ZIMBA FX: todas juntas'
+  if (l.length === JUNTAS.edney.length && JUNTAS.edney.every(id => l.includes(id))) return 'ZIMBA FX: todas juntas'
   if (l.length === 4 && JUNTAS.bot.every(id => l.includes(id))) return 'BOT: todos os avisos'
   return l.length === 1 ? nomes[l[0]] || l[0] : l.length === 2 ? (l.every(id => id.startsWith('bot-')) ? 'BOT: ' : '') + l.map(curto).join(' + ') : l.length + ' estratégias'
 }
@@ -336,7 +336,7 @@ function escolhaEstr() {
   if (!ids.length) return
   const n = id => /^bot/.test(id) ? (ultimoGrafico.alvos?.lista || []).filter(p => (JUNTAS[id] || [id]).includes('bot-' + p.tipo)).length
     : (ultimoGrafico.estrategias.lista || []).filter(x => (JUNTAS[id] || [id]).includes(x.id)).length
-  const html = '<option value="">Estratégia: nenhuma</option>' + [...(ultimoGrafico.alvos ? BOT_ESTR : []), ...ids].flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'ZIMBA FX: todas juntas (liquidez, CHoCH e order block)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
+  const html = '<option value="">Estratégia: nenhuma</option>' + [...(ultimoGrafico.alvos ? BOT_ESTR : []), ...ids].flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'ZIMBA FX: todas juntas (liquidez, CHoCH, order block, Wyckoff e Elliott)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
   el.classList.toggle('on', estrEscolhidas().length > 0)
   mAtualizar()
@@ -533,7 +533,8 @@ function placarTP(L) {
   const linha = e => {
     const grupo = e.id === 'bot' && F.length
     return '<tr title="' + esc(e.autor) + '"' + (grupo ? ' class="grupo"' : filho(e) ? ' data-de="bot"' + (aberto ? '' : ' hidden') : '') + '><td>'
-      + (grupo ? '<button type="button" class="abreGrupo" aria-expanded="' + aberto + '">' + nome(e) + setaGrupo(aberto) + '</button>' : nome(e)) + '</td>'
+      + (grupo ? '<button type="button" class="abreGrupo" aria-expanded="' + aberto + '">' + nome(e) + setaGrupo(aberto) + '</button>' : nome(e))
+      + (e.partes ? ' <span class="partes">' + esc(e.partes) + '</span>' : '') + '</td>'
       + '<td class="num">' + (e.abertas ? '<span class="suave">a decorrer +' + e.abertas + '</span> ' : '') + e.n + '</td>'
       + e.tp.map(k => '<td class="num">' + pct(k, e.n) + '</td>').join('') + '<td class="num">' + pct(e.stop, e.n) + '</td>'
       + '<td class="num' + cor(e.pips) + '">' + (e.n ? pips(e.pips) : '-') + '</td></tr>'

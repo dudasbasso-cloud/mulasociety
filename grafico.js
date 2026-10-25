@@ -212,6 +212,7 @@ function dicaEstr(x, casas) {
 }
 // o aviso do bot: os TP por onde passou e como acabou pela regra (TP3, de volta ao TP1 depois do TP2, ou stop)
 const TIPO_ALVO = { teto: ' de teto', pico: ' depois do pico', incrivel: ' INCRÍVEL', sv3: ' do SV3' }
+const CURTO_SINAL = { teto: 'Teto', pico: 'Pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
 function dicaAlvo(p, n, casas) {
   const quando = t => hora(t) + (data(t) === data(p.t) ? '' : ' de ' + data(t)), e = p.fim?.estado
   const tps = p.hits.map((t, k) => t != null && !(e === 'tp3' && k === 2) ? 'TP' + (k + 1) + ' às ' + quando(t) : null).filter(Boolean).join(' · ')
@@ -479,6 +480,13 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     porTempo = new Map()
     if (camadas.sinais) for (const s of d.sinais) porTempo.set(s.time, [...(porTempo.get(s.time) || []), s])
     marcadores.setMarkers(camadas.sinais ? d.sinais.map(s => marca(s, casas)).sort((a, b) => a.time - b.time) : [])
+    // 25/10 («n entendo o que são essas setas, mete o nome por cima»): os avisos do bot na camada Sinais também com o nome,
+    // por cima numa venda e por baixo numa compra, e ✓ ou ✗ quando já acabou. Só o tipo (a ponta da seta já diz o lado):
+    // com «Venda de teto» em todas, os nomes atropelavam-se onde há muitas
+    if (camadas.sinais) for (const s of d.sinais) {
+      const cor = marca(s, casas).color
+      nomeSeta(s.time, s.lado === 'venda', (CURTO_SINAL[s.tipo] || s.tipo) + (cor === P.gt ? ' ✓' : cor === P.rt ? ' ✗' : ''), cor, 0.7)
+    }
     // as entradas das estratégias (camada Estratégias): a seta do lado com o nome curto, ✓ se ganhou e ✗ se perdeu. A seta e
     // o nome têm a cor de como acabou (verde ganhou, vermelho perdeu, areia ainda a decorrer); antes era a do lado, e um
     // «Liquidez ✓» de venda saía a vermelho. «ZIMBA FX: todas» (id edney) junta as cinco (liquidez, CHoCH, order block, Wyckoff e Elliott; eram três até 25/10); podem vir várias ao mesmo tempo

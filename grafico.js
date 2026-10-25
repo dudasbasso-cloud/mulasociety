@@ -397,6 +397,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
   function mostrar(d0, camadas) {
     ultimaVez = [d0, camadas]
     const d = comHistoria(d0)
+    // 25/10 («quando ta em 1segundo fica super dificil de ver o grafico»): no 1 s só as velas, o plano e as posições. As outras
+    // camadas eram linhas feitas de velas de 1 s ou caixas que, com o preço a mexer cêntimos, enchiam o fundo todo
+    if (d.tf === '1s') camadas = { plano: camadas.plano, posicoes: camadas.posicoes, estrVer: [] }
     const nova = d.simbolo + '|' + d.tf !== chave
     chave = d.simbolo + '|' + d.tf; casas = d.casas; tfAtual = d.tf
     chart.applyOptions({ timeScale: { secondsVisible: d.tf === '1s' } })
@@ -553,7 +556,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       if (p.sl > 0) linhasPos.push(velas.createPriceLine({ price: p.sl, color: P.rt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'stop' }))
       if (p.tp > 0) linhasPos.push(velas.createPriceLine({ price: p.tp, color: P.gt, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'TP' }))
     }
-    n = d.velas.length; nVer = d.tf === '15m' ? 130 : d.tf === '1s' ? 300 : 110
+    n = d.velas.length; nVer = d.tf === '15m' ? 130 : d.tf === '1s' ? 150 : 110
     if (nova) { mexeu = false; ajustar() }
   }
   // o plano no gráfico: a entrada, o stop e os dois alvos (tracejados, com o nome no eixo)

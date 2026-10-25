@@ -337,7 +337,10 @@ $('pergunta').addEventListener('submit', async e => {
 $('brief').addEventListener('toggle', e => { if (e.target.tagName === 'DETAILS') { est.detalhes = e.target.open; guardar() } }, true)
 
 function marcar() {
-  for (const s of document.querySelectorAll('.legenda [data-c]')) s.style.display = est.camadas[s.dataset.c] ? '' : 'none'
+  // no 1 s só se desenham as velas, o plano e as posições: as outras camadas ficam apagadas
+  const so1s = c => est.tf === '1s' && c !== 'plano' && c !== 'posicoes'
+  $('camadas').classList.toggle('so1s', est.tf === '1s')
+  for (const s of document.querySelectorAll('.legenda [data-c]')) s.style.display = est.camadas[s.dataset.c] && !so1s(s.dataset.c) ? '' : 'none'
   $('legEma').textContent = 'EMA 200 ' + (est.tf === '1d' ? 'do diário' : 'de ' + TFN[est.tf])
   // 25/10 («mete ai 1 segundo»): o 1 s só no ouro e só no Jarvis do Mac (o preço de segundo em segundo não vai à nuvem)
   for (const s of $('tfs').children) { const on = s.dataset.tf === est.tf; s.classList.toggle('on', on); s.setAttribute('aria-pressed', on)
@@ -401,7 +404,7 @@ const VAZIA = {
 }
 let notaAte = 0
 function notaCamada(c) {
-  const porque = est.camadas[c] && ultimoGrafico && VAZIA[c]?.(ultimoGrafico)
+  const porque = est.camadas[c] && ultimoGrafico && (ultimoGrafico.tf === '1s' && c !== 'plano' && c !== 'posicoes' ? 'no 1 s só ficam as velas, o plano e as posições' : VAZIA[c]?.(ultimoGrafico))
   clearTimeout(notaAte)
   if (!porque) { notaCam.classList.remove('on'); return }
   notaCam.textContent = ($('camadas').querySelector('[data-c="' + c + '"]')?.textContent || c) + ': ' + porque + '.'

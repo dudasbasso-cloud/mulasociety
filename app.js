@@ -616,7 +616,11 @@ function resultado(r) {
   const banca = b ? '<div class="tit"><span>A banca</span><span>' + fmt(b.inicio, 0) + ' € a ' + quando(r.desde) + '</span></div>'
     + valor('Agora', fmt(b.agora, 0) + ' €', cor(b.agora - b.inicio), (b.agora >= b.inicio ? '+' : '') + Math.round(100 * (b.agora - b.inicio) / b.inicio) + ' %. Os avisos fechados pela regra, cada um na hora em que acabou; os abertos ainda não contam')
     + (b.tMinimo ? valor('O mais baixo', fmt(b.minimo, 0) + ' €', b.minimo < b.inicio / 2 ? ' desce' : '', quando(b.tMinimo) + (b.stops ? '. Com ' + fmt(r.lote, 2) + ' cada stop custou em média ' + fmt(b.stopMedio, 0) + ' €' : '')) : '') : ''
-  $('resultadoDica').innerHTML = r.avisos ? banca + '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
+  const hoje = r.hoje ? '<div class="tit"><span>Hoje</span><span>desde as 00:00 de Lisboa</span></div>'
+    + valor('Tocaram o TP', r.hoje.tp.map((n, i) => 'TP' + (i + 1) + NB + n).join(' · '), r.hoje.tp.some(n => n) ? ' sobe' : '', 'cada aviso conta uma vez por TP')
+    + valor('Bateram no stop', String(r.hoje.sl), r.hoje.sl ? ' desce' : '', 'antes do TP2, pela regra')
+    + linha('Fechados hoje', r.hoje.eur, 'pela regra, com ' + fmt(r.lote, 2) + ' lotes') : ''
+  $('resultadoDica').innerHTML = r.avisos ? banca + hoje + '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
     + linha('Feitos', r.ganhos, 'com a regra: TP no TP3 e, no TP2, o stop passa para o TP1 (quem voltou ao TP1 conta o TP1)')
     + linha('Perdidos', -r.perdas, 'os que bateram no stop antes do TP2')
     + '<div class="tit"><span>Se fechasses tudo no mesmo TP</span><span>' + (b ? 'a banca, com os stops' : 'já com os stops') + '</span></div>'
@@ -632,6 +636,10 @@ function resultado(r) {
     $('resultado').innerHTML = 'Banca ' + fmt(b.inicio, 0) + ' € → <b class="num' + cor(b.agora - b.inicio) + '">' + fmt(b.agora, 0) + ' €</b>'
       // 25/10 («em vez disto mete TP1 TP2 TP3»): no lugar do mais baixo, a banca se tivesse fechado tudo no TP1, no TP2 ou no TP3
       + r.porTP.map((v, i) => ' · TP' + (i + 1) + ' <b class="num' + cor(v) + '">' + fmt(b.inicio + v, 0) + ' €</b>').join('')
+      // 25/10 («mete uma cena do dia de hoje: SL e TPs»): quantos avisos tocaram cada TP hoje e quantos bateram no stop.
+      // O número vem antes («2 TP1»), para não se confundir com a banca de cada TP aqui ao lado
+      + (r.hoje ? '<span class="hojeTP"> · Hoje: ' + (r.hoje.tp.some(n => n) ? r.hoje.tp.map((n, i) => n ? '<b class="num sobe">' + n + NB + 'TP' + (i + 1) + '</b>' : '').filter(Boolean).join(' · ') : '<b class="num">0' + NB + 'TP</b>')
+        + ' · <b class="num' + (r.hoje.sl ? ' desce' : '') + '">' + r.hoje.sl + NB + 'SL</b></span>' : '')
     return
   }
   $('resultado').innerHTML = 'Desde ' + dia + ' com ' + fmt(r.lote, 2) + ': ' + (r.avisos

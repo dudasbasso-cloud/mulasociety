@@ -639,7 +639,11 @@ function resultado(r) {
     + valor('Tocaram o TP', r.hoje.tp.map((n, i) => 'TP' + (i + 1) + NB + n).join(' · '), r.hoje.tp.some(n => n) ? ' sobe' : '', 'cada aviso conta uma vez por TP')
     + valor('Bateram no stop', String(r.hoje.sl), r.hoje.sl ? ' desce' : '', 'antes do TP2, pela regra')
     + linha('Fechados hoje', r.hoje.eur, 'pela regra, com ' + fmt(r.lote, 2) + ' lotes') : ''
-  $('resultadoDica').innerHTML = r.avisos ? banca + hoje + '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
+  // 26/10 («tens que perceber o melhor jeito de nunca te enganares»): a conferência automática do Telegram contra o Jarvis
+  const cf = r.conferencia ? '<div class="tit"><span>Conferência</span><span>às ' + hhmm(r.conferencia.t * 1000) + '</span></div>'
+    + (r.conferencia.erros.length ? r.conferencia.erros.map(e => '<p class="desce">' + esc(e) + '</p>').join('')
+      : '<p>Tudo bate certo: os avisos do Telegram estão todos aqui, do lado certo e com os mesmos preços.</p>') : ''
+  $('resultadoDica').innerHTML = r.avisos ? banca + hoje + cf + '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
     + linha('Feitos', r.ganhos, 'com a regra: TP no TP3 e, no TP2, o stop passa para o TP1 (quem voltou ao TP1 conta o TP1)')
     + linha('Perdidos', -r.perdas, 'os que bateram no stop antes do TP2')
     + '<div class="tit"><span>Se fechasses tudo no mesmo TP</span><span>' + (b ? 'a banca, com os stops' : 'já com os stops') + '</span></div>'
@@ -659,6 +663,7 @@ function resultado(r) {
       // O número vem antes («2 TP1»), para não se confundir com a banca de cada TP aqui ao lado
       + (r.hoje ? '<span class="hojeTP"> · Hoje: ' + (r.hoje.tp.some(n => n) ? r.hoje.tp.map((n, i) => n ? '<b class="num sobe">' + n + NB + 'TP' + (i + 1) + '</b>' : '').filter(Boolean).join(' · ') : '<b class="num">0' + NB + 'TP</b>')
         + ' · <b class="num' + (r.hoje.sl ? ' desce' : '') + '">' + r.hoje.sl + NB + 'SL</b></span>' : '')
+      + (r.conferencia?.erros?.length ? ' · <b class="num desce">⚠ conferência</b>' : '')
     return
   }
   $('resultado').innerHTML = 'Desde ' + dia + ' com ' + fmt(r.lote, 2) + ': ' + (r.avisos

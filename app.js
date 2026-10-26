@@ -286,7 +286,7 @@ function analise(r) {
   ultimaR = r
   $('brief').innerHTML = r.resumo?.length === 1 && r.resumo[0].rotulo === 'Mercado' ? mercadoFechado(r) : r.resumo?.length ? agoraVisual(r.resumo, casasTexto(r.simbolo)) : ''
   const nome = r.simbolo === 'XAUUSD' ? 'ouro' : r.simbolo
-  $('noticias').innerHTML = r.setas.length ? r.setas.map(x => '<div class="noticia"><div class="q"><span class="num">' + diaHora(x.quando) + '</span><span class="chip ' + (x.dir > 0 ? 'sobe">▲' : 'desce">▼') + x.grau + ' ' + esc(r.simbolo) + '</span></div><div class="tx">' + esc(x.texto) + '</div>' + (x.porque ? '<div class="pq">' + esc(x.porque) + '</div>' : '') + depoisTxt(x.depois, r.simbolo) + '</div>').join('')
+  $('noticias').innerHTML = r.setas.length ? r.setas.map(x => '<div class="noticia"><div class="q"><span class="num">' + diaHora(x.quando) + '</span><span class="chip ' + (x.dir > 0 ? 'sobe">▲' : 'desce">▼') + x.grau + ' ' + esc(r.simbolo) + '</span></div><div class="tx">' + esc(x.texto) + '</div>' + (x.porque || x.mais ? '<div class="pq">' + esc(x.porque || '') + (x.mais ? (x.porque ? ' · ' : '') + 'mais ' + x.mais + (x.mais > 1 ? ' notícias' : ' notícia') + ' sobre isto' : '') + '</div>' : '') + depoisTxt(x.depois, r.simbolo) + '</div>').join('')
     // 25/10 («e aqui nada?»): as setas vêm do card Mercado do Orca; com as notícias dele desligadas não chegam novas
     // 25/10: com o botão de pausa aqui em cima e a pausa sozinha do fim de semana (pausaAuto)
     : '<div class="vazio">' + (r.pausa ? (r.pausaAuto ? 'Ao fim de semana, com o mercado fechado, as notícias param sozinhas para não gastarem créditos' : 'As notícias estão em pausa, por isso não chegam setas novas') + (r.ultimaSeta ? ' (a última foi a ' + diaDe(r.ultimaSeta) + ', às ' + hhmm(r.ultimaSeta) + ')' : '')
@@ -501,12 +501,14 @@ function reabreEm() {
   return null
 }
 setInterval(() => { if (ultimaR && $('brief').querySelector('.mf')) $('brief').innerHTML = mercadoFechado(ultimaR) }, 30e3)
-// 24/10: o que o preço fez na hora a seguir à notícia («subiu 12,4 pips na hora a seguir»), e se a seta acertou
+// 24/10: o que o preço fez na hora a seguir à notícia («subiu 12,4 pips na hora a seguir»), e se a seta acertou.
+// 26/10: abaixo de 2 pips é ruído (em meia hora o ouro mexe mais de 0,5 $ em 95% das vezes): «quase não mexeu», sem dizer
+// se a seta acertou, como o servidor (PARADO, em noticias.mjs)
 function depoisTxt(d, simbolo) {
   if (!d) return ''
   const n = Math.abs(d.mov), u = simbolo === 'XAUUSD' ? ' pips' : '', q = d.min >= 60 ? 'na hora a seguir' : 'nos ' + d.min + ' min a seguir'
-  const t = n < 0.5 ? 'Quase não mexeu ' + q : (d.mov > 0 ? 'Subiu ' : 'Desceu ') + fmt(n, 1) + u + ' ' + q
-  return '<div class="depois ' + (n < 0.5 ? '' : d.mov > 0 ? 'sobe' : 'desce') + '">' + t + (d.acertou === true ? ' · a seta acertou' : d.acertou === false ? ' · a seta falhou' : '') + '</div>'
+  const t = n < 2 ? 'Quase não mexeu ' + q : (d.mov > 0 ? 'Subiu ' : 'Desceu ') + fmt(n, 1) + u + ' ' + q
+  return '<div class="depois ' + (n < 2 ? '' : d.mov > 0 ? 'sobe' : 'desce') + '">' + t + (d.acertou === true ? ' · a seta acertou' : d.acertou === false ? ' · a seta falhou' : '') + '</div>'
 }
 function ordemParada(p, r, fechado, diaria) {
   const c = casasTexto(r.simbolo), px = r.analise?.px, t = fechado ? reabreEm() : null, falta = t ? t - Date.now() : null

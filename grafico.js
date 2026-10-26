@@ -519,6 +519,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // 25/10 («que estratégia está a ser usada?»): os avisos das estratégias (CHoCH, Liquidez, ...) diziam só «Compra» ou
     // «Venda». Agora levam o nome curto por cima da seta e o nome todo ao passar o rato; os do BOT SV3 ficam como estavam
     const estrDe = new Map((d.estrategias?.ids || []).map(x => [x.id, x]))
+    // 26/10 («esta?», de uma compra Liquidez que bateu no stop 2 minutos depois e parecia aberta): o nome de um aviso que já
+    // acabou diz como acabou, ✓ ou ✗, como nos Sinais. Quando a caixa é cortada pelo seguinte, já o diz por extenso («· stop às»)
+    const acabou = p => { const f = p.regra || p.fim; return f ? (f.estado === 'stop' ? ' ✗' : ' ✓') : '' }
     const seta = (p, extra = '') => {
       const v = p.lado === 'venda', cor = v ? P.rt : P.gt
       nomeSeta(p.time, v, (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : TIPO_ALVO[p.tipo] ? '' : ' · ' + (estrDe.get(p.tipo)?.curto || p.tipo)) + extra, cor, 0.7)
@@ -549,13 +552,13 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       // 23/10 («isto fica sempre do lado direito, para não confundir»): os preços do último aviso vão sempre até à direita
       // do gráfico, mesmo com a caixa já fechada
       juntaL({ de: p.time, ate: p === ultimo ? null : ate, itens: p === ultimo ? precos(p) : [0, 1].map(k => ({ preco: p.tps[k], cor: G(0.45) })) })
-      if (!camadas.sinais) { mAlvos.push(seta(p, (n > 1 ? ' ×' + n : '') + depois)); for (const q of g) if (q !== solto) nota(q.time, h) }
+      if (!camadas.sinais) { mAlvos.push(seta(p, (n > 1 ? ' ×' + n : '') + (depois || acabou(p)))); for (const q of g) if (q !== solto) nota(q.time, h) }
       pontos(p, visto, h)
     })
     if (solto) {
       const h = dicaAlvo(solto, 1, casas, estrDe.get(solto.tipo)?.nome)
       caixa(solto, solto.time, null); juntaL({ de: solto.time, ate: null, itens: precos(solto) })
-      if (!camadas.sinais) { mAlvos.push(seta(solto)); nota(solto.time, h) }
+      if (!camadas.sinais) { mAlvos.push(seta(solto, acabou(solto))); nota(solto.time, h) }
       pontos(solto, t => t >= solto.time, h)
     }
     marcasAlvos.setMarkers(mAlvos.filter(naJanela).sort((a, b) => a.time - b.time))

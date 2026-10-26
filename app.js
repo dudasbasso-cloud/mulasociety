@@ -130,8 +130,8 @@ function plano(p, r) {
   const fechado = /^mercado fechado/.test(semVelas()), diaria = /^pausa diária/.test(semVelas())
   // 25/10 («quantas tenho a decorrer? mete ali em cima as entradas, tipo TP e SL, onde diz em pausa»): com avisos abertos e sem
   // ordem para fazer agora, o retângulo mostra-os; o que o SV3 espera fica numa linha por baixo
-  const ab = avisosAbertos()
-  if (ab.length && (fechado || diaria || p.acao === 'esperar' || !p.agora)) { $('plano').innerHTML = decorrer(ab, p, r, fechado, diaria); resultadosAbertos(r.analise?.px); return }
+  const ab = avisosAbertos(), fe = avisosFechados()
+  if ((ab.length || fe.length) && (fechado || diaria || p.acao === 'esperar' || !p.agora)) { $('plano').innerHTML = decorrer(ab, fe, p, r, fechado, diaria); resultadosAbertos(r.analise?.px); return }
   if (fechado || diaria || (p.acao !== 'esperar' && !p.agora)) { $('plano').innerHTML = ordemParada(p, r, fechado, diaria); return }
   if (p.acao === 'esperar') {
     const [curto, ...regra] = p.porque.split(': '), px = r.analise?.px
@@ -159,16 +159,31 @@ function plano(p, r) {
 // os avisos do bot ainda abertos (os que foram para o Telegram, como no quadro dos Alvos), os mais novos primeiro. Os iguais
 // (o mesmo lado e os mesmos preços, até 1 h uns dos outros) juntam-se num só, «×2», como no gráfico
 const CURTO_AVISO = { teto: 'Teto', pico: 'Pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
-function avisosAbertos() {
+// (o fim pela regra, quando há: o regresso ao TP1 depois do TP2 já fecha o aviso)
+const fimDe = p => p.regra || p.fim
+function avisosDo(filtro) {
   const g = ultimoGrafico
   if (est.simbolo !== 'XAUUSD' || g?.simbolo !== 'XAUUSD') return []
   const nomes = new Map((g.estrategias?.ids || []).map(x => [x.id, x.nome])), curtos = new Map((g.estrategias?.ids || []).map(x => [x.id, x.curto])), out = []
-  for (const p of (g.alvos?.lista || []).filter(p => !p.fim)) {
+  for (const p of (g.alvos?.lista || []).filter(filtro)) {
     const u = out.find(o => o.lado === p.lado && o.entrada === p.entrada && o.sl === p.sl && Math.abs(o.t - p.t) <= 3600), nome = nomes.get(p.tipo) || CURTO_AVISO[p.tipo] || p.tipo
     if (u) { u.n++; u.nomes.push(nome) } else out.push({ ...p, n: 1, curto: CURTO_AVISO[p.tipo] || curtos.get(p.tipo) || p.tipo, nomes: [nome] })
   }
   return out.sort((a, b) => b.t - a.t)
 }
+const avisosAbertos = () => avisosDo(p => !fimDe(p))
+// 26/10 («eu recebi no tg mas no card não tem»): os que já acabaram nas últimas 24 h, os mais recentes primeiro
+const avisosFechados = () => avisosDo(p => { const f = fimDe(p); return f && Date.now() / 1000 - f.t <= 86400 }).sort((a, b) => fimDe(b).t - fimDe(a).t)
+// cada um numa linha: ✓ ou ✗, o lado e o nome, como e quando acabou, e o resultado pela regra (o € vem em resultadosAbertos,
+// com o lote dele: o TP3 vale 3 vezes o stop, o regresso ao TP1 uma vez, o stop menos uma). Até 4; os outros contam-se
+const COMO_ACABOU = { stop: 'stop', tp1: 'saiu no TP1', tp3: 'TP3' }
+const listaFechados = (l, c) => '<div class="fe-lista"><div class="fe-tit">Fecharam nas últimas 24 h</div>' + l.slice(0, 4).map(p => {
+  const f = fimDe(p), ok = f.estado !== 'stop', v = p.lado === 'venda', k = f.estado === 'tp3' ? 3 : ok ? 1 : -1
+  return '<div class="fe" data-r="' + k * Math.abs(p.entrada - p.sl) + '" title="' + esc(p.nomes.join(' e ') + ', entrada ' + fmt(p.entrada, c) + ' às ' + diaHora(p.t * 1000)) + '">'
+    + '<span class="' + (ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fe-l ' + (v ? 'desce">Venda' : 'sobe">Compra') + '</span>'
+    + '<span class="fe-n">' + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span><span class="fe-h">' + COMO_ACABOU[f.estado] + ' ' + diaHora(f.t * 1000) + '</span>'
+    + '<b class="fe-r num ' + (ok ? 'sobe' : 'desce') + '"></b></div>'
+}).join('') + (l.length > 4 ? '<div class="fe-mais">e mais ' + (l.length - 4) + '</div>' : '') + '</div>'
 // cada aviso: o lado e o nome, a hora, quanto vai agora (resultadosAbertos) e os preços: a entrada, o stop (no TP1 depois do
 // TP2, pela regra) e os três TP, com ✓ nos que já tocou
 // (os nomes dos preços só uma vez, em cima: com um nome por aviso o cartão empurrava para fora o dos separadores)
@@ -180,21 +195,25 @@ const listaAbertos = (l, c) => '<div class="ab-lista"><div class="ab-tit"><span>
     + '<span class="ab-h num">' + diaHora(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
     + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu ? p.tps[0] : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
 }).join('') + '</div>'
-function decorrer(l, p, r, fechado, diaria) {
+function decorrer(l, fe, p, r, fechado, diaria) {
   const c = casasTexto(r.simbolo), px = r.analise?.px, n = l.reduce((s, x) => s + x.n, 0), linha = p.acao !== 'esperar' && p.entrada != null
   const sv3 = fechado ? 'Mercado fechado, ' + semVelas().replace(/^mercado fechado, /, '') : diaria ? 'Pausa diária, ' + semVelas().replace(/^pausa diária, /, '')
     : p.acao === 'esperar' ? 'SV3: esperar. ' + p.porque.split(': ')[0].replace(/\.$/, '')
     : 'SV3 em pausa: ' + (linha ? (p.acao === 'vender' ? 'vende' : 'compra') + ' se tocar ' + fmt(p.entrada, c) + (px != null ? ', a ' + fmt(Math.abs(p.entrada - px), 1) + ' pips' : '') : 'sem entrada agora')
-  return '<div class="ordemParada decorrer"><div class="op-est">A decorrer</div><div class="op-sub">' + n + (n === 1 ? ' aviso do bot' : ' avisos do bot')
-    + (px != null ? ' · agora <b class="num ab-px">' + fmt(px, c) + '</b>' : '') + '<span class="ab-lote"></span></div>' + listaAbertos(l, c) + '<div class="ab-sv3">' + esc(sv3) + '</div>'
+  return '<div class="ordemParada decorrer"><div class="op-est">' + (n ? 'A decorrer' : 'Avisos') + '</div><div class="op-sub">' + (n ? n + (n === 1 ? ' aviso do bot' : ' avisos do bot') : 'Nenhum a decorrer')
+    + (px != null ? ' · agora <b class="num ab-px">' + fmt(px, c) + '</b>' : '') + '<span class="ab-lote"></span></div>' + (n ? listaAbertos(l, c) : '') + (fe.length ? listaFechados(fe, c) : '') + '<div class="ab-sv3">' + esc(sv3) + '</div>'
     + (!fechado && p.acao !== 'esperar' && p.entradaTexto ? comoEntrar(p) : '') + '</div>'
 }
 // quanto vai cada aviso aberto, ao preço de agora (de segundo em segundo no Mac). 25/10 («mete também o valor como se
 // tivesse metido 0,32 lote»): e em €, com o lote dele; 1 $ no ouro com 1 lote são 100 $. O amigo não tem o lote: só pips
 function resultadosAbertos(px) {
+  const v = valorLote
+  for (const el of $('plano').querySelectorAll('.fe[data-r]')) {
+    const d = +el.dataset.r, s = d >= 0 ? '+' : '-'
+    el.querySelector('.fe-r').textContent = v ? s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : s + fmt(Math.abs(d), 1) + ' pips'
+  }
   if (px == null) return
   pxAbertos = px
-  const v = valorLote
   for (const el of $('plano').querySelectorAll('.ab[data-entrada]')) {
     const d = (el.dataset.lado === 'venda' ? 1 : -1) * (+el.dataset.entrada - px), r = el.querySelector('.ab-r'), s = d >= 0 ? '+' : '-'
     r.textContent = s + fmt(Math.abs(d), 1) + ' pips' + (v ? ' · ' + s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : '')

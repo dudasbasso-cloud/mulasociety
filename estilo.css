@@ -752,3 +752,13 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 /* o cartão dos separadores nunca desaparece: com muitos avisos abertos, a coluna corre */
 .col.dir .abas { min-height:200px }
 .ab-sv3 { margin-top:9px; font-size:12px; line-height:1.4; color:var(--suave) }
+
+/* 26/10: os avisos que fecharam nas últimas 24 h, uma linha cada, por baixo dos que estão a decorrer */
+.fe-lista { margin-top:12px }
+.fe-tit { font-size:10.5px; color:var(--fraco); padding-bottom:2px }
+.fe { display:flex; align-items:baseline; gap:6px; padding:5px 0; border-bottom:1px solid var(--borda); font-size:12.5px; white-space:nowrap }
+.fe .fe-l { font-weight:600 }
+.fe .fe-n { color:var(--texto); overflow:hidden; text-overflow:ellipsis; min-width:0 }
+.fe .fe-h { color:var(--fraco); font-size:11.5px }
+.fe .fe-r { margin-left:auto; font-size:12.5px; font-weight:600 }
+.fe-mais { padding-top:4px; font-size:11.5px; color:var(--fraco) }

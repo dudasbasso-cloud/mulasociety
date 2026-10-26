@@ -162,16 +162,29 @@ class Rotulos {
       // vela empilham-se
       const S = Math.min(Math.max(ts.options().barSpacing, 12), 30), margem = Math.max(S * 0.1, 3), ALT = 14
       const L = this.itens.map(it => ({ ...it, x: this.x(it.time), y: this.serie.priceToCoordinate(it.preco) }))
-        .filter(it => it.x != null && it.y != null && it.x > -80 && it.x < W + 80)
+        .filter(it => it.x != null && it.y != null && it.x > -80 && it.x < W + 80 && (!it.seta || (it.y > -30 && it.y < H + 30)))
       // primeiro o sítio de cada seta e de cada ponto fica ocupado; depois os nomes, os das setas antes dos dos pontos
       for (const it of L) {
         const f = S * it.tam
         if (it.ponto) { it.yc = it.y + (it.desvio || 0) * f / 2; ocupar({ x: it.x - f / 2, y: it.yc - f / 2, w: f, h: f }); continue }
+        // a seta no preço da entrada: a ponta toca-lhe, por cima numa venda e por baixo numa compra
+        if (it.seta) { ocupar({ x: it.x - f / 2, y: it.cima ? it.y - f : it.y, w: f, h: f }); it.base = it.cima ? it.y - f - 2 : it.y + f + 2; continue }
         ocupar({ x: it.x - f / 2, y: it.cima ? it.y - margem - (it.n + 1) * f - it.n * margem : it.y + margem + it.n * (f + margem), w: f, h: f })
         it.base = it.cima ? it.y - it.pilha * (f + margem) - 2 : it.y + it.pilha * (f + margem) + 2
       }
       L.sort((a, b) => (a.ponto ? 1 : 0) - (b.ponto ? 1 : 0))
       c.save()
+      // 26/10 («supostamente essa que fechou era de venda»): a seta de uma compra ficava por baixo da vela, a 14 pips da entrada
+      // e com o stop por cima dela, e parecia uma venda. Agora a ponta fica no preço da entrada, como no MT5; o contorno
+      // (o da letra dos nomes) deixa-a ver-se por cima de uma vela da mesma cor
+      c.lineJoin = 'round'; c.lineWidth = 2.5 * r; c.strokeStyle = P.rotulo
+      for (const it of L) if (it.seta) {
+        const f = S * it.tam, s = it.cima ? -1 : 1, x = it.x, y = it.y, cab = f * 0.55, h = f / 2, ha = Math.max(1, f / 7)
+        c.beginPath()
+        c.moveTo(x * r, y * k); c.lineTo((x + h) * r, (y + s * cab) * k); c.lineTo((x + ha) * r, (y + s * cab) * k); c.lineTo((x + ha) * r, (y + s * f) * k)
+        c.lineTo((x - ha) * r, (y + s * f) * k); c.lineTo((x - ha) * r, (y + s * cab) * k); c.lineTo((x - h) * r, (y + s * cab) * k); c.closePath()
+        c.stroke(); c.fillStyle = it.cor; c.fill()
+      }
       c.font = '500 ' + (11 * r) + 'px -apple-system, sans-serif'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 3 * r; c.strokeStyle = P.rotulo
       const dentro = y => Math.max(1, Math.min(H - ALT - 1, y))
       for (const it of L) {
@@ -515,7 +528,10 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     notas = new Map()
     const nota = (t, h) => { const l = notas.get(t) || []; if (!l.includes(h)) l.push(h); notas.set(t, l) }
     const porVela = new Map(d.velas.map(v => [v.time, v])), rotulos = []
-    const nomeSeta = (time, cima, texto, cor, tam) => { const v = porVela.get(time); if (v) rotulos.push({ time, preco: cima ? v.high : v.low, cima, texto, cor, tam }) }
+    const nomeSeta = (time, cima, texto, cor, tam, entrada) => {
+      if (entrada != null) { rotulos.push({ time, preco: entrada, cima, texto, cor, tam, seta: true }); return }
+      const v = porVela.get(time); if (v) rotulos.push({ time, preco: cima ? v.high : v.low, cima, texto, cor, tam })
+    }
     // 25/10 («que estratégia está a ser usada?»): os avisos das estratégias (CHoCH, Liquidez, ...) diziam só «Compra» ou
     // «Venda». Agora levam o nome curto por cima da seta e o nome todo ao passar o rato; os do BOT SV3 ficam como estavam
     const estrDe = new Map((d.estrategias?.ids || []).map(x => [x.id, x]))
@@ -524,8 +540,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const acabou = p => { const f = p.regra || p.fim; return f ? (f.estado === 'stop' ? ' ✗' : ' ✓') : '' }
     const seta = (p, extra = '') => {
       const v = p.lado === 'venda', cor = v ? P.rt : P.gt
-      nomeSeta(p.time, v, (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : TIPO_ALVO[p.tipo] ? '' : ' · ' + (estrDe.get(p.tipo)?.curto || p.tipo)) + extra, cor, 0.7)
-      return { time: p.time, position: v ? 'aboveBar' : 'belowBar', shape: v ? 'arrowDown' : 'arrowUp', color: cor, size: 0.7 }
+      nomeSeta(p.time, v, (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : TIPO_ALVO[p.tipo] ? '' : ' · ' + (estrDe.get(p.tipo)?.curto || p.tipo)) + extra, cor, 0.7, p.entrada)
     }
     const pontos = (p, visto, h) => {
       const ponto = (t, o, texto, desvio = 0) => { mAlvos.push({ time: t, shape: 'circle', size: 0.5, ...o }); nota(t, h); rotulos.push({ ponto: true, time: t, preco: o.price, cima: desvio < 0, desvio, texto, cor: o.color, tam: 0.5 }) }
@@ -552,13 +567,13 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       // 23/10 («isto fica sempre do lado direito, para não confundir»): os preços do último aviso vão sempre até à direita
       // do gráfico, mesmo com a caixa já fechada
       juntaL({ de: p.time, ate: p === ultimo ? null : ate, itens: p === ultimo ? precos(p) : [0, 1].map(k => ({ preco: p.tps[k], cor: G(0.45) })) })
-      if (!camadas.sinais) { mAlvos.push(seta(p, (n > 1 ? ' ×' + n : '') + (depois || acabou(p)))); for (const q of g) if (q !== solto) nota(q.time, h) }
+      if (!camadas.sinais) { seta(p, (n > 1 ? ' ×' + n : '') + (depois || acabou(p))); for (const q of g) if (q !== solto) nota(q.time, h) }
       pontos(p, visto, h)
     })
     if (solto) {
       const h = dicaAlvo(solto, 1, casas, estrDe.get(solto.tipo)?.nome)
       caixa(solto, solto.time, null); juntaL({ de: solto.time, ate: null, itens: precos(solto) })
-      if (!camadas.sinais) { mAlvos.push(seta(solto, acabou(solto))); nota(solto.time, h) }
+      if (!camadas.sinais) { seta(solto, acabou(solto)); nota(solto.time, h) }
       pontos(solto, t => t >= solto.time, h)
     }
     marcasAlvos.setMarkers(mAlvos.filter(naJanela).sort((a, b) => a.time - b.time))
@@ -578,17 +593,16 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // o nome têm a cor de como acabou (verde ganhou, vermelho perdeu, areia ainda a decorrer); antes era a do lado, e um
     // «Liquidez ✓» de venda saía a vermelho. «ZIMBA FX: todas» (id edney) junta as cinco (liquidez, CHoCH, order block, Wyckoff e Elliott; eram três até 25/10); podem vir várias ao mesmo tempo
     const ver = (camadas.estrVer || []).flatMap(v => v === 'edney' ? ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott'] : [v]), EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
-    marcasEstr.setMarkers(EL.map(x => ({ time: x.time, position: x.lado === 'venda' ? 'aboveBar' : 'belowBar', shape: x.lado === 'venda' ? 'arrowDown' : 'arrowUp',
-      color: corEstr(x), size: 0.8 })).filter(naJanela).sort((a, b) => a.time - b.time))
+    marcasEstr.setMarkers([])
     for (const x of [...EL].sort((a, b) => a.time - b.time)) {
       nota(x.time, dicaEstr(x, casas))
-      nomeSeta(x.time, x.lado === 'venda', x.curto + (x.fim === 'aberta' ? '' : ganhou(x) ? ' ✓' : ' ✗'), corEstr(x), 0.8)
+      nomeSeta(x.time, x.lado === 'venda', x.curto + (x.fim === 'aberta' ? '' : ganhou(x) ? ' ✓' : ' ✗'), corEstr(x), 0.8, x.entrada)
     }
     // as setas da mesma vela empilham-se (como na biblioteca): cada nome sabe quantas há e vai para fora da pilha. No
     // telemóvel também (25/10, «no telemóvel mete como antes, parece que só tem as setas, não tem o nome do CHoCH»)
     const pilhas = new Map(), daPilha = it => it.time + '|' + it.cima + '|' + it.tam
-    for (const it of rotulos) if (!it.ponto) { it.n = pilhas.get(daPilha(it)) || 0; pilhas.set(daPilha(it), it.n + 1) }
-    for (const it of rotulos) if (!it.ponto) it.pilha = pilhas.get(daPilha(it))
+    for (const it of rotulos) if (!it.ponto && !it.seta) { it.n = pilhas.get(daPilha(it)) || 0; pilhas.set(daPilha(it), it.n + 1) }
+    for (const it of rotulos) if (!it.ponto && !it.seta) it.pilha = pilhas.get(daPilha(it))
     if (rotulos.length) { const ro = new Rotulos(rotulos, xDe); velas.attachPrimitive(ro); caixas.push(ro) }
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
     // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte. 25/10 («mete o TP, a

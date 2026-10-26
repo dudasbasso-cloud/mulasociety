@@ -252,6 +252,17 @@ function dicaEstr(x, casas) {
     + (x.pips >= 0 ? '+' : '-') + fmt(Math.abs(x.pips), 1) + ' pips'
   return '<b>' + x.nome + ', ' + x.lado + '</b> às ' + hora(x.t) + ' de ' + data(x.t) + '<br>entrada ' + fmt(x.entrada, casas) + ' · stop ' + fmt(x.sl, casas) + ' · TP3 ' + fmt(x.tps[2], casas) + '<br>' + res
 }
+// 26/10: os números dos avisos do dia, como no Telegram («#7»); três ou mais seguidos ficam «#2 a #6»
+export function numerosAviso(l) {
+  const L = l.filter(Boolean), out = []
+  for (let i = 0; i < L.length;) {
+    let j = i
+    while (j + 1 < L.length && L[j + 1] === L[j] + 1) j++
+    out.push(j - i >= 2 ? '#' + L[i] + ' a #' + L[j] : L.slice(i, j + 1).map(k => '#' + k).join(' '))
+    i = j + 1
+  }
+  return out.join(' ')
+}
 // o aviso do bot: os TP por onde passou e como acabou pela regra (TP3, de volta ao TP1 depois do TP2, ou stop)
 const TIPO_ALVO = { teto: ' de teto', pico: ' depois do pico', incrivel: ' INCRÍVEL', sv3: ' do SV3' }
 const CURTO_SINAL = { teto: 'Teto', pico: 'Pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
@@ -260,7 +271,7 @@ function dicaAlvo(p, n, casas, nome) {
   const tps = p.hits.map((t, k) => t != null && !(e === 'tp3' && k === 2) ? 'TP' + (k + 1) + ' às ' + quando(t) : null).filter(Boolean).join(' · ')
   const fim = !p.fim ? 'ainda aberto' : '<b style="color:' + (e === 'stop' ? P.rt : P.gt) + '">'
     + ({ tp3: '✓ fechou no TP3', tp1: '✓ saiu no TP1, depois do TP2', stop: '✗ stop' }[e] || e) + ' às ' + quando(p.fim.exato ?? p.fim.t) + '</b>'
-  return '<b>' + (p.lado === 'venda' ? 'Venda' : 'Compra') + (TIPO_ALVO[p.tipo] || (nome ? ' · ' + nome : '')) + (n > 1 ? ' ×' + n : '') + '</b> às ' + hora(p.t) + ' de ' + data(p.t)
+  return '<b>' + (p.num ? '#' + p.num + ' ' : '') + (p.lado === 'venda' ? 'Venda' : 'Compra') + (TIPO_ALVO[p.tipo] || (nome ? ' · ' + nome : '')) + (n > 1 ? ' ×' + n : '') + '</b> às ' + hora(p.t) + ' de ' + data(p.t)
     + '<br>entrada ' + fmt(p.entrada, casas) + ' · stop ' + fmt(p.sl, casas) + ' · TP3 ' + fmt(p.tps[2], casas) + (tps ? '<br>' + tps : '') + '<br>' + fim
 }
 
@@ -538,9 +549,10 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // 26/10 («esta?», de uma compra Liquidez que bateu no stop 2 minutos depois e parecia aberta): o nome de um aviso que já
     // acabou diz como acabou, ✓ ou ✗, como nos Sinais. Quando a caixa é cortada pelo seguinte, já o diz por extenso («· stop às»)
     const acabou = p => { const f = p.regra || p.fim; return f ? (f.estado === 'stop' ? ' ✗' : ' ✓') : '' }
-    const seta = (p, extra = '') => {
-      const v = p.lado === 'venda', cor = v ? P.rt : P.gt
-      nomeSeta(p.time, v, (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : TIPO_ALVO[p.tipo] ? '' : ' · ' + (estrDe.get(p.tipo)?.curto || p.tipo)) + extra, cor, 0.7, p.entrada)
+    // 26/10: à frente, o número do aviso no dia, o mesmo do Telegram («#7»)
+    const seta = (p, extra = '', g = [p]) => {
+      const v = p.lado === 'venda', cor = v ? P.rt : P.gt, nums = numerosAviso(g.map(q => q.num))
+      nomeSeta(p.time, v, (nums ? nums + ' ' : '') + (v ? 'Venda' : 'Compra') + (p.tipo === 'teto' ? ' de teto' : TIPO_ALVO[p.tipo] ? '' : ' · ' + (estrDe.get(p.tipo)?.curto || p.tipo)) + extra, cor, 0.7, p.entrada)
     }
     const pontos = (p, visto, h) => {
       const ponto = (t, o, texto, desvio = 0) => { mAlvos.push({ time: t, shape: 'circle', size: 0.5, ...o }); nota(t, h); rotulos.push({ ponto: true, time: t, preco: o.price, cima: desvio < 0, desvio, texto, cor: o.color, tam: 0.5 }) }
@@ -567,7 +579,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       // 23/10 («isto fica sempre do lado direito, para não confundir»): os preços do último aviso vão sempre até à direita
       // do gráfico, mesmo com a caixa já fechada
       juntaL({ de: p.time, ate: p === ultimo ? null : ate, itens: p === ultimo ? precos(p) : [0, 1].map(k => ({ preco: p.tps[k], cor: G(0.45) })) })
-      if (!camadas.sinais) { seta(p, (n > 1 ? ' ×' + n : '') + (depois || acabou(p))); for (const q of g) if (q !== solto) nota(q.time, h) }
+      if (!camadas.sinais) { seta(p, (n > 1 ? ' ×' + n : '') + (depois || acabou(p)), g.filter(q => q !== solto)); for (const q of g) if (q !== solto) nota(q.time, h) }
       pontos(p, visto, h)
     })
     if (solto) {

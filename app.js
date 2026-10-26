@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico } from './grafico.js'
+import { criarGrafico, numerosAviso } from './grafico.js'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -167,7 +167,7 @@ function avisosDo(filtro) {
   const nomes = new Map((g.estrategias?.ids || []).map(x => [x.id, x.nome])), curtos = new Map((g.estrategias?.ids || []).map(x => [x.id, x.curto])), out = []
   for (const p of (g.alvos?.lista || []).filter(filtro)) {
     const u = out.find(o => o.lado === p.lado && o.entrada === p.entrada && o.sl === p.sl && Math.abs(o.t - p.t) <= 3600), nome = nomes.get(p.tipo) || CURTO_AVISO[p.tipo] || p.tipo
-    if (u) { u.n++; u.nomes.push(nome) } else out.push({ ...p, n: 1, curto: CURTO_AVISO[p.tipo] || curtos.get(p.tipo) || p.tipo, nomes: [nome] })
+    if (u) { u.n++; u.nomes.push(nome); if (p.num) u.nums.push(p.num) } else out.push({ ...p, n: 1, curto: CURTO_AVISO[p.tipo] || curtos.get(p.tipo) || p.tipo, nomes: [nome], nums: p.num ? [p.num] : [] })
   }
   return out.sort((a, b) => b.t - a.t)
 }
@@ -177,11 +177,13 @@ const avisosFechados = () => avisosDo(p => { const f = fimDe(p); return f && Dat
 // cada um numa linha: ✓ ou ✗, o lado e o nome, como e quando acabou, e o resultado pela regra (o € vem em resultadosAbertos,
 // com o lote dele: o TP3 vale 3 vezes o stop, o regresso ao TP1 uma vez, o stop menos uma). Até 4; os outros contam-se
 const COMO_ACABOU = { stop: 'stop', tp1: 'saiu no TP1', tp3: 'TP3' }
+// 26/10: o número do aviso no dia, o mesmo do Telegram e das respostas dos TP e do stop («#7»)
+const numeros = p => p.nums?.length ? numerosAviso(p.nums) + ' ' : ''
 const listaFechados = (l, c) => '<div class="fe-lista"><div class="fe-tit">Fecharam nas últimas 24 h</div>' + l.slice(0, 4).map(p => {
   const f = fimDe(p), ok = f.estado !== 'stop', v = p.lado === 'venda', k = f.estado === 'tp3' ? 3 : ok ? 1 : -1
   return '<div class="fe" data-r="' + k * Math.abs(p.entrada - p.sl) + '" title="' + esc(p.nomes.join(' e ') + ', entrada ' + fmt(p.entrada, c) + ' às ' + diaHora(p.t * 1000)) + '">'
     + '<span class="' + (ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fe-l ' + (v ? 'desce">Venda' : 'sobe">Compra') + '</span>'
-    + '<span class="fe-n">' + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span><span class="fe-h">' + COMO_ACABOU[f.estado] + ' ' + diaHora(f.t * 1000) + '</span>'
+    + '<span class="fe-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span><span class="fe-h">' + COMO_ACABOU[f.estado] + ' ' + diaHora(f.t * 1000) + '</span>'
     + '<b class="fe-r num ' + (ok ? 'sobe' : 'desce') + '"></b></div>'
 }).join('') + (l.length > 4 ? '<div class="fe-mais">e mais ' + (l.length - 4) + '</div>' : '') + '</div>'
 // cada aviso: o lado e o nome, a hora, quanto vai agora (resultadosAbertos) e os preços: a entrada, o stop (no TP1 depois do
@@ -191,7 +193,7 @@ const listaAbertos = (l, c) => '<div class="ab-lista"><div class="ab-tit"><span>
   const v = p.lado === 'venda', moveu = p.hits[1] != null
   const niv = (x, cl, ok) => '<b class="num ' + cl + '">' + fmt(x, c) + (ok ? '<i>✓</i>' : '') + '</b>'
   return '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para o TP1' : '')) + '">'
-    + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
+    + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
     + '<span class="ab-h num">' + diaHora(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
     + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu ? p.tps[0] : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
 }).join('') + '</div>'
@@ -587,6 +589,8 @@ function ligar() {
     if (tipo === 'analise' && dados.simbolo === est.simbolo) { analise(dados); carregarGrafico() }
     else if (tipo === 'radar') radar(dados)
     else if (tipo === 'conta') conta(dados)
+    // 26/10: um aviso do bot mudou (um novo, um TP, um stop): o gráfico, o card e a barra refazem-se já, sem esperar pela volta
+    else if (tipo === 'avisos') { if (est.simbolo === 'XAUUSD') carregarGrafico(); api('resultado').then(resultado, () => {}) }
     else if (tipo === 'obs') observacao(dados)
     else if (tipo === 'forca') forca(dados)
     // o preço de segundo em segundo: no gráfico de 1 s acaba a última vela ou junta a seguinte, e o preço lá em cima anda com

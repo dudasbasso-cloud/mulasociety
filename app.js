@@ -625,38 +625,43 @@ if (!AMIGO) api('conta').then(conta, () => conta(null))
 api('observacoes').then(observacoes, () => observacoes([]))
 if (!AMIGO) api('opcoes').then(opcoes, () => opcoes({}))
 // lá em cima (23/10): o que os avisos do ouro davam com o lote dele desde o primeiro, como o quadro (o amigo não vê).
-// Ao passar o rato («dizer com base no quê»): a regra de cada número, o que dava fechar tudo no TP1, no TP2 ou no TP3, e os
-// avisos que ficaram fora da conta por terem saído com os avisos dele em pausa. Um quadro nosso, porque o title do sistema
-// demorava e quase não se via.
+// Ao passar o rato («dizer com base no quê»): um quadro nosso, porque o title do sistema demorava e quase não se via.
+// 26/10 («consegues melhorar isto, não percebo»): em palavras simples e em três partes: hoje, desde o primeiro dia e qual TP
+// dá mais (com a banca de cada um, os mesmos números da barra). Por baixo, a conferência e os avisos que ficaram fora da conta
+// por terem saído com os avisos dele em pausa.
 function resultado(r) {
   if (!r) return
   valorLote = r.lote && r.eurusd ? { lote: r.lote, eurusd: r.eurusd } : null
   resultadosAbertos(pxAbertos)
   const dia = new Date(r.desde * 1000).toLocaleDateString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit' })
   const sinal = x => (x >= 0 ? '+' : '-') + fmt(Math.abs(x), 0) + ' €', cor = x => x >= 0.5 ? ' sobe' : x <= -0.5 ? ' desce' : ''
-  const linha = (nome, v, nota) => '<div class="l"><span>' + nome + '</span><b class="num' + cor(v) + '">' + sinal(v) + '</b>' + (nota ? '<i>' + nota + '</i>' : '') + '</div>'
-  // 25/10 («como se tivéssemos começado com uma banca de 500 euros dia 21 às 18:00»): a banca de agora e o mais baixo a que desceu
-  const b = r.banca, quando = t => new Date(t * 1000).toLocaleString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(', ', ' às ')
+  const b = r.banca, h = r.hoje, quando = t => new Date(t * 1000).toLocaleString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(', ', ' às ')
+  const tit = (nome, sub) => '<div class="tit"><span>' + nome + '</span><span>' + sub + '</span></div>'
   const valor = (nome, txt, cls, nota) => '<div class="l"><span>' + nome + '</span><b class="num' + cls + '">' + txt + '</b>' + (nota ? '<i>' + nota + '</i>' : '') + '</div>'
-  const banca = b ? '<div class="tit"><span>A banca</span><span>' + fmt(b.inicio, 0) + ' € a ' + quando(r.desde) + '</span></div>'
-    + valor('Agora', fmt(b.agora, 0) + ' €', cor(b.agora - b.inicio), (b.agora >= b.inicio ? '+' : '') + Math.round(100 * (b.agora - b.inicio) / b.inicio) + ' %. Os avisos fechados pela regra, cada um na hora em que acabou; os abertos ainda não contam')
-    + (b.tMinimo ? valor('O mais baixo', fmt(b.minimo, 0) + ' €', b.minimo < b.inicio / 2 ? ' desce' : '', quando(b.tMinimo) + (b.stops ? '. Com ' + fmt(r.lote, 2) + ' cada stop custou em média ' + fmt(b.stopMedio, 0) + ' €' : '')) : '') : ''
-  const hoje = r.hoje ? '<div class="tit"><span>Hoje</span><span>desde as 00:00 de Lisboa</span></div>'
-    + valor('Tocaram o TP', r.hoje.tp.map((n, i) => 'TP' + (i + 1) + NB + n).join(' · '), r.hoje.tp.some(n => n) ? ' sobe' : '', 'cada aviso conta uma vez por TP')
-    + valor('Bateram no stop', String(r.hoje.sl), r.hoje.sl ? ' desce' : '', 'antes do TP2, pela regra')
-    + linha('Fechados hoje', r.hoje.eur, 'pela regra, com ' + fmt(r.lote, 2) + ' lotes') : ''
-  // 26/10 («tens que perceber o melhor jeito de nunca te enganares»): a conferência automática do Telegram contra o Jarvis
-  const cf = r.conferencia ? '<div class="tit"><span>Conferência</span><span>às ' + hhmm(r.conferencia.t * 1000) + '</span></div>'
-    + (r.conferencia.erros.length ? r.conferencia.erros.map(e => '<p class="desce">' + esc(e) + '</p>').join('')
-      : '<p>Tudo bate certo: os avisos do Telegram estão todos aqui, do lado certo e com os mesmos preços.</p>') : ''
-  $('resultadoDica').innerHTML = r.avisos ? banca + hoje + cf + '<div class="tit"><span>Como se conta</span><span>' + fmt(r.lote, 2) + ' lotes</span></div>'
-    + linha('Feitos', r.ganhos, 'com a regra: TP no TP3 e, no TP2, o stop passa para o TP1 (quem voltou ao TP1 conta o TP1)')
-    + linha('Perdidos', -r.perdas, 'os que bateram no stop antes do TP2')
-    + '<div class="tit"><span>Se fechasses tudo no mesmo TP</span><span>' + (b ? 'a banca, com os stops' : 'já com os stops') + '</span></div>'
-    + ['TP1', 'TP2', 'TP3'].map((n, i) => b ? valor('Tudo no ' + n, fmt(b.inicio + r.porTP[i], 0) + ' €', cor(r.porTP[i]), sinal(r.porTP[i])) : linha('Tudo no ' + n, r.porTP[i])).join('')
-    + '<p>' + r.avisos + ' avisos que te chegaram desde ' + dia + (r.abertos ? ', ' + r.abertos + (r.abertos > 1 ? ' ainda abertos' : ' ainda aberto') : '') + '.</p>'
-    + (r.pausa ? '<p>Fora da conta: ' + r.pausa.avisos + ' avisos que saíram com os teus avisos em pausa e não te chegaram (davam ' + sinal(r.pausa.ganhos)
-      + (r.pausa.perdas >= 0.5 ? ' e ' + sinal(-r.pausa.perdas) : ', sem stops') + ').</p>' : '') : ''
+  // «4 com lucro · 16 no stop»: cada aviso fechado conta uma vez
+  const conta = (n, txt, cls) => '<span' + (n ? ' class="' + cls + '"' : '') + '>' + n + NB + txt + '</span>'
+  const fecharam = (bons, stops) => conta(bons, 'com lucro', 'sobe') + ' · ' + conta(stops, 'no stop', 'desce')
+  const parteHoje = h ? tit('Hoje', 'desde as 00:00')
+    + valor('Resultado', sinal(h.eur), cor(h.eur), h.lucro + h.sl ? '' : 'ainda nenhum aviso fechou hoje')
+    + (h.lucro + h.sl ? valor('Fecharam', fecharam(h.lucro, h.sl), '') : '')
+    + valor('Tocaram', h.tp.map((n, i) => n + NB + 'TP' + (i + 1)).join(' · '), '', 'o mesmo aviso conta em todos os TP que tocou hoje') : ''
+  const parteDesde = tit('Desde ' + dia, r.avisos + ' avisos')
+    + valor('Resultado', sinal(r.ganhos - r.perdas), cor(r.ganhos - r.perdas), 'ganhou ' + fmt(r.ganhos, 0) + ' € nos TP e perdeu ' + fmt(r.perdas, 0) + ' € nos stops')
+    + (b ? valor('A banca', fmt(b.inicio, 0) + ' € → ' + fmt(b.agora, 0) + ' €', cor(b.agora - b.inicio), b.tMinimo ? 'o mais baixo foi ' + fmt(b.minimo, 0) + ' €, a ' + quando(b.tMinimo) : '')
+      + valor('Fecharam', fecharam(b.fechados - b.stops, b.stops), '', r.abertos ? 'e ' + r.abertos + (r.abertos > 1 ? ' ainda abertos, que ainda não contam' : ' ainda aberto, que ainda não conta') : '') : '')
+  // a nossa regra e fechar sempre no mesmo TP, cada uma com a banca a que chegava (como na barra); diz-se qual dá mais
+  const formas = [['A nossa regra', r.ganhos - r.perdas], ...r.porTP.map((v, i) => ['Sempre no TP' + (i + 1), v])], melhor = Math.max(...formas.map(f => f[1]))
+  const parteTP = tit('Qual TP dá mais', b ? 'a banca, começando com ' + fmt(b.inicio, 0) + ' €' : 'desde ' + dia)
+    + formas.map(([nome, v], i) => valor(nome, b ? fmt(b.inicio + v, 0) + ' €' : sinal(v), cor(v),
+      i ? (v === melhor ? 'é a que dá mais' : '') : 'TP no TP3; quando toca o TP2, o stop passa para o TP1' + (v === melhor ? '. É a que dá mais' : ''))).join('')
+  // 26/10 («tens que perceber o melhor jeito de nunca te enganares»): a conferência automática do Telegram contra o Jarvis;
+  // se alguma coisa não bate, vem logo no topo
+  const erros = r.conferencia?.erros?.length ? r.conferencia.erros.map(e => '<p class="desce">' + esc(e) + '</p>').join('') : ''
+  const certo = r.conferencia && !erros ? '<p>Bate certo com o Telegram (conferido às ' + hhmm(r.conferencia.t * 1000) + ').</p>' : ''
+  const pausa = r.pausa ? '<p>Fora desta conta: ' + r.pausa.avisos + (r.pausa.avisos > 1 ? ' avisos que saíram com os teus avisos em pausa e não te chegaram'
+    : ' aviso que saiu com os teus avisos em pausa e não te chegou') + ' (davam ' + sinal(r.pausa.ganhos - r.pausa.perdas) + ').</p>' : ''
+  $('resultadoDica').innerHTML = r.avisos ? '<p>Quanto davam os avisos do Telegram, todos com ' + fmt(r.lote, 2) + ' lotes.</p>' + erros
+    + parteHoje + parteDesde + parteTP + certo + pausa : ''
   // 24/10 («podes meter isto noutro sítio ou arquiva»): o card das estratégias de TP fica arquivado (estrategiasTP); no lugar
   // dele, o placar de cada estratégia
   placarTP(r.placar)
@@ -705,7 +710,8 @@ function placarTP(L) {
   const comTipos = l => l.flatMap(e => e.id === 'bot' ? [e, ...F] : [e])
   const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + comTipos(l).map(linha).join('') + '</tbody></table>'
   const V = L.filter(e => !filho(e)), meio = Math.ceil(V.length / 2)
-  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>todas medidas igual desde 19/10, até 24 h cada<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
+  // 27/10: o BOT conta como saiu no Telegram (a regra, sem limite de horas); as outras medem-se nas velas, até 24 h cada
+  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>desde 19/10 · o BOT como no Telegram, as outras nas velas até 24 h<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
     + '<div class="placarDuas">' + tabela(V.slice(0, meio)) + tabela(V.slice(meio)) + '</div>'
   el.hidden = false
 }

@@ -660,7 +660,7 @@ function resultado(r) {
   const certo = r.conferencia && !erros ? '<p>Bate certo com o Telegram (conferido às ' + hhmm(r.conferencia.t * 1000) + ').</p>' : ''
   const pausa = r.pausa ? '<p>Fora desta conta: ' + r.pausa.avisos + (r.pausa.avisos > 1 ? ' avisos que saíram com os teus avisos em pausa e não te chegaram'
     : ' aviso que saiu com os teus avisos em pausa e não te chegou') + ' (davam ' + sinal(r.pausa.ganhos - r.pausa.perdas) + ').</p>' : ''
-  $('resultadoDica').innerHTML = r.avisos ? '<p>Quanto davam os avisos do Telegram, todos com ' + fmt(r.lote, 2) + ' lotes.</p>' + erros
+  $('resultadoDica').innerHTML = r.avisos ? '<p>Quanto davam os avisos do Telegram, todos com ' + fmt(r.lote, 2) + ' lotes' + (r.custo ? ', já sem o spread (' + fmt(r.custo, 2) + NB + '$ em cada aviso)' : '') + '.</p>' + erros
     + parteHoje + parteDesde + parteTP + certo + pausa : ''
   // 24/10 («podes meter isto noutro sítio ou arquiva»): o card das estratégias de TP fica arquivado (estrategiasTP); no lugar
   // dele, o placar de cada estratégia

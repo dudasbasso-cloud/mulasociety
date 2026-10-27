@@ -666,15 +666,16 @@ function resultado(r) {
   // dele, o placar de cada estratégia
   placarTP(r.placar)
   if (b) {
-    // (curta, para caber a 1440 px com os botões: a data, o lote e a percentagem estão na dica)
+    // (a 1440 px, o ecrã dele, só cabe a banca e o TP1; o resto, com a data, o lote e a percentagem, está na dica)
     $('resultado').innerHTML = 'Banca ' + fmt(b.inicio, 0) + ' € → <b class="num' + cor(b.agora - b.inicio) + '">' + fmt(b.agora, 0) + ' €</b>'
+      // 27/10: o aviso da conferência logo a seguir à banca; no fim ficava escondido nas reticências, a 1440 px
+      + (r.conferencia?.erros?.length ? ' · <b class="num desce">⚠ conferência</b>' : '')
       // 25/10 («em vez disto mete TP1 TP2 TP3»): no lugar do mais baixo, a banca se tivesse fechado tudo no TP1, no TP2 ou no TP3
       + r.porTP.map((v, i) => ' · TP' + (i + 1) + ' <b class="num' + cor(v) + '">' + fmt(b.inicio + v, 0) + ' €</b>').join('')
       // 25/10 («mete uma cena do dia de hoje: SL e TPs»): quantos avisos tocaram cada TP hoje e quantos bateram no stop.
       // O número vem antes («2 TP1»), para não se confundir com a banca de cada TP aqui ao lado
       + (r.hoje ? '<span class="hojeTP"> · Hoje: ' + (r.hoje.tp.some(n => n) ? r.hoje.tp.map((n, i) => n ? '<b class="num sobe">' + n + NB + 'TP' + (i + 1) + '</b>' : '').filter(Boolean).join(' · ') : '<b class="num">0' + NB + 'TP</b>')
         + ' · <b class="num' + (r.hoje.sl ? ' desce' : '') + '">' + r.hoje.sl + NB + 'SL</b></span>' : '')
-      + (r.conferencia?.erros?.length ? ' · <b class="num desce">⚠ conferência</b>' : '')
     return
   }
   $('resultado').innerHTML = 'Desde ' + dia + ' com ' + fmt(r.lote, 2) + ': ' + (r.avisos
@@ -1057,5 +1058,6 @@ const TEMAS = [
   btn.addEventListener('click', abrir)
   caixa.addEventListener('click', e => { if (e.target.closest('[data-fecha]')) fechar() })
   addEventListener('keydown', e => { if (e.key === 'Escape' && aberto) fechar() })
-  carregar(); setInterval(carregar, 60e3)
+  // 27/10: na página do amigo não há /api/lucros; já não se pede (era um 404 por minuto, na nuvem uma chamada à toa)
+  if (!AMIGO) { carregar(); setInterval(carregar, 60e3) }
 }

@@ -803,7 +803,8 @@ if (AMIGO) {
   const estado = ok => { ligado = ok; pintarLigacao() }
   estado(true)
   setInterval(seVisivel(() => { api('analise?s=' + est.simbolo).then(d => { estado(true); if (d.simbolo === est.simbolo) analise(d) }, () => estado(false)); carregarGrafico() }), 30e3)
-  setInterval(seVisivel(() => { api('radar').then(radar, () => {}); api('forca').then(forca, () => {}); api('observacoes').then(observacoes, () => {}) }), 120e3)
+  // o radar e a força estão escondidos (23/10) e a nuvem já não os faz (28/10)
+  setInterval(seVisivel(() => api('observacoes').then(observacoes, () => {})), 120e3)
 }
 
 // a grelha do mês de hoje (em Lisboa), de segunda a domingo

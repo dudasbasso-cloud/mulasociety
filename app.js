@@ -582,8 +582,18 @@ async function selecionar(s) { est.simbolo = s; if (s !== 'XAUUSD' && est.tf ===
 
 // em pausa (o botão do Orca), o ponto lá em cima diz «em pausa» em vez de «ligado»
 let pausado = false
+// 28/10: o ponto junta a ligação ao Jarvis, a internet do Mac (o ping traz desde quando falta) e a pausa. Com a internet em
+// baixo o servidor continuava a responder e o ponto ficava verde, «ligado», com o gráfico e o card parados no que havia
+let ligado = null, semRede = null
+function pintarLigacao() {
+  const hm = t => new Date(t * 1000).toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit' })
+  const [c, txt] = ligado === false ? ['erro', 'sem ligação'] : semRede ? ['erro', 'sem internet'] : pausado ? ['pausa', 'notícias em pausa'] : ligado ? ['on', 'ligado'] : ['', 'a ligar']
+  $('ligacao').innerHTML = '<span class="ponto ' + c + '"></span>' + txt
+  // a hora fica na dica: com ela à vista, a 1440 px a banca lá em cima perdia o número
+  $('ligacao').title = !ligado || !semRede ? '' : 'Sem internet desde as ' + hm(semRede) + ': o gráfico, o card e a banca ficam parados no que havia até ela voltar.'
+}
 function ligar() {
-  const ev = new EventSource('/api/eventos'), ponto = ok => { if (!pausado) $('ligacao').innerHTML = '<span class="ponto ' + (ok ? 'on' : 'erro') + '"></span>' + (ok ? 'ligado' : 'sem ligação') }
+  const ev = new EventSource('/api/eventos'), ponto = ok => { ligado = ok; pintarLigacao() }
   ev.onopen = () => ponto(true)
   ev.onerror = () => ponto(false)
   ev.onmessage = e => {
@@ -755,10 +765,11 @@ await carregar()
 // o canal de eventos não passa pelo túnel rápido do link: na entrada do amigo vai-se buscar tudo de tempos a tempos
 // o ecrã recarrega-se sozinho quando os ficheiros dele mudam (a versão vem no /api/ping); o ping diz também se está em pausa
 const verPausa = q => {
-  if (!!q.pausa === pausado) return
-  pausado = !!q.pausa
-  $('ligacao').innerHTML = pausado ? '<span class="ponto pausa"></span>notícias em pausa' : '<span class="ponto on"></span>ligado'
-  pintarPausa()
+  const s = 'semRede' in q ? q.semRede ?? null : semRede, mudou = !!q.pausa !== pausado
+  if (!mudou && s === semRede) return
+  pausado = !!q.pausa; semRede = s
+  pintarLigacao()
+  if (mudou) pintarPausa()
 }
 // 25/10 («adiciona aqui o play pause mas apenas eu é que o posso usar»): no título das notícias, o mesmo pausa e play do botão
 // do Orca (pára as notícias, o que gasta créditos). Na entrada do amigo não aparece nem tem rota
@@ -784,7 +795,7 @@ api('ping').then(p => { const v0 = p.versao; verPausa(p); setInterval(() => api(
   verPausa(q)
 }, () => {}), 15e3) }, () => {})
 if (AMIGO) {
-  const estado = ok => { if (!pausado) $('ligacao').innerHTML = '<span class="ponto ' + (ok ? 'on' : 'erro') + '"></span>' + (ok ? 'ligado' : 'sem ligação') }
+  const estado = ok => { ligado = ok; pintarLigacao() }
   estado(true)
   setInterval(() => { api('analise?s=' + est.simbolo).then(d => { estado(true); if (d.simbolo === est.simbolo) analise(d) }, () => estado(false)); carregarGrafico() }, 30e3)
   setInterval(() => { api('radar').then(radar, () => {}); api('forca').then(forca, () => {}); api('observacoes').then(observacoes, () => {}) }, 120e3)

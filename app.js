@@ -616,6 +616,11 @@ function ligar() {
 
 // a entrada do amigo (o link partilhado, servidor/amigo.mjs): sem a conta, as opções e a conversa
 const AMIGO = document.documentElement.classList.contains('amigo')
+// 28/10: na página do amigo (na nuvem) os pedidos de tempo a tempo param com o separador escondido: o gráfico eram 170 KB de
+// 30 em 30 s, a gastar os dados do telemóvel sem ninguém a ver. Ao voltar, faz logo os que ficaram por fazer
+const porFazer = new Set()
+const seVisivel = fn => !AMIGO ? fn : () => { if (document.hidden) porFazer.add(fn); else fn() }
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; const L = [...porFazer]; porFazer.clear(); L.forEach(fn => fn()) })
 // os separadores do cartão da direita (22/10): lembra o último aberto; o amigo não tem a conversa
 function aba(n) {
   // 22/10 («retira»): a conversa saiu do ecrã (o servidor continua a tê-la)
@@ -753,7 +758,7 @@ function estrategiasTP(E) {
 }
 if (!AMIGO) { api('resultado').then(resultado, () => {}); setInterval(() => api('resultado').then(resultado, () => {}), 60e3) }
 // o amigo vê o placar das estratégias, sem a barra dos € dele
-if (AMIGO) { const pl = () => api('placar').then(r => placarTP(r.placar), () => {}); pl(); setInterval(pl, 120e3) }
+if (AMIGO) { const pl = () => api('placar').then(r => placarTP(r.placar), () => {}); pl(); setInterval(seVisivel(pl), 120e3) }
 $('resultado').addEventListener('mouseenter', () => {
   const d = $('resultadoDica'), b = $('resultado').getBoundingClientRect()
   if (!d.innerHTML) return
@@ -790,15 +795,15 @@ if (!AMIGO) {
   })
 }
 // 25/10: em pausa só param as notícias; os eventos continuam a chegar e o gráfico anda (antes refazia-se de 2 em 2 min)
-api('ping').then(p => { const v0 = p.versao; verPausa(p); setInterval(() => api('ping').then(q => {
+api('ping').then(p => { const v0 = p.versao; verPausa(p); setInterval(seVisivel(() => api('ping').then(q => {
   if (q.versao && v0 && q.versao !== v0) location.reload()
   verPausa(q)
-}, () => {}), 15e3) }, () => {})
+}, () => {})), 15e3) }, () => {})
 if (AMIGO) {
   const estado = ok => { ligado = ok; pintarLigacao() }
   estado(true)
-  setInterval(() => { api('analise?s=' + est.simbolo).then(d => { estado(true); if (d.simbolo === est.simbolo) analise(d) }, () => estado(false)); carregarGrafico() }, 30e3)
-  setInterval(() => { api('radar').then(radar, () => {}); api('forca').then(forca, () => {}); api('observacoes').then(observacoes, () => {}) }, 120e3)
+  setInterval(seVisivel(() => { api('analise?s=' + est.simbolo).then(d => { estado(true); if (d.simbolo === est.simbolo) analise(d) }, () => estado(false)); carregarGrafico() }), 30e3)
+  setInterval(seVisivel(() => { api('radar').then(radar, () => {}); api('forca').then(forca, () => {}); api('observacoes').then(observacoes, () => {}) }), 120e3)
 }
 
 // a grelha do mês de hoje (em Lisboa), de segunda a domingo
@@ -839,7 +844,7 @@ async function carregarMacro() {
         + '<div class="mc-sp">' + sparkMacro(a.spark) + '<span class="suave">últimas 24 h</span></div></div>').join('')
     + '<div class="mc-nota">O dólar a descer costuma empurrar o ouro para cima; o petróleo a subir costuma ir com ele. Direção pela EMA 50 de 15 min.</div>'
 }
-setInterval(() => { if (est.aba === 'macro') carregarMacro() }, 60e3)
+setInterval(seVisivel(() => { if (est.aba === 'macro') carregarMacro() }), 60e3)
 
 let abrirFolha = () => {}
 // 24/10 («vê como é o TradingView na app mobile»): no telemóvel é como a app deles. Cada painel ocupa o ecrã e muda-se nos

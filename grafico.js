@@ -366,19 +366,11 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
   // chega com o gráfico à ponta esquerda, pedem-se as velas de antes, aos bocados de 2000, e ficam guardadas por símbolo e
   // tempo. Cada janela nova cola-se a elas pela hora (o que sai da janela fica na história: não há buracos)
   const historias = new Map(), aPedir = new Set(), semMais = new Set(), PRECOS = ['verm', 'cinza', 'verde', 'ema200', 'ema80'], SERIES = ['velas', ...PRECOS, 'k', 'd']
-  // a diferença do ouro (base) mudou desde que vieram: as velas e as linhas de preço acertam-se pela nova
-  function mudarBase(h, base = 0) {
-    const x = (h.base ?? 0) - base
-    if (x) {
-      h.velas = h.velas.map(v => ({ time: v.time, open: v.open + x, high: v.high + x, low: v.low + x, close: v.close + x }))
-      for (const q of PRECOS) h[q] = h[q].map(p => p.value == null ? p : { time: p.time, value: p.value + x })
-    }
-    h.base = base
-  }
+  // 28/10: as velas do ouro vêm cada uma com a diferença da hora dela (diferenca.mjs no servidor), que não muda com a de
+  // agora: as guardadas já não se acertam
   function comHistoria(d) {
     const h = historias.get(d.simbolo + '|' + d.tf)
     if (!h || !d.velas.length) return d
-    mudarBase(h, d.base)
     const w0 = d.velas[0].time, cola = (a, b) => { let i = a.length; while (i > 0 && a[i - 1].time >= w0) i--; return [...a.slice(0, i), ...b] }
     const D = { ...d, velas: cola(h.velas, d.velas), sv3: { verm: cola(h.verm, d.sv3.verm), cinza: cola(h.cinza, d.sv3.cinza), verde: cola(h.verde, d.sv3.verde) },
       ema200: cola(h.ema200, d.ema200), ema80: cola(h.ema80, d.ema80 || []), estoc: d.estoc && { k: cola(h.k, d.estoc.k), d: cola(h.d, d.estoc.d) } }
@@ -390,9 +382,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     aPedir.delete(k)
     if (r.fim) semMais.add(k)
     if (!r.t?.length) return
-    const novo = { base: r.base, velas: r.t.map((t, i) => ({ time: t, open: r.o[i], high: r.h[i], low: r.l[i], close: r.c[i] })), ...Object.fromEntries([...PRECOS, 'k', 'd'].map(q => [q, linhaH(r[q])])) }
+    const novo = { velas: r.t.map((t, i) => ({ time: t, open: r.o[i], high: r.h[i], low: r.l[i], close: r.c[i] })), ...Object.fromEntries([...PRECOS, 'k', 'd'].map(q => [q, linhaH(r[q])])) }
     const h = historias.get(k)
-    if (h) { mudarBase(novo, h.base); const t0 = h.velas[0]?.time ?? Infinity; for (const q of SERIES) h[q] = [...novo[q].filter(x => x.time < t0), ...h[q]] }
+    if (h) { const t0 = h.velas[0]?.time ?? Infinity; for (const q of SERIES) h[q] = [...novo[q].filter(x => x.time < t0), ...h[q]] }
     else { historias.set(k, novo); if (historias.size > 6) historias.delete(historias.keys().next().value) }
     if (k === chave && ultimaVez) mostrar(...ultimaVez)
   }

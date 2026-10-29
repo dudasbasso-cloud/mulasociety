@@ -771,4 +771,10 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .fe .fe-n { color:var(--texto); overflow:hidden; text-overflow:ellipsis; min-width:0 }
 .fe .fe-h { color:var(--fraco); font-size:11.5px }
 .fe .fe-r { margin-left:auto; font-size:12.5px; font-weight:600 }
-.fe-mais { padding-top:4px; font-size:11.5px; color:var(--fraco) }
+/* 29/10 («se clicar em ver mais, mostra tipo pop-up»): o «Ver mais» é um botão discreto, sublinhado; abre a janela dos
+   Lucros, mais estreita, com todos os que fecharam */
+.fe-mais { display:block; margin-top:4px; padding:2px 0; background:none; border:0; font:inherit; font-size:11.5px; color:var(--suave); cursor:pointer;
+  text-decoration:underline; text-decoration-color:var(--borda); text-underline-offset:3px }
+@media (hover: hover) { .fe-mais:hover { color:var(--texto) } }
+.fechadosCaixa { width:min(560px, 100%) }
+.fechadosCaixa .fe-lista { margin-top:0 }

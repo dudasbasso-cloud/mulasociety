@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=6e14a8b311'
+import { criarGrafico, numerosAviso } from './grafico.js?v=3fc06edc91'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -179,13 +179,24 @@ const avisosFechados = () => avisosDo(p => { const f = fimDe(p); return f && Dat
 const COMO_ACABOU = { stop: 'stop', tp1: 'saiu no TP1', tp3: 'TP3' }
 // 26/10: o número do aviso no dia, o mesmo do Telegram e das respostas dos TP e do stop («#7»)
 const numeros = p => p.nums?.length ? numerosAviso(p.nums) + ' ' : ''
-const listaFechados = (l, c) => '<div class="fe-lista"><div class="fe-tit">Fecharam nas últimas 24 h</div>' + l.slice(0, 4).map(p => {
+const linhaFechado = (p, c) => {
   const f = fimDe(p), ok = f.estado !== 'stop', v = p.lado === 'venda', k = f.estado === 'tp3' ? 3 : ok ? 1 : -1
   return '<div class="fe" data-r="' + k * Math.abs(p.entrada - p.sl) + '" title="' + esc(p.nomes.join(' e ') + ', entrada ' + fmt(p.entrada, c) + ' às ' + diaHora(p.t * 1000)) + '">'
     + '<span class="' + (ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fe-l ' + (v ? 'desce">Venda' : 'sobe">Compra') + '</span>'
     + '<span class="fe-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span><span class="fe-h">' + COMO_ACABOU[f.estado] + ' ' + diaHora(f.t * 1000) + '</span>'
     + '<b class="fe-r num ' + (ok ? 'sobe' : 'desce') + '"></b></div>'
-}).join('') + (l.length > 4 ? '<div class="fe-mais">e mais ' + (l.length - 4) + '</div>' : '') + '</div>'
+}
+// 29/10 («se clicar em ver mais, mostra tipo pop-up»): os outros abrem-se todos numa janela por cima (a dos Lucros, mais estreita)
+const listaFechados = (l, c) => '<div class="fe-lista"><div class="fe-tit">Fecharam nas últimas 24 h</div>' + l.slice(0, 4).map(p => linhaFechado(p, c)).join('')
+  + (l.length > 4 ? '<button type="button" class="fe-mais" aria-haspopup="dialog">Ver mais ' + (l.length - 4) + '</button>' : '') + '</div>'
+// o € de cada um, com o lote dele; sem o lote, em pips
+const valoresFechados = raiz => {
+  const v = valorLote
+  for (const el of raiz.querySelectorAll('.fe[data-r]')) {
+    const d = +el.dataset.r, s = d >= 0 ? '+' : '-'
+    el.querySelector('.fe-r').textContent = v ? s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : s + fmt(Math.abs(d), 1) + ' pips'
+  }
+}
 // cada aviso: o lado e o nome, a hora, quanto vai agora (resultadosAbertos) e os preços: a entrada, o stop (no TP1 depois do
 // TP2, pela regra) e os três TP, com ✓ nos que já tocou
 // (os nomes dos preços só uma vez, em cima: com um nome por aviso o cartão empurrava para fora o dos separadores)
@@ -219,10 +230,7 @@ function decorrer(l, fe, p, r, fechado, diaria) {
 // chegou), só pips
 function resultadosAbertos(px) {
   const v = valorLote
-  for (const el of $('plano').querySelectorAll('.fe[data-r]')) {
-    const d = +el.dataset.r, s = d >= 0 ? '+' : '-'
-    el.querySelector('.fe-r').textContent = v ? s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : s + fmt(Math.abs(d), 1) + ' pips'
-  }
+  valoresFechados($('plano'))
   if (px == null) return
   pxAbertos = px
   let somaPips = 0, somaEur = 0
@@ -1114,4 +1122,19 @@ const TEMAS = [
   addEventListener('keydown', e => { if (e.key === 'Escape' && aberto) fechar() })
   // 29/10 («mete mesmo igual»): também na página do amigo (antes não tinha /api/lucros); lá só com o separador à vista
   carregar(); setInterval(seVisivel(carregar), 60e3)
+}
+// 29/10 («aqui, se clicar em ver mais, mostra tipo pop-up»): todos os que fecharam nas últimas 24 h, por cima do ecrã
+{
+  const caixa = $('fechados'), corpo = $('fechadosCorpo')
+  let de = null
+  const fundo = on => { for (const el of document.body.children) if (el !== caixa && el.tagName !== 'SCRIPT') el.inert = on }
+  function abrir(btn) {
+    corpo.innerHTML = '<div class="fe-lista">' + avisosFechados().map(p => linhaFechado(p, casasTexto('XAUUSD'))).join('') + '</div>'
+    valoresFechados(corpo)
+    de = btn; caixa.hidden = false; fundo(true); $('fechadosFechar').focus()
+  }
+  function fechar() { caixa.hidden = true; fundo(false); (de?.isConnected ? de : $('plano').querySelector('.fe-mais'))?.focus() }
+  $('plano').addEventListener('click', e => { const b = e.target.closest('.fe-mais'); if (b) abrir(b) })
+  caixa.addEventListener('click', e => { if (e.target.closest('[data-fecha]')) fechar() })
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !caixa.hidden) fechar() })
 }

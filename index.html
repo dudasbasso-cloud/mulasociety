@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="jarvis-codigo" content="__CODIGO__">
 <title>MULASOCIETY ORG.</title>
-<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '6e14a8b311'</script>
-<link rel="stylesheet" href="estilo.css?v=6e14a8b311">
+<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '3fc06edc91'</script>
+<link rel="stylesheet" href="estilo.css?v=3fc06edc91">
 <script>try{var g=localStorage.getItem('jarvis-grafico');if(g&&g!=='escuro')document.documentElement.dataset.graf=g}catch(e){}</script>
 <link rel="icon" href="favicon.png">
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
@@ -88,6 +88,14 @@
     <div id="lucrosCorpo"></div>
   </section>
 </div>
-<script type="module" src="app.js?v=6e14a8b311"></script>
+<!-- 29/10: o «Ver mais» dos avisos que fecharam (app.js), na mesma janela dos Lucros -->
+<div class="lucros" id="fechados" hidden>
+  <div class="lucrosFundo" data-fecha></div>
+  <section class="lucrosCaixa fechadosCaixa" role="dialog" aria-modal="true" aria-labelledby="fechadosTit">
+    <header class="lucrosCab"><h2 id="fechadosTit">Fecharam nas últimas 24 h</h2><button type="button" class="lucrosFechar" id="fechadosFechar" data-fecha aria-label="Fechar">×</button></header>
+    <div id="fechadosCorpo"></div>
+  </section>
+</div>
+<script type="module" src="app.js?v=3fc06edc91"></script>
 </body>
 </html>

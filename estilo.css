@@ -388,6 +388,19 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
 .abas .separadores > * { padding-left:3px; padding-right:3px; font-size:10.8px }
 /* 24/10 («o calendário consegue ficar um pouco maior, só para quando houver 3 ou 4 acontecimentos») */
 .calendario #calendario { min-height:150px }
+/* 29/10 («o calendário mete tipo em baixo das notícias, em pequeno mesmo»): por baixo das notícias, só com a altura dos
+   eventos (com mais de 4, desliza). Na coluna estreita cada evento leva a moeda e a hora numa linha e o nome por baixo; o
+   previsto fica na dica */
+@media (min-width: 1001px) and (min-height: 521px) {
+  .col.esq .calendario { flex:none }
+  .col.esq .calendario .tit { padding-bottom:6px }
+  .col.esq .calendario #calendario { min-height:0; max-height:184px }
+  .col.esq .eventos { padding:0 12px 10px; gap:5px }
+  .col.esq .eventos .evento { display:grid; grid-template-columns:auto 1fr; gap:1px 8px; padding:4px 8px; font-size:11.5px }
+  .col.esq .eventos .evento .tt { grid-column:1 / -1; grid-row:2; white-space:normal; line-height:1.3 }
+  .col.esq .eventos .evento .hora { justify-self:end; margin-left:0 }
+  .col.esq .eventos .evento .prev { display:none }
+}
 
 /* 25/10 («melhorar o ux dos cards»): o que desliza sem barra esbate-se na ponta quando há mais (app.js marca as classes) */
 .mais-baixo { -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 28px), transparent); mask-image:linear-gradient(to bottom, #000 calc(100% - 28px), transparent) }
@@ -452,6 +465,8 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
   body[data-m="analise"] .grelha { display:flex; flex-direction:column }
   body[data-m="analise"] .card.abas { flex:1 1 0; min-height:0; padding-top:env(safe-area-inset-top) }
   body[data-m="analise"] [data-painel="analise"]:not(.abas) { flex:0 0 auto; max-height:46%; border-top:1px solid var(--borda) }
+  /* 29/10: o calendário passou para a coluna das notícias; no telemóvel continua por baixo da análise */
+  body[data-m="analise"] .card.calendario { order:1 }
   body[data-m="estrategias"] #estrTP { display:block !important }
   [data-painel="grafico"] { background:var(--bg) }
   [data-painel="grafico"] .cab, .alvos, .legenda { display:none !important }

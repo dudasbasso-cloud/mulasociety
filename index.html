@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="jarvis-codigo" content="__CODIGO__">
 <title>MULASOCIETY ORG.</title>
-<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '3fc06edc91'</script>
-<link rel="stylesheet" href="estilo.css?v=3fc06edc91">
+<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '17307351e7'</script>
+<link rel="stylesheet" href="estilo.css?v=17307351e7">
 <script>try{var g=localStorage.getItem('jarvis-grafico');if(g&&g!=='escuro')document.documentElement.dataset.graf=g}catch(e){}</script>
 <link rel="icon" href="favicon.png">
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
@@ -33,6 +33,8 @@
            esquerdo»): as notícias e o calendário passaram para o lugar do radar; o radar fica escondido até ir para o lado da conversa -->
       <!-- 24/10 («quero que seja um card específico no topo das notícias sozinho»): o calendário num card só, por cima -->
       <div class="card cresce noticias"><div class="tit"><span>Notícias</span><span>setas com grau<button type="button" id="pausaNot" class="pausaNot" hidden></button></span></div><div class="desliza"><div id="noticias"></div></div></div>
+      <!-- 29/10 («o calendário mete tipo em baixo das notícias, em pequeno mesmo»): por baixo das notícias, só com a altura dos eventos -->
+      <div class="card calendario"><div class="tit"><span>Calendário</span><span>médias e fortes</span></div><div id="calendario"></div></div>
       <div class="card cresce" hidden><div class="tit"><span>Radar</span><span id="radarInfo">a ler os pares</span></div><div class="desliza" id="radar"></div></div>
       <!-- 23/10 («também podes arquivar a força das divisas»): escondida como o radar -->
       <div class="card" hidden><div class="tit"><span>Força das divisas</span><span>24 h · 5 dias</span></div><div class="forca" id="forca"><div class="vazio">A medir pelos 28 pares.</div></div></div>
@@ -70,7 +72,6 @@
         <div class="aba conversa" data-aba="conversa"><div class="tit"><span>Conversa</span><span>o Claude do teu Mac</span></div><div class="conv desliza" id="conversa"></div>
           <form class="entrada" id="pergunta"><input id="texto" placeholder="Escreve a tua pergunta…" autocomplete="off"><button type="submit">enviar</button></form></div>
       </div>
-          <div class="card calendario"><div class="tit"><span>Calendário</span><span>médias e fortes</span></div><div id="calendario"></div></div>
   <!-- 24/10 («mantém como está mas melhor só a disposição»): as opções passam para o fundo da direita; à esquerda o calendário e as notícias até ao fundo -->
       <div class="card opcoes"><div class="tit"><span>Opções</span></div><div class="opc" id="opcoes"></div></div>
     </section>
@@ -96,6 +97,6 @@
     <div id="fechadosCorpo"></div>
   </section>
 </div>
-<script type="module" src="app.js?v=3fc06edc91"></script>
+<script type="module" src="app.js?v=17307351e7"></script>
 </body>
 </html>

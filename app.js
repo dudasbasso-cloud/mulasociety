@@ -425,20 +425,22 @@ function marcar() {
 }
 // 24/10 («mete as estratégias mesmo, e eu seleciono para ver só aquela»): uma lista na barra das camadas; a escolhida
 // mostra as entradas dela no gráfico (seta do lado, ✓ se chegou a um TP, ✗ se foi ao stop). Nenhuma = nada
-// 25/10 («a possibilidade de meter as que eu quiser selecionadas»): várias ao mesmo tempo. A linha «ZIMBA FX: todas juntas»
-// (id edney) liga e desliga as cinco dele (eram três até 25/10); fica ligada quando estão todas. O select escondido só guarda os nomes
+// 25/10 («a possibilidade de meter as que eu quiser selecionadas»): várias ao mesmo tempo. O select escondido só guarda os nomes.
+// 29/10: a «ZIMBA FX: todas juntas» (id edney) já não liga as cinco: é uma estratégia só, com as entradas em que as cinco
+// deram sinal do mesmo lado (estrategias.mjs, sinaisJuntas)
 // 25/10 («deveria estar nesses filtros»): os avisos do bot também, por tipo, com os nomes do placar; «todos os avisos»
 // (id bot) liga os quatro tipos
-const JUNTAS = { edney: ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott'], bot: ['bot-pico', 'bot-teto', 'bot-incrivel', 'bot-sv3'] }
+const JUNTAS = { bot: ['bot-pico', 'bot-teto', 'bot-incrivel', 'bot-sv3'] }, ZIMBA_CINCO = ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott']
 const BOT_ESTR = [{ id: 'bot', nome: 'BOT: todos os avisos' }, { id: 'bot-pico', nome: 'BOT: venda depois do pico' }, { id: 'bot-teto', nome: 'BOT: venda de teto' },
   { id: 'bot-incrivel', nome: 'BOT: INCRÍVEL' }, { id: 'bot-sv3', nome: 'BOT: linhas do SV3' }]
 const estrEscolhidas = () => [...new Set((est.estrVer || []).flatMap(v => JUNTAS[v] || [v]))]
 est.estrVer = estrEscolhidas()
+// quem tinha a «todas juntas» escolhida antes de 29/10 tinha guardadas as cinco: passa a ter a estratégia nova (uma vez só)
+if (!est.juntas5) { if (est.estrVer.length === 5 && ZIMBA_CINCO.every(id => est.estrVer.includes(id))) est.estrVer = ['edney']; est.juntas5 = 1; guardar() }
 function nomeEstr() {
   const l = estrEscolhidas(), nomes = Object.fromEntries([...$('estrSel').options].filter(o => o.value).map(o => [o.value, o.text.replace(/\s*\(.*\)$/, '')]))
   const curto = id => (nomes[id] || id).replace(/^(ZIMBA FX|BOT): /, '')
   if (!l.length) return ''
-  if (l.length === JUNTAS.edney.length && JUNTAS.edney.every(id => l.includes(id))) return 'ZIMBA FX: todas juntas'
   if (l.length === 4 && JUNTAS.bot.every(id => l.includes(id))) return 'BOT: todos os avisos'
   return l.length === 1 ? nomes[l[0]] || l[0] : l.length === 2 ? (l.every(id => id.startsWith('bot-')) ? 'BOT: ' : '') + l.map(curto).join(' + ') : l.length + ' estratégias'
 }
@@ -447,7 +449,7 @@ function escolhaEstr() {
   if (!ids.length) return
   const n = id => /^bot/.test(id) ? (ultimoGrafico.alvos?.lista || []).filter(p => (JUNTAS[id] || [id]).includes('bot-' + p.tipo)).length
     : (ultimoGrafico.estrategias.lista || []).filter(x => (JUNTAS[id] || [id]).includes(x.id)).length
-  const html = '<option value="">Estratégia: nenhuma</option>' + [...(ultimoGrafico.alvos ? BOT_ESTR : []), ...ids].flatMap(x => x.id === 'liquidez' ? [{ id: 'edney', nome: 'ZIMBA FX: todas juntas (liquidez, CHoCH, order block, Wyckoff e Elliott)' }, x] : [x]).map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
+  const html = '<option value="">Estratégia: nenhuma</option>' + [...(ultimoGrafico.alvos ? BOT_ESTR : []), ...ids].map(x => '<option value="' + x.id + '">' + esc(x.nome) + ' (' + n(x.id) + ')</option>').join('')
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html }
   el.classList.toggle('on', estrEscolhidas().length > 0)
   mAtualizar()
@@ -726,8 +728,9 @@ function placarTP(L) {
   const comTipos = l => l.flatMap(e => e.id === 'bot' ? [e, ...F] : [e])
   const tabela = l => '<table class="placar"><thead><tr><th>Estratégia</th><th>Entradas</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Stop</th><th>Pips</th></tr></thead><tbody>' + comTipos(l).map(linha).join('') + '</tbody></table>'
   const V = L.filter(e => !filho(e)), meio = Math.ceil(V.length / 2)
-  // 27/10: o BOT conta como saiu no Telegram (a regra, sem limite de horas); as outras medem-se nas velas, até 24 h cada
-  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>desde 19/10 · o BOT como no Telegram, as outras nas velas até 24 h<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
+  // 27/10: o BOT conta como saiu no Telegram (a regra, sem limite de horas); as outras medem-se nas velas, até 24 h cada.
+  // 29/10 («estas estratégias são por dia ou desde sempre?»): diz que é tudo somado e que as 24 h são de cada entrada
+  el.innerHTML = '<div class="tit"><span>Estratégias</span><span>tudo somado desde 19/10 · o BOT como no Telegram; nas outras, cada entrada até 24 h<span class="legDecorrer">' + RELOGIO + 'a decorrer</span></span></div>'
     + '<div class="placarDuas">' + tabela(V.slice(0, meio)) + tabela(V.slice(meio)) + '</div>'
   el.hidden = false
 }
@@ -921,9 +924,9 @@ function mAtualizar() {
         sub: !e ? '' : e.n ? e.n + (e.n === 1 ? ' entrada' : ' entradas') + ' desde 19/10 · TP1 ' + Math.round(100 * e.tp[0] / e.n) + '%' + (e.abertas ? ' · ' + e.abertas + '\u00a0a\u00a0decorrer' : '')
           : e.abertas ? e.abertas + ' a decorrer, desde 19/10' : 'sem entradas desde 19/10',
         ordem: o.value === 'zimba' ? 2e9 : o.value === 'edney' || o.value === 'bot' ? 1e9 : e?.n ? e.pips : -1e9 } }
-    // 25/10: o modelo completo dos vídeos dele à frente, depois as três peças juntas e cada uma; o Wyckoff e o Elliott também
+    // 25/10: o modelo completo dos vídeos dele à frente, depois as cinco juntas e cada uma; o Wyckoff e o Elliott também
     // são da lista dele («mete as 5»)
-    const ed = ['zimba', 'edney', ...JUNTAS.edney, 'wyckoff', 'elliott'], bt = ['bot', ...JUNTAS.bot], por = l => l.sort((a, b) => b.ordem - a.ordem), B = ops.filter(o => bt.includes(o.value))
+    const ed = ['zimba', 'edney', ...ZIMBA_CINCO], bt = ['bot', ...JUNTAS.bot], por = l => l.sort((a, b) => b.ordem - a.ordem), B = ops.filter(o => bt.includes(o.value))
     return [{ nome: 'Nenhuma', v: '', on: !l.length, radio: true }, ...(B.length ? [{ grupo: '<span class="ouro">BOT</span>' }, ...por(B.map(item))] : []),
       { grupo: '<span class="ouro laranja">ZIMBA FX</span>' }, ...por(ops.filter(o => ed.includes(o.value)).map(item)),
       { grupo: 'Outras' }, ...por(ops.filter(o => !ed.includes(o.value) && !bt.includes(o.value)).map(item))]

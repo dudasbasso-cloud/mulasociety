@@ -595,8 +595,9 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     }
     // as entradas das estratégias (camada Estratégias): a seta do lado com o nome curto, ✓ se ganhou e ✗ se perdeu. A seta e
     // o nome têm a cor de como acabou (verde ganhou, vermelho perdeu, areia ainda a decorrer); antes era a do lado, e um
-    // «Liquidez ✓» de venda saía a vermelho. «ZIMBA FX: todas» (id edney) junta as cinco (liquidez, CHoCH, order block, Wyckoff e Elliott; eram três até 25/10); podem vir várias ao mesmo tempo
-    const ver = (camadas.estrVer || []).flatMap(v => v === 'edney' ? ['liquidez', 'choch', 'orderblock', 'wyckoff', 'elliott'] : [v]), EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
+    // «Liquidez ✓» de venda saía a vermelho. Podem vir várias ao mesmo tempo. 29/10: a «ZIMBA FX: todas juntas» (id edney) tem
+    // as entradas dela, as das cinco do mesmo lado (antes mostrava as de cada uma das cinco)
+    const ver = camadas.estrVer || [], EL = ver.length ? (d.estrategias?.lista || []).filter(x => ver.includes(x.id)) : []
     marcasEstr.setMarkers([])
     for (const x of [...EL].sort((a, b) => a.time - b.time)) {
       nota(x.time, dicaEstr(x, casas))

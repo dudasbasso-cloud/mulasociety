@@ -687,8 +687,12 @@ function resultado(r) {
   const certo = r.conferencia && !erros ? '<p>Bate certo com o Telegram (conferido às ' + hhmm(r.conferencia.t * 1000) + ').</p>' : ''
   const pausa = r.pausa ? '<p>Fora desta conta: ' + r.pausa.avisos + (r.pausa.avisos > 1 ? ' avisos que saíram com os teus avisos em pausa e não te chegaram'
     : ' aviso que saiu com os teus avisos em pausa e não te chegou') + ' (davam ' + sinal(r.pausa.ganhos - r.pausa.perdas) + ').</p>' : ''
-  $('resultadoDica').innerHTML = r.avisos ? '<p>Quanto davam os avisos do Telegram, todos com ' + fmt(r.lote, 2) + ' lotes' + (r.custo ? ', já sem o spread (' + fmt(r.custo, 2) + NB + '$ em cada aviso)' : '') + '.</p>' + erros
-    + parteHoje + parteDesde + parteTP + certo + pausa : ''
+  // 29/10 («este cálculo deve tar todo errado»): só os avisos do bot; os sinais das estratégias que também vão para o Telegram
+  // ficam fora da banca, com o que davam numa linha à parte
+  const outros = r.outros ? '<p>Não entram os ' + r.outros.avisos + ' sinais das estratégias (ZIMBA FX, Abertura, Elliott...) que foram para o Telegram desde '
+    + diaDe(r.outros.desde * 1000) + ': com ' + fmt(r.lote, 2) + ' lotes davam ' + sinal(r.outros.ganhos - r.outros.perdas) + '. Cada uma tem a linha dela no placar.</p>' : ''
+  $('resultadoDica').innerHTML = r.avisos ? '<p>Quanto davam os avisos do bot no Telegram (teto, pico, INCRÍVEL e SV3), todos com ' + fmt(r.lote, 2) + ' lotes' + (r.custo ? ', já sem o spread (' + fmt(r.custo, 2) + NB + '$ em cada aviso)' : '') + '.</p>' + erros
+    + parteHoje + parteDesde + parteTP + certo + pausa + outros : ''
   // 24/10 («podes meter isto noutro sítio ou arquiva»): o card das estratégias de TP fica arquivado (estrategiasTP); no lugar
   // dele, o placar de cada estratégia
   placarTP(r.placar)
@@ -1073,7 +1077,7 @@ const TEMAS = [
             : '<td colspan="4">não entrou: ' + PORQUE[e.porque] + '</td>') + '</tr>').join('') + '</tbody></table>' : '<p class="lc-vazio">Ainda sem avisos.</p>') + '</div>'
     corpo.innerHTML = '<div class="lc-topo"><div><div class="lc-rot">Banca</div><div class="lc-banca num">' + fmt(g.inicio, 0) + NB + '€ → <b class="' + cl(r.banca.agora - g.inicio).trim() + '">' + fmt(r.banca.agora, 0) + NB + '€</b></div>'
       + '<div class="lc-sub">Desde ' + quando(r.desde) + ', com as tuas regras: uma entrada de cada vez, ' + fmt(g.risco, 0) + ' € de risco em cada, o dia pára aos ' + eur(g.parar) + '.</div></div>'
-      + '<div class="lc-fixo"><span>Com ' + fmt(r.fixo.lote, 2) + ' fixo em todos os avisos (a barra de cima)</span><b class="num' + cl(r.fixo.agora - g.inicio) + '">' + fmt(r.fixo.agora, 0) + NB + '€</b></div></div>'
+      + '<div class="lc-fixo"><span>Com ' + fmt(r.fixo.lote, 2) + ' fixo em todos os avisos do bot (a barra de cima)</span><b class="num' + cl(r.fixo.agora - g.inicio) + '">' + fmt(r.fixo.agora, 0) + NB + '€</b></div></div>'
       + '<div class="lc-grelha">' + hoje + '<div class="lc-card"><div class="tit"><span>Ordem aberta</span><span>o que fazer agora</span></div>' + abertas + '</div>' + osDias + aSeguir + tabela + '</div>'
   }
   async function carregar() {

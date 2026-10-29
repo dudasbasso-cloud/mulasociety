@@ -189,14 +189,22 @@ const listaFechados = (l, c) => '<div class="fe-lista"><div class="fe-tit">Fecha
 // cada aviso: o lado e o nome, a hora, quanto vai agora (resultadosAbertos) e os preços: a entrada, o stop (no TP1 depois do
 // TP2, pela regra) e os três TP, com ✓ nos que já tocou
 // (os nomes dos preços só uma vez, em cima: com um nome por aviso o cartão empurrava para fora o dos separadores)
-const listaAbertos = (l, c) => '<div class="ab-lista"><div class="ab-tit"><span>Entrada</span><span>Stop</span><span>TP1</span><span>TP2</span><span>TP3</span></div>' + l.map(p => {
-  const v = p.lado === 'venda', moveu = p.hits[1] != null
-  const niv = (x, cl, ok) => '<b class="num ' + cl + '">' + fmt(x, c) + (ok ? '<i>✓</i>' : '') + '</b>'
-  return '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para o TP1' : '')) + '">'
-    + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
-    + '<span class="ab-h num">' + diaHora(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
-    + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu ? p.tps[0] : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
-}).join('') + '</div>'
+// 29/10 («tens que arranjar forma disto ficar no mesmo retângulo»): os de outros dias vão debaixo de uma linha com o dia,
+// como nas observações, e cada aviso só leva a hora; com a data em cada linha, o cabeçalho passava a borda do cartão
+const listaAbertos = (l, c) => {
+  const hoje = diaDe(Date.now()), ontem = diaDe(Date.now() - 864e5)
+  let dia = hoje
+  return '<div class="ab-lista"><div class="ab-tit"><span>Entrada</span><span>Stop</span><span>TP1</span><span>TP2</span><span>TP3</span></div>' + l.map(p => {
+    const v = p.lado === 'venda', moveu = p.hits[1] != null, d = diaDe(p.t * 1000), novoDia = d !== dia
+    const niv = (x, cl, ok) => '<b class="num ' + cl + '">' + fmt(x, c) + (ok ? '<i>✓</i>' : '') + '</b>'
+    dia = d
+    return (novoDia ? '<div class="ab-dia">' + (d === ontem ? 'Ontem' : d) + '</div>' : '')
+      + '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para o TP1' : '')) + '">'
+      + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
+      + '<span class="ab-h num">' + hhmm(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
+      + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu ? p.tps[0] : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
+  }).join('') + '</div>'
+}
 function decorrer(l, fe, p, r, fechado, diaria) {
   const c = casasTexto(r.simbolo), px = r.analise?.px, n = l.reduce((s, x) => s + x.n, 0), linha = p.acao !== 'esperar' && p.entrada != null
   const sv3 = fechado ? 'Mercado fechado, ' + semVelas().replace(/^mercado fechado, /, '') : diaria ? 'Pausa diária, ' + semVelas().replace(/^pausa diária, /, '')
@@ -218,7 +226,9 @@ function resultadosAbertos(px) {
   pxAbertos = px
   for (const el of $('plano').querySelectorAll('.ab[data-entrada]')) {
     const d = (el.dataset.lado === 'venda' ? 1 : -1) * (+el.dataset.entrada - px), r = el.querySelector('.ab-r'), s = d >= 0 ? '+' : '-'
-    r.textContent = s + fmt(Math.abs(d), 1) + ' pips' + (v ? ' · ' + s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : '')
+    // com o €, os pips vão mais pequenos ao lado (29/10: cabem no cartão); sem o lote (o amigo), só os pips, como antes
+    const pips = s + fmt(Math.abs(d), 1) + ' pips'
+    r.innerHTML = v ? '<span class="ab-pips">' + pips + '</span> ' + s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : pips
     r.className = 'ab-r num ' + (d >= 0 ? 'sobe' : 'desce')
   }
   const a = $('plano').querySelector('.ab-px')

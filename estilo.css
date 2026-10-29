@@ -734,7 +734,12 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .plano .ordemParada.decorrer { border-left-color:var(--areia); justify-content:flex-start }
 .ordemParada.decorrer .op-est { color:var(--areia) }
 .ordemParada .op-sub .ab-px { color:var(--texto); font-weight:600 }
-.ab-lista { margin-top:10px; display:grid }
+/* 29/10 («tens que arranjar forma disto ficar no mesmo retângulo»): a coluna da lista tem a largura do cartão (antes crescia
+   até ao cabeçalho mais comprido e as linhas passavam a borda); no cabeçalho só o nome encolhe, com o nome todo ao passar o rato */
+.ab-lista { margin-top:10px; display:grid; grid-template-columns:minmax(0, 1fr) }
+.ab-dia { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco); padding:10px 0 2px }
+.ab-cab > :not(.ab-n) { flex-shrink:0 }
+.ab-cab .ab-r .ab-pips { font-size:11.5px; font-weight:400 }
 .ab-cap { margin-top:14px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco) }
 .ab-cap .ab-lote { text-transform:none; letter-spacing:0 }
 .ab-tit, .ab-niv { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:4px }

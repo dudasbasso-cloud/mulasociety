@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js'
+import { criarGrafico, numerosAviso } from './grafico.js?v=9cca4cdfef'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -817,6 +817,14 @@ api('ping').then(p => { const v0 = p.versao; verPausa(p); setInterval(seVisivel(
   if (q.versao && v0 && q.versao !== v0) location.reload()
   verPausa(q)
 }, () => {})), 15e3) }, () => {})
+// 29/10 («ele diz que ainda não está»: o Chrome do sócio ficou com a versão antiga, mesmo a recarregar): na nuvem o ping
+// não traz a versão, por isso a página sabe com que versão foi publicada (nuvem/publicar.sh) e vê de 2 em 2 min a
+// versao.txt; se já há outra, recarrega sozinha (no máximo uma vez em 5 min, se o GitHub ainda der a antiga)
+if (window.JARVIS_VERSAO) setInterval(seVisivel(() => fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
+  v = v.trim()
+  if (!v || v === window.JARVIS_VERSAO || Date.now() - (+sessionStorage.recarregou || 0) < 5 * 60e3) return
+  sessionStorage.recarregou = Date.now(); location.reload()
+}).catch(() => {})), 2 * 60e3)
 if (AMIGO) {
   const estado = ok => { ligado = ok; pintarLigacao() }
   estado(true)

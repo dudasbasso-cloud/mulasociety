@@ -215,7 +215,8 @@ function decorrer(l, fe, p, r, fechado, diaria) {
     + (!fechado && p.acao !== 'esperar' && p.entradaTexto ? comoEntrar(p) : '') + '</div>'
 }
 // quanto vai cada aviso aberto, ao preço de agora (de segundo em segundo no Mac). 25/10 («mete também o valor como se
-// tivesse metido 0,32 lote»): e em €, com o lote dele; 1 $ no ouro com 1 lote são 100 $. O amigo não tem o lote: só pips
+// tivesse metido 0,32 lote»): e em €, com o lote dele; 1 $ no ouro com 1 lote são 100 $. Sem o lote (a barra ainda não
+// chegou), só pips
 function resultadosAbertos(px) {
   const v = valorLote
   for (const el of $('plano').querySelectorAll('.fe[data-r]')) {
@@ -651,7 +652,7 @@ api('radar').then(radar, () => radar([]))
 if (!AMIGO) api('conta').then(conta, () => conta(null))
 api('observacoes').then(observacoes, () => observacoes([]))
 if (!AMIGO) api('opcoes').then(opcoes, () => opcoes({}))
-// lá em cima (23/10): o que os avisos do ouro davam com o lote dele desde o primeiro, como o quadro (o amigo não vê).
+// lá em cima (23/10): o que os avisos do ouro davam com o lote dele desde o primeiro, como o quadro (o amigo também, desde 29/10).
 // Ao passar o rato («dizer com base no quê»): um quadro nosso, porque o title do sistema demorava e quase não se via.
 // 26/10 («consegues melhorar isto, não percebo»): em palavras simples e em três partes: hoje, desde o primeiro dia e qual TP
 // dá mais (com a banca de cada um, os mesmos números da barra). Por baixo, a conferência e os avisos que ficaram fora da conta
@@ -773,9 +774,9 @@ function estrategiasTP(E) {
       + (E.lista.length > 1 && e.pips === melhor ? '<span class="sobe"> · a que mais deu</span>' : '') + '</div></div>').join('') + '</div>'
   el.hidden = false
 }
-if (!AMIGO) { api('resultado').then(resultado, () => {}); setInterval(() => api('resultado').then(resultado, () => {}), 60e3) }
-// o amigo vê o placar das estratégias, sem a barra dos € dele
-if (AMIGO) { const pl = () => api('placar').then(r => placarTP(r.placar), () => {}); pl(); setInterval(seVisivel(pl), 120e3) }
+// 29/10 («o meu sócio não tem muitas coisas que eu tenho, tipo lucro: mete mesmo igual como eu tou a ver»): o amigo também
+// tem a barra, com os € e o placar (antes só o placar); na nuvem vem da volta, de 2 em 2 min
+{ const res = () => api('resultado').then(resultado, () => {}); res(); setInterval(seVisivel(res), 60e3) }
 $('resultado').addEventListener('mouseenter', () => {
   const d = $('resultadoDica'), b = $('resultado').getBoundingClientRect()
   if (!d.innerHTML) return
@@ -1023,7 +1024,7 @@ const TEMAS = [
 // 25/10 («podes fazer uma aba lá em cima para eu verificar os meus lucros [...] com a estratégia a seguir neste momento, se
 // tou a mover o SL para a zona de profit, e o que temos que fazer depois para arriscarmos mais»): o separador «Lucros», por
 // cima do ecrã. A banca de 500 € a seguir os avisos do bot que te chegaram, com as tuas regras e a fase lucro (lucros.mjs).
-// O botão da barra diz o lucro de hoje; na página do amigo não aparece (lá não há /api/lucros)
+// O botão da barra diz o lucro de hoje; desde 29/10 também na página do amigo
 {
   const caixa = $('lucros'), btn = $('lucrosBtn'), corpo = $('lucrosCorpo'), c = casasTexto('XAUUSD')
   let r = null, aberto = false
@@ -1092,6 +1093,6 @@ const TEMAS = [
   btn.addEventListener('click', abrir)
   caixa.addEventListener('click', e => { if (e.target.closest('[data-fecha]')) fechar() })
   addEventListener('keydown', e => { if (e.key === 'Escape' && aberto) fechar() })
-  // 27/10: na página do amigo não há /api/lucros; já não se pede (era um 404 por minuto, na nuvem uma chamada à toa)
-  if (!AMIGO) { carregar(); setInterval(carregar, 60e3) }
+  // 29/10 («mete mesmo igual»): também na página do amigo (antes não tinha /api/lucros); lá só com o separador à vista
+  carregar(); setInterval(seVisivel(carregar), 60e3)
 }

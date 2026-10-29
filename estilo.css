@@ -270,9 +270,8 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
 .ag-sv3.entrar { padding:8px 10px; border-radius:8px; background:rgba(156,184,148,.1) }
 .ag-atencao { padding:8px 10px; border-left:3px solid var(--areia); background:rgba(214,195,159,.06); border-radius:6px; font-size:12.5px }
 .ag-txt { font-size:13px }
-/* lá em cima, o que os avisos davam com o lote dele desde as 17:00 (o amigo não vê) */
+/* lá em cima, o que os avisos davam com o lote dele desde as 17:00 (29/10: o amigo também a vê) */
 .topo .it b.sobe { color:var(--salva) } .topo .it b.desce { color:var(--rosa) }
-.amigo #resultado { display:none !important }
 /* a explicação da barra lá em cima (23/10, «dizer com base no quê»): aparece logo ao passar o rato, por cima de tudo */
 .dicaTopo { position:fixed; z-index:50; width:360px; padding-bottom:12px; background:var(--painel); border:1px solid var(--borda); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.5); font-size:12.5px; pointer-events:none }
 .dicaTopo .l { display:grid; grid-template-columns:1fr auto; column-gap:12px; padding:3px 14px }

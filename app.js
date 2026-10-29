@@ -1035,7 +1035,7 @@ const TEMAS = [
       + '<div class="lc-grande num' + cl(h.eur) + '">' + eur(h.eur) + '</div><div class="lc-fase' + (h.parou ? ' parou' : h.fase ? ' lucro' : '') + '">'
       + (h.parou ? 'O dia parou' : h.fase ? 'Fase lucro' : 'Fase normal') + '</div>'
       + (h.fase || h.parou ? '' : '<div class="lc-barra" aria-hidden="true"><i style="width:' + Math.max(0, Math.min(100, 100 * h.eur / g.limiar)).toFixed(1) + '%"></i></div>')
-      + linha('A próxima entrada arrisca', fmt(h.proximoRisco, 0) + NB + '€') + (h.fase || h.parou ? '' : linha('Falta para a fase lucro', fmt(h.faltam, 0) + NB + '€'))
+      + (h.parou ? '' : linha('A próxima entrada arrisca', fmt(h.proximoRisco, 0) + NB + '€')) + (h.fase || h.parou ? '' : linha('Falta para a fase lucro', fmt(h.faltam, 0) + NB + '€'))
       + linha(h.pico >= g.limiar ? 'O dia pára se descer a' : 'O dia pára aos', eur(h.chao)) + linha('Entradas hoje', h.entradas) + '</div>'
     const abertas = r.abertas.length ? r.abertas.map(e => '<div class="lc-ordem"><div class="lc-o-tit"><b class="' + (e.lado === 'venda' ? 'desce' : 'sobe') + '">' + esc(nomeAviso(e)) + '</b><span>'
         + hora(e.t) + (e.corre ? ' · a deixar correr' : '') + '</span></div>'

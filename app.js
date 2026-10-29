@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=9cca4cdfef'
+import { criarGrafico, numerosAviso } from './grafico.js?v=6e14a8b311'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -152,7 +152,7 @@ function plano(p, r) {
   // (enquanto espera a linha, desde 23/10, é o «Em pausa» do ordemParada). O que arriscas está no stop
   $('plano').innerHTML = retangulo(venda ? 'vender' : 'comprar', venda ? 'Vender' : 'Comprar', (venda ? 'short' : 'long') + ', entrar já' + (p.risco ? ' · ' + fmt(p.risco.lote, 2) + ' lotes' : ''),
     '<div class="escada">' + niveis.map(n => '<div class="deg ' + n.cl + '"><i></i><span class="n">' + n.nome + '</span><b class="num">' + fmt(n.preco, c) + '</b><span class="d">' + n.d + '</span></div>').join('') + '</div>',
-    comoEntrar(p)) + (ab.length ? '<div class="ab-cap">A decorrer<span class="ab-lote"></span></div>' + listaAbertos(ab, c) : '')
+    comoEntrar(p)) + (ab.length ? '<div class="ab-cap">A decorrer<span class="ab-lote"></span><b class="ab-total num"></b></div>' + listaAbertos(ab, c) : '')
   resultadosAbertos(px)
 }
 
@@ -199,7 +199,7 @@ const listaAbertos = (l, c) => {
     const niv = (x, cl, ok) => '<b class="num ' + cl + '">' + fmt(x, c) + (ok ? '<i>✓</i>' : '') + '</b>'
     dia = d
     return (novoDia ? '<div class="ab-dia">' + (d === ontem ? 'Ontem' : d) + '</div>' : '')
-      + '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para o TP1' : '')) + '">'
+      + '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" data-n="' + p.n + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para o TP1' : '')) + '">'
       + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
       + '<span class="ab-h num">' + hhmm(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
       + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu ? p.tps[0] : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
@@ -210,7 +210,7 @@ function decorrer(l, fe, p, r, fechado, diaria) {
   const sv3 = fechado ? 'Mercado fechado, ' + semVelas().replace(/^mercado fechado, /, '') : diaria ? 'Pausa diária, ' + semVelas().replace(/^pausa diária, /, '')
     : p.acao === 'esperar' ? 'SV3: esperar. ' + p.porque.split(': ')[0].replace(/\.$/, '')
     : 'SV3 em pausa: ' + (linha ? (p.acao === 'vender' ? 'vende' : 'compra') + ' se tocar ' + fmt(p.entrada, c) + (px != null ? ', a ' + fmt(Math.abs(p.entrada - px), 1) + ' pips' : '') : 'sem entrada agora')
-  return '<div class="ordemParada decorrer"><div class="op-est">' + (n ? 'A decorrer' : 'Avisos') + '</div><div class="op-sub">' + (n ? n + (n === 1 ? ' aviso do bot' : ' avisos do bot') : 'Nenhum a decorrer')
+  return '<div class="ordemParada decorrer"><div class="op-est">' + (n ? 'A decorrer<b class="ab-total num"></b>' : 'Avisos') + '</div><div class="op-sub">' + (n ? n + (n === 1 ? ' aviso do bot' : ' avisos do bot') : 'Nenhum a decorrer')
     + (px != null ? ' · agora <b class="num ab-px">' + fmt(px, c) + '</b>' : '') + '<span class="ab-lote"></span></div>' + (n ? listaAbertos(l, c) : '') + (fe.length ? listaFechados(fe, c) : '') + '<div class="ab-sv3">' + esc(sv3) + '</div>'
     + (!fechado && p.acao !== 'esperar' && p.entradaTexto ? comoEntrar(p) : '') + '</div>'
 }
@@ -225,12 +225,23 @@ function resultadosAbertos(px) {
   }
   if (px == null) return
   pxAbertos = px
+  let somaPips = 0, somaEur = 0
   for (const el of $('plano').querySelectorAll('.ab[data-entrada]')) {
     const d = (el.dataset.lado === 'venda' ? 1 : -1) * (+el.dataset.entrada - px), r = el.querySelector('.ab-r'), s = d >= 0 ? '+' : '-'
     // com o €, os pips vão mais pequenos ao lado (29/10: cabem no cartão); sem o lote (o amigo), só os pips, como antes
-    const pips = s + fmt(Math.abs(d), 1) + ' pips'
-    r.innerHTML = v ? '<span class="ab-pips">' + pips + '</span> ' + s + fmt(Math.abs(d) * 100 * v.lote / v.eurusd, 0) + NB + '€' : pips
+    const pips = s + fmt(Math.abs(d), 1) + ' pips', eur = v ? Math.round(Math.abs(d) * 100 * v.lote / v.eurusd) : 0
+    r.innerHTML = v ? '<span class="ab-pips">' + pips + '</span> ' + s + fmt(eur, 0) + NB + '€' : pips
     r.className = 'ab-r num ' + (d >= 0 ? 'sobe' : 'desce')
+    // o total soma o que se vê em cada linha (os «×2» contam duas vezes, como no número de avisos)
+    const k = (+el.dataset.n || 1) * (d >= 0 ? 1 : -1)
+    somaPips += k * Math.round(Math.abs(d) * 10) / 10; somaEur += k * eur
+  }
+  // 29/10 («aqui em cima mete a soma de todas, tipo total das que tão a decorrer»): ao lado do título, em € (sem o lote, em pips)
+  for (const t of $('plano').querySelectorAll('.ab-total')) {
+    const x = v ? somaEur : somaPips, s = x >= 0 ? '+' : '-'
+    t.innerHTML = '<span class="ab-tot-l">total</span> ' + s + (v ? fmt(Math.abs(x), 0) + NB + '€' : fmt(Math.abs(x), 1) + ' pips')
+    t.className = 'ab-total num ' + (x >= 0 ? 'sobe' : 'desce')
+    t.title = 'A soma dos avisos a decorrer, ao preço de agora' + (v ? ': ' + (somaPips >= 0 ? '+' : '-') + fmt(Math.abs(somaPips), 1) + ' pips' : '')
   }
   const a = $('plano').querySelector('.ab-px')
   if (a) a.textContent = fmt(px, casasTexto('XAUUSD'))

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="jarvis-codigo" content="__CODIGO__">
 <title>MULASOCIETY ORG.</title>
-<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '17307351e7'</script>
-<link rel="stylesheet" href="estilo.css?v=17307351e7">
+<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = 'd4bed2c524'</script>
+<link rel="stylesheet" href="estilo.css?v=d4bed2c524">
 <script>try{var g=localStorage.getItem('jarvis-grafico');if(g&&g!=='escuro')document.documentElement.dataset.graf=g}catch(e){}</script>
 <link rel="icon" href="favicon.png">
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
@@ -17,7 +17,7 @@
     <div class="marca">MULASOCIETY ORG.</div>
     <div class="relogio"><b class="num" id="relogio">--:--:--</b><span>Lisboa · <span class="num" id="relogioGraf">--:--</span> no teu gráfico</span></div>
     <div class="it" id="sessoes"></div>
-    <div class="it" id="resultado"></div>
+    <div class="it" id="resultado"><button type="button" class="temaBtn fatBtn" id="fatBtn" aria-haspopup="dialog" hidden><span class="fat-longo">Calendário de faturação</span><span class="fat-curto">Faturação</span> <b class="num" id="fatBtnV"></b></button><span id="resultadoTxt"></span></div>
     <div class="dir">
       <div class="it" id="topoRobo" hidden></div>
       <button type="button" class="temaBtn" id="lucrosBtn" aria-haspopup="dialog" hidden>Lucros</button>
@@ -97,6 +97,14 @@
     <div id="fechadosCorpo"></div>
   </section>
 </div>
-<script type="module" src="app.js?v=17307351e7"></script>
+<!-- 30/10: o calendário de faturação (app.js), na mesma janela dos Lucros -->
+<div class="lucros" id="faturacao" hidden>
+  <div class="lucrosFundo" data-fecha></div>
+  <section class="lucrosCaixa fatCaixa" role="dialog" aria-modal="true" aria-labelledby="fatTit">
+    <header class="lucrosCab"><h2 id="fatTit">Calendário de faturação</h2><button type="button" class="lucrosFechar" id="fatFechar" data-fecha aria-label="Fechar">×</button></header>
+    <div id="fatCorpo"></div>
+  </section>
+</div>
+<script type="module" src="app.js?v=d4bed2c524"></script>
 </body>
 </html>

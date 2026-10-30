@@ -793,3 +793,33 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 @media (hover: hover) { .fe-mais:hover { color:var(--texto) } }
 .fechadosCaixa { width:min(560px, 100%) }
 .fechadosCaixa .fe-lista { margin-top:0 }
+/* 30/10: o calendário de faturação (app.js), na janela dos Lucros, no lugar da banca e dos TP da barra. Um quadrado por dia:
+   verde salva se o dia fechou a ganhar, rosa velho se fechou a perder, sem cor se nada fechou */
+.topo .it .fatBtn { margin-right:12px; font-size:12.5px; vertical-align:1px }
+/* a 1440 px (o ecrã dele) só cabe o botão: o nome curto, e o «Hoje» fica na dica e no quadrado de hoje (antes também não cabia) */
+.fat-curto { display:none }
+@media (max-width: 1719px) { .fat-longo, .topo .hojeTP { display:none } .fat-curto { display:inline } }
+.fatCaixa { width:min(1040px, 100%) }
+.fat-topo { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:2px 2px 8px }
+.fat-mes { display:flex; align-items:center; gap:8px }
+.fat-mes b { display:inline-block; font-size:18px; font-weight:600 } .fat-mes b::first-letter { text-transform:uppercase }
+.fat-seta { width:28px; height:28px; display:grid; place-items:center; border:1px solid var(--borda); border-radius:7px; background:transparent; color:var(--suave); cursor:pointer }
+.fat-seta svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round }
+.fat-seta:disabled { color:#3a3f45; cursor:default }
+@media (hover: hover) { .fat-seta:not(:disabled):hover { color:var(--texto); background:#1b1f23 } }
+.fat-total { display:flex; align-items:baseline; gap:14px; font-size:12.5px; color:var(--suave) }
+.fat-total b { margin-left:6px; font-size:18px; font-weight:700; color:var(--texto) } .fat-total b.sobe { color:var(--salva) } .fat-total b.desce { color:var(--rosa) }
+.fat-nota { margin:0 2px 8px; font-size:12px; line-height:1.45; color:var(--suave); text-wrap:pretty } .fat-nota.desce { color:var(--rosa) }
+.fat-tab { width:calc(100% + 12px); margin:4px -6px 0; border-collapse:separate; border-spacing:6px; table-layout:fixed }
+.fat-tab th { padding:0 9px; font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); text-align:left }
+.fat-d { height:98px; padding:8px 10px; vertical-align:top; background:#141719; border:1px solid var(--borda); border-radius:9px }
+.fat-d.vazio { background:transparent; border-color:transparent }
+.fat-d.fora { background:transparent } .fat-d.fora .fat-n { color:var(--fraco) }
+.fat-d.ganha { background:rgba(156,184,148,.13); border-color:rgba(156,184,148,.3) }
+.fat-d.perde { background:rgba(204,147,144,.13); border-color:rgba(204,147,144,.3) }
+.fat-d.hoje { box-shadow:inset 0 0 0 1px var(--areia) }
+.fat-n { display:block; font-size:11.5px; color:var(--suave) } .fat-d.hoje .fat-n { color:var(--areia) }
+.fat-v { display:block; margin-top:3px; font-size:17px; font-weight:700; line-height:1.2; color:var(--texto) }
+.fat-d.ganha .fat-v { color:var(--salva) } .fat-d.perde .fat-v { color:var(--rosa) }
+.fat-s { display:block; margin-top:2px; font-size:11px; line-height:1.35; color:var(--suave); text-wrap:pretty } .fat-s.desce { color:var(--rosa) }
+@media (max-width: 700px) { .fat-tab { width:calc(100% + 6px); margin:4px -3px 0; border-spacing:3px } .fat-d { height:58px; padding:5px } .fat-v { font-size:12px } .fat-s { display:none } }

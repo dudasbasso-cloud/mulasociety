@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=d4bed2c524'
+import { criarGrafico, numerosAviso } from './grafico.js?v=a2bb07a635'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -747,6 +747,8 @@ function faturacao(r) {
 }
 function desenharFat() {
   const r = fatR, hoje = diaLxDe(Date.now()), ini = r.banca.inicio, desde = diaLxDe(r.desde * 1000)
+  // 30/10 («não quero que tu inventes resultados»): só os avisos que foram para o Telegram; os dias antes do primeiro dizem-no
+  const primeiro = r.primeiro ? diaLxDe(r.primeiro * 1000) : null
   const mHoje = hoje.slice(0, 7), mIni = desde.slice(0, 7), m = fatMes && fatMes >= mIni && fatMes <= mHoje ? fatMes : mHoje
   const [a, mm] = m.split('-').map(Number), n = new Date(Date.UTC(a, mm, 0)).getUTCDate(), vazios = (new Date(Date.UTC(a, mm - 1, 1)).getUTCDay() + 6) % 7
   const D = new Map(r.dias.map(d => [d.dia, d])), doMes = r.dias.filter(d => d.dia.startsWith(m)), total = doMes.reduce((s, d) => s + d.eur, 0)
@@ -756,7 +758,8 @@ function desenharFat() {
     const d = D.get(dia), num = +dia.slice(8), eHoje = dia === hoje, cls = 'fat-d' + (eHoje ? ' hoje' : '')
     const topo = '<span class="fat-n">' + num + (eHoje ? ' · hoje' : '') + '</span>'
     if (!d) return '<td class="' + cls + (dia > hoje || dia < desde ? ' fora' : '') + '">' + topo
-      + (dia >= desde && dia <= hoje && emPausa(dia) ? '<span class="fat-s">avisos em pausa</span>' : eHoje ? '<span class="fat-s">ainda nenhum fechou</span>' : '') + '</td>'
+      + (dia >= desde && dia <= hoje && emPausa(dia) ? '<span class="fat-s">avisos em pausa</span>' : eHoje ? '<span class="fat-s">ainda nenhum fechou</span>'
+        : primeiro && dia >= desde && dia < primeiro ? '<span class="fat-s" title="' + esc('O primeiro aviso foi para o Telegram a ' + diaDe(r.primeiro * 1000) + ' às ' + hhmm(r.primeiro * 1000) + '.') + '">sem avisos</span>' : '') + '</td>'
     const contas = [d.lucro && d.lucro + ' com lucro', d.entradas && d.entradas + ' na entrada', d.stops && d.stops + ' no stop'].filter(Boolean)
     return '<td class="' + cls + (d.eur >= 0.5 ? ' ganha' : d.eur <= -0.5 ? ' perde' : '') + '" title="' + esc(nomeDia(dia) + ': começou com ' + fmt(ini, 0) + ' € e acabou com ' + fmt(ini + d.eur, 0) + ' €. ' + contas.join(', ') + '.') + '">' + topo
       + '<b class="fat-v num">' + fatSinal(d.eur) + '</b><span class="fat-s num">' + fmt(ini, 0) + ' → ' + fmt(ini + d.eur, 0) + NB + '€</span>'
@@ -772,7 +775,7 @@ function desenharFat() {
   $('fatCorpo').innerHTML = '<div class="fat-topo"><div class="fat-mes">' + (mIni < mHoje ? seta(-1, 'Mês anterior', 'm15 6-6 6 6 6') : '')
       + '<b>' + new Date(m + '-15T12:00:00Z').toLocaleDateString('pt-PT', { timeZone: 'UTC', month: 'long', year: 'numeric' }) + '</b>' + (mIni < mHoje ? seta(1, 'Mês seguinte', 'm9 6 6 6-6 6') : '') + '</div>'
     + '<div class="fat-total"><span>' + verdes + (verdes === 1 ? ' dia verde' : ' dias verdes') + ' · ' + vermelhos + (vermelhos === 1 ? ' vermelho' : ' vermelhos') + '</span>No mês <b class="num' + fatCor(total) + '">' + fatSinal(total) + '</b></div></div>'
-    + '<p class="fat-nota">Cada dia começa com ' + fmt(ini, 0) + ' € de banca: todos os avisos do bot (teto, pico, INCRÍVEL e SV3) desde ' + diaDe(r.desde * 1000) + ', com ' + fmt(r.lote, 2) + ' lotes e já sem o spread. Cada aviso conta no dia em que fechou.</p>'
+    + '<p class="fat-nota">Cada dia começa com ' + fmt(ini, 0) + ' € de banca: só os avisos do bot que foram mesmo para o Telegram (teto, pico, INCRÍVEL e SV3), com ' + fmt(r.lote, 2) + ' lotes e já sem o spread. Cada aviso conta no dia em que fechou.</p>'
     + (r.conferencia?.erros || []).map(e => '<p class="fat-nota desce">⚠ ' + esc(e) + '</p>').join('')
     + '<table class="fat-tab"><thead><tr>' + ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'].map(x => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>'
     + Array.from({ length: cel.length / 7 }, (_, i) => '<tr>' + cel.slice(i * 7, i * 7 + 7).join('') + '</tr>').join('') + '</tbody></table>'

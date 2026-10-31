@@ -907,6 +907,12 @@ button.fat-d { cursor:pointer }
 .fat-barra { flex:1; height:4px; border-radius:2px; background:#24282d; overflow:hidden }
 .fat-barra i { display:block; height:100%; border-radius:2px; background:currentColor }
 .fat-t-p b { min-width:56px; text-align:right }
+/* 31/10 («a sv3 é das melhores e não meteste em praticamente nenhum dos dias»): os tipos do BOT SV3 por baixo dele, como no
+   placar: recolhidos, mais pequenos e sem a linha entre eles, para se lerem como parte dele */
+.fat-tipos tr:has(+ .fat-parte) td { border-bottom:0 }
+.fat-tipos tr.fat-parte td { padding-top:0; font-size:13px }
+.fat-tipos tr.fat-parte td:first-child { padding-left:16px; color:var(--suave) }
+.fat-tipos tr.fat-parte td:last-child { font-weight:500 }
 /* 30/10 («acho que está a faltar infos, hoje não houve elliot»): as outras estratégias, em pips, no cartão do dia */
 .fat-fora { margin-top:18px }
 .fat-fora h3.lc-rot { font-weight:400 }

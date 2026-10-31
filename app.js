@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=e345d57ca8'
+import { criarGrafico, numerosAviso } from './grafico.js?v=fc8539d86f'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -863,19 +863,24 @@ function desenharFat() {
   // que deu mais para a que deu menos; os € dos avisos do bot ficam no cartão ao lado
   // 31/10 («epa não sei, melhora isso»): os fechos com os sinais do calendário (✓ com lucro, ○ na entrada, ✗ no stop) em vez de
   // quatro colunas de números, e ao pé dos pips uma barra fina com o tamanho de cada uma (as perto de zero ficam apagadas)
-  const linha = (nome, T, v, maior) => {
+  const linha = (nome, T, v, maior, parte) => {
     const x = { lucro: T.filter(f => R_FAT[f.fim] > 0).length, entradas: T.filter(f => f.fim === 'entrada').length, stops: T.filter(f => f.fim === 'stop').length }
-    return '<tr><td>' + esc(nome) + '</td><td class="fat-t-s num" title="' + esc(contas(x).join(', ')) + '">' + sinais(x) + '</td><td class="fat-t-p"><div><span class="fat-barra" aria-hidden="true"><i class="'
+    return '<tr' + (parte ? ' class="fat-parte"' : '') + '><td>' + esc(nome) + '</td><td class="fat-t-s num" title="' + esc(contas(x).join(', ')) + '">' + sinais(x) + '</td><td class="fat-t-p"><div><span class="fat-barra" aria-hidden="true"><i class="'
       + (v < 0 ? 'desce' : 'sobe') + '" style="width:' + (100 * Math.abs(v) / maior).toFixed(1) + '%"></i></span><b class="num' + (fatCor(v) || ' suave') + '">' + pips(v) + '</b></div></td></tr>'
   }
-  const comPips = [...L.map(f => ({ ...f, pips: R_FAT[f.fim] * f.R - (r.custo || 0) })), ...LO.filter(f => f.fim)]
-  const estrDia = [...new Set(comPips.map(f => f.tipo))].map(t => { const T = comPips.filter(f => f.tipo === t); return { t, T, v: T.reduce((s, f) => s + f.pips, 0) } }).sort((p, q) => q.v - p.v)
+  // 31/10 («a sv3 é das melhores e não meteste em praticamente nenhum dos dias»): o BOT SV3 do placar são os avisos do bot todos
+  // juntos (teto, pico, INCRÍVEL e as linhas do SV3, que sozinhas só deram um aviso desde 19/10). Aqui também: uma linha com a
+  // soma deles e, por baixo, os tipos que fecharam nesse dia, como no placar
+  const porTipo = l => [...new Set(l.map(f => f.tipo))].map(t => { const T = l.filter(f => f.tipo === t); return { t, T, v: T.reduce((s, f) => s + f.pips, 0) } }).sort((p, q) => q.v - p.v)
+  const doBot = L.map(f => ({ ...f, pips: R_FAT[f.fim] * f.R - (r.custo || 0) })), partes = porTipo(doBot), PARTE = { ...NOME_AVISO, sv3: 'Linhas do SV3' }
+  const estrDia = [...(doBot.length ? [{ t: 'bot', T: doBot, v: partes.reduce((s, o) => s + o.v, 0), partes }] : []), ...porTipo(LO.filter(f => f.fim))].sort((p, q) => q.v - p.v)
+  const escala = Math.max(1e-9, ...[...estrDia, ...partes].map(o => Math.abs(o.v)))
   // 31/10 («quero que isto seja mais relevante»): com título como o do cartão do dia, ao lado dele e da mesma largura (estilo.css).
   // Depois («mete o total de pips em cima à direita»): o total do dia em pips, onde o cartão do dia tem os €
   const somaE = estrDia.reduce((s, o) => s + o.v, 0)
   const porEstr = estrDia.length ? '<section class="fat-cartao" aria-labelledby="fatTiposTit"><div class="fat-dia-cab"><div><div class="lc-rot">Por estratégia</div><h2 class="fat-dia-nome" id="fatTiposTit">' + nomeDia(dia) + '</h2></div>'
     + '<b class="fat-dia-v num' + fatCor(somaE) + '">' + pips(somaE) + NB + 'pips</b></div><table class="fat-tipos"><thead><tr><th scope="col">Estratégia</th><th scope="col">Avisos</th><th scope="col">Pips</th></tr></thead><tbody>'
-    + estrDia.map(o => linha(NOME_AVISO[o.t] || nomeE[o.t] || o.t, o.T, o.v, Math.max(1e-9, ...estrDia.map(e => Math.abs(e.v))))).join('') + '</tbody></table></section>' : ''
+    + estrDia.map(o => linha(o.partes ? nomeE.bot || 'BOT SV3' : nomeE[o.t] || o.t, o.T, o.v, escala) + (o.partes || []).map(p => linha(PARTE[p.t] || p.t, p.T, p.v, escala, true)).join('')).join('') + '</tbody></table></section>' : ''
 
   const seta = (k, nome, d) => '<button type="button" class="fat-seta" data-mes="' + k + '" aria-label="' + nome + '"' + ((k < 0 ? m <= mIni : m >= mHoje) ? ' disabled' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg></button>'
   const foco = document.activeElement?.closest?.('#pagFat [data-mes], #pagFat [data-dia], #pagFat .fat-desliza'), qual = foco && (foco.dataset.mes ? '[data-mes="' + foco.dataset.mes + '"]' : foco.dataset.dia ? '[data-dia="' + foco.dataset.dia + '"]' : '.fat-desliza')
@@ -885,7 +890,7 @@ function desenharFat() {
   // 31/10 («podes retirar isto daqui»): sem a coluna das estratégias em pips ao lado (desde 19/10); essa tabela fica por baixo
   // do gráfico, e o calendário e o dia escolhido ficam com a largura toda
   $('fatCorpo').innerHTML = resumo + cal
-    + '<p class="fat-nota">Cada dia começa com ' + fmt(ini, 0) + ' € de banca: só os avisos do bot que foram mesmo para o Telegram (teto, pico, INCRÍVEL e SV3), com ' + fmt(r.lote, 2) + ' lotes e já sem o spread (' + fmt(r.custo, 2) + NB + '$ em cada aviso). Cada aviso conta no dia em que fechou. As outras estratégias que foram para o Telegram contam em pips, sem mexer na banca. Carrega num dia para ver os avisos dele aqui em baixo.</p>'
+    + '<p class="fat-nota">Cada dia começa com ' + fmt(ini, 0) + ' € de banca: só os avisos do BOT SV3 que foram mesmo para o Telegram (teto, pico, INCRÍVEL e linhas do SV3), com ' + fmt(r.lote, 2) + ' lotes e já sem o spread (' + fmt(r.custo, 2) + NB + '$ em cada aviso). Cada aviso conta no dia em que fechou. As outras estratégias que foram para o Telegram contam em pips, sem mexer na banca. Carrega num dia para ver os avisos dele aqui em baixo.</p>'
     + (r.conferencia?.erros || []).map(e => '<p class="fat-nota desce">⚠ ' + esc(e) + '</p>').join('')
     + '<div class="fat-baixo">' + doDia + porEstr + '</div>'
   const novo = $('fatCorpo').querySelector('.fat-desliza')

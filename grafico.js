@@ -246,11 +246,11 @@ function dicaDe(s, casas) {
 // estratégia diz como acabou (verde ganhou, vermelho perdeu, areia ainda a decorrer); a ponta, o lado
 const ganhou = x => /^tp/.test(x.fim) || (x.fim === 'tempo' && x.pips > 0)
 const corEstr = x => x.fim === 'aberta' ? P.at : ganhou(x) ? P.gt : P.rt
-const FIM_ESTR = { tp3: 'chegou ao TP3', tp1: 'chegou ao TP2 e saiu no TP1', stop: 'bateu no stop', tempo: 'fechou ao fim de 24 h' }
+const FIM_ESTR = { tp2: 'chegou ao TP2', stop: 'bateu no stop', tempo: 'fechou ao fim de 24 h' }
 function dicaEstr(x, casas) {
   const res = x.fim === 'aberta' ? 'ainda a decorrer' : '<b style="color:' + corEstr(x) + '">' + (ganhou(x) ? '✓ ' : '✗ ') + (FIM_ESTR[x.fim] || x.fim) + '</b> · '
     + (x.pips >= 0 ? '+' : '-') + fmt(Math.abs(x.pips), 1) + ' pips'
-  return '<b>' + x.nome + ', ' + x.lado + '</b> às ' + hora(x.t) + ' de ' + data(x.t) + '<br>entrada ' + fmt(x.entrada, casas) + ' · stop ' + fmt(x.sl, casas) + ' · TP3 ' + fmt(x.tps[2], casas) + '<br>' + res
+  return '<b>' + x.nome + ', ' + x.lado + '</b> às ' + hora(x.t) + ' de ' + data(x.t) + '<br>entrada ' + fmt(x.entrada, casas) + ' · stop ' + fmt(x.sl, casas) + ' · TP2 ' + fmt(x.tps[1], casas) + '<br>' + res
 }
 // 26/10: os números dos avisos do dia, como no Telegram («#7»); três ou mais seguidos ficam «#2 a #6»
 export function numerosAviso(l) {
@@ -263,17 +263,16 @@ export function numerosAviso(l) {
   }
   return out.join(' ')
 }
-// o aviso do bot: os TP por onde passou e como acabou pela regra (TP3, de volta ao TP1 depois do TP2, de volta à entrada
-// depois do TP1, ou stop)
+// o aviso do bot: os TP por onde passou e como acabou pela regra (31/10: no TP2 ou no stop, sem mexer no stop)
 const TIPO_ALVO = { teto: ' de teto', pico: ' depois do pico', incrivel: ' INCRÍVEL', sv3: ' do SV3' }
 const CURTO_SINAL = { teto: 'Teto', pico: 'Pico', incrivel: 'INCRÍVEL', sv3: 'SV3' }
 function dicaAlvo(p, n, casas, nome) {
   const quando = t => hora(t) + (data(t) === data(p.t) ? '' : ' de ' + data(t)), e = p.fim?.estado
-  const tps = p.hits.map((t, k) => t != null && !(e === 'tp3' && k === 2) ? 'TP' + (k + 1) + ' às ' + quando(t) : null).filter(Boolean).join(' · ')
-  const fim = !p.fim ? 'ainda aberto' : '<b style="color:' + (e === 'stop' ? P.rt : e === 'entrada' ? P.at : P.gt) + '">'
-    + ({ tp3: '✓ fechou no TP3', tp1: '✓ saiu no TP1, depois do TP2', entrada: 'saiu na entrada, depois do TP1 (0)', stop: '✗ stop' }[e] || e) + ' às ' + quando(p.fim.exato ?? p.fim.t) + '</b>'
+  const tps = p.hits.map((t, k) => t != null && !(e === 'tp2' && k === 1) ? 'TP' + (k + 1) + ' às ' + quando(t) : null).filter(Boolean).join(' · ')
+  const fim = !p.fim ? 'ainda aberto' : '<b style="color:' + (e === 'stop' ? P.rt : P.gt) + '">'
+    + ({ tp2: '✓ fechou no TP2', stop: '✗ stop' }[e] || e) + ' às ' + quando(p.fim.exato ?? p.fim.t) + '</b>'
   return '<b>' + (p.num ? '#' + p.num + ' ' : '') + (p.lado === 'venda' ? 'Venda' : 'Compra') + (TIPO_ALVO[p.tipo] || (nome ? ' · ' + nome : '')) + (n > 1 ? ' ×' + n : '') + '</b> às ' + hora(p.t) + ' de ' + data(p.t)
-    + '<br>entrada ' + fmt(p.entrada, casas) + ' · stop ' + fmt(p.sl, casas) + ' · TP3 ' + fmt(p.tps[2], casas) + (tps ? '<br>' + tps : '') + '<br>' + fim
+    + '<br>entrada ' + fmt(p.entrada, casas) + ' · stop ' + fmt(p.sl, casas) + ' · TP2 ' + fmt(p.tps[1], casas) + (tps ? '<br>' + tps : '') + '<br>' + fim
 }
 
 export function criarGrafico(el, { pedirHistoria = null } = {}) {
@@ -416,12 +415,10 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const total = c.fechados + c.abertos, nome = x => x === 1 ? (ouro ? ' aviso' : ' sinal') : (ouro ? ' avisos' : ' sinais')
     const tps = tudo ? [c.tp1, c.tp2, c.tp3] : [0, 1, 2].map(k => H.filter(p => p.hits[k]).length), n = k => tps[k]
     // 24/10 («faz essa estratégia»): as barras dividem pelos decididos (fechados ou já no TP1); o acerto é o dos que acabaram a
-    // ganhar sobre os fechados. 29/10: no TP1 o stop passa para a entrada, por isso o stop conta só antes do TP1, e os que
-    // voltaram à entrada têm a linha deles e não são acerto
+    // ganhar sobre os fechados. 31/10: tudo no TP2, sem mexer no stop; o TP3 já não conta (o aviso fecha no TP2)
     const st = tudo ? c.stop : H.filter(p => p.fim?.estado === 'stop').length, quantos = tudo ? total : H.length
-    const ze = tudo ? c.entrada ?? 0 : H.filter(p => p.fim?.estado === 'entrada').length
     const dec = tudo ? c.decididos ?? n(0) + st : H.filter(p => p.fim || p.hits[0]).length, pc = x => dec ? Math.round(100 * x / dec) : 0
-    const fech = tudo ? c.fechados : H.filter(p => p.fim).length, acerto = fech ? Math.round(100 * (fech - st - ze) / fech) : null
+    const fech = tudo ? c.fechados : H.filter(p => p.fim).length, acerto = fech ? Math.round(100 * (fech - st) / fech) : null
     const linha = (nome, x, cor) => '<div class="l' + (nome === 'Stop' && x ? ' st' : '') + '"><b>' + nome + '</b><span class="q">' + x + '</span><i class="barra"><span style="width:' + pc(x) + '%;background:' + cor + '"></span></i><span class="q">' + pc(x) + '%</span></div>'
     // 23/10 («devia ter aqui 1 stop», «mete lá a vermelho no card»): os stops desde o início a vermelho, com a hora do último
     const ultStop = (a.lista || []).filter(p => p.fim?.estado === 'stop').at(-1)
@@ -429,12 +426,12 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const stops = x => !x ? '0 stops' : '<b class="st">' + x + (x === 1 ? ' stop' : ' stops') + (ultStop ? (x === 1 ? ' a ' : ', o último a ') + hora(ultStop.fim.exato ?? ultStop.fim.t) : '') + '</b>'
     quadro.innerHTML = '<div class="t">' + (ouro ? 'Avisos do bot' : 'Sinais do SV3')
       + '<div class="seg">' + [['tudo', 'Tudo'], ['hoje', 'Hoje'], ['ontem', 'Ontem']].map(([v, x]) => '<button type="button" data-vista="' + v + '" aria-pressed="' + (v === vistaAlvos) + '"' + (v === vistaAlvos ? ' class="on"' : '') + '>' + x + '</button>').join('') + '</div></div>'
-      + (quantos ? linha('TP1', n(0), P.gt) + linha('TP2', n(1), P.gt) + linha('TP3', n(2), P.gt) + (ze ? linha('Entrada', ze, P.at) : '') + linha('Stop', st, P.rt)
+      + (quantos ? linha('TP1', n(0), P.gt) + linha('TP2', n(1), P.gt) + linha('Stop', st, P.rt)
         + '<div class="a"><span>' + quantos + nome(quantos) + ' · ' + (tudo ? 'desde ' + data(c.desde) : dia) + '</span>' + (acerto != null ? '<span>Acerto <b>' + acerto + '%</b></span>' : '') + '</div>'
         : '<div class="r">' + (vistaAlvos === 'ontem' ? 'Sem' + nome(2) + ' ontem (' + dia + ').' : 'Ainda sem' + nome(2) + ' hoje (' + dia + ').') + '</div>')
       + (tudo ? (c.stop ? '<div class="r">' + stops(c.stop) + '</div>' : '')
         : '<div class="r">Desde ' + data(c.desde) + ': ' + total + nome(total) + ', ' + stops(c.stop) + (c.acerto != null ? ', acerto ' + Math.round(100 * c.acerto) + '%' : '') + '</div>')
-      + '<div class="nota">' + (ouro ? 'Só os avisos do Telegram. TP no TP3; no TP1 o stop passa para a entrada e no TP2 para o TP1.' : 'TP no TP3; no TP1 o stop passa para a entrada e no TP2 para o TP1. Um sinal de cada vez.') + '</div>'
+      + '<div class="nota">' + (ouro ? 'Só os avisos do Telegram. Tudo no TP2, sem mexer no stop.' : 'Tudo no TP2, sem mexer no stop. Um sinal de cada vez.') + '</div>'
     quadro.style.display = 'block'
   }
   // o estocástico 5,3,3 num painel por baixo (só existe com a camada ligada), com o 80 e o 20 e o nome no canto
@@ -509,7 +506,8 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const junta = o => { const c = new Caixa(o, xDe); velas.attachPrimitive(c); caixas.push(c) }
     const alinhar = t => t - t % TFS[d.tf]
     // as caixas dos alvos: verde da entrada ao TP3, vermelha da entrada ao stop, da vela do sinal até ao fim (TP3 ou stop;
-    // aberta, até à direita); o TP1, o TP2, o TP3 e o stop marcados no preço, na vela em que lá chegou
+    // aberta, até à direita); o TP1, o TP2, o TP3 e o stop marcados no preço, na vela em que lá chegou. 31/10 (tudo no TP2): a
+    // verde vai até ao TP2, onde fica o TP, como na foto do Telegram, e a caixa acaba no TP2 ou no stop
     // 23/10 («tá tudo bugado», «uma em cima da outra? antes tava mais clean», «a box deveria estar bem colocada»): cada caixa
     // começa na vela do sinal, com a entrada nela, e nunca fica uma em cima da outra. Os avisos repetidos (o mesmo lado, até
     // 1 h depois do anterior) fazem uma caixa só («Venda ×3» na dica); o quadro continua a contar cada aviso. Quando chega outro
@@ -525,7 +523,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const precos = p => [{ preco: p.sl, cor: P.rt, texto: 'stop ' + fp(p.sl) }, { preco: p.entrada, cor: P.at, texto: 'entrada ' + fp(p.entrada) },
       ...p.tps.map((preco, k) => ({ preco, cor: P.gt, texto: 'TP' + (k + 1) + ' ' + fp(preco) + (p.hits[k] ? ' ✓' : '') }))]
     const caixa = (p, de, ate) => {
-      junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.tps[2]), lo: Math.min(p.entrada, p.tps[2]), fundo: G(0.10), borda: G(0.30) })
+      junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.tps[1]), lo: Math.min(p.entrada, p.tps[1]), fundo: G(0.10), borda: G(0.30) })
       junta({ de, ate, velas: true, hi: Math.max(p.entrada, p.sl), lo: Math.min(p.entrada, p.sl), fundo: R(0.12), borda: R(0.30) })
     }
     // 24/10 («estes títulos ficam bué confusos», «não quero perder os nomes em cima delas»): os nomes continuam por cima das
@@ -543,8 +541,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     const estrDe = new Map((d.estrategias?.ids || []).map(x => [x.id, x]))
     // 26/10 («esta?», de uma compra Liquidez que bateu no stop 2 minutos depois e parecia aberta): o nome de um aviso que já
     // acabou diz como acabou, ✓ ou ✗, como nos Sinais. Quando a caixa é cortada pelo seguinte, já o diz por extenso («· stop às»)
-    // 29/10: o que voltou à entrada depois do TP1 não ganhou nem perdeu
-    const acabou = p => { const f = p.regra || p.fim; return f ? (f.estado === 'stop' ? ' ✗' : f.estado === 'entrada' ? ' · na entrada' : ' ✓') : '' }
+    const acabou = p => { const f = p.regra || p.fim; return f ? (f.estado === 'stop' ? ' ✗' : ' ✓') : '' }
     // 26/10: à frente, o número do aviso no dia, o mesmo do Telegram («#7»)
     const seta = (p, extra = '', g = [p]) => {
       const v = p.lado === 'venda', cor = v ? P.rt : P.gt, nums = numerosAviso(g.map(q => q.num))
@@ -554,11 +551,6 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       const ponto = (t, o, texto, desvio = 0) => { mAlvos.push({ time: t, shape: 'circle', size: 0.5, ...o }); nota(t, h); rotulos.push({ ponto: true, time: t, preco: o.price, cima: desvio < 0, desvio, texto, cor: o.color, tam: 0.5 }) }
       p.hits.forEach((t, k) => { if (t != null && visto(t)) ponto(t, { position: 'atPriceMiddle', price: p.tps[k], color: P.gt }, 'TP' + (k + 1)) })
       if (p.fim?.estado === 'stop' && visto(p.fim.t)) ponto(p.fim.t, { position: 'atPriceMiddle', price: p.sl, color: P.rt }, 'stop')
-      // 24/10: com a regra, o preço voltou ao TP1 depois do TP2 e o aviso fechou aí. O ponto e o nome ficam do lado de onde o
-      // preço voltou (por cima numa venda): no meio ficava em cima da vela verde e não se lia
-      if (p.fim?.estado === 'tp1' && visto(p.fim.t)) { const v = p.lado === 'venda'; ponto(p.fim.t, { position: v ? 'atPriceTop' : 'atPriceBottom', price: p.tps[0], color: P.gt }, 'saiu no TP1', v ? -1 : 1) }
-      // 29/10: e voltou à entrada depois do TP1, com o stop já lá
-      if (p.fim?.estado === 'entrada' && visto(p.fim.t)) { const v = p.lado === 'venda'; ponto(p.fim.t, { position: v ? 'atPriceTop' : 'atPriceBottom', price: p.entrada, color: P.at }, 'saiu na entrada', v ? -1 : 1) }
     }
     // 24/10 («este TP3, tu metes esta box: isso quer dizer que a trade só vai até essa box?»): o nome do aviso diz o que ele
     // fez depois de a caixa fechar e a que horas (de Lisboa, com o dia quando já é outro)
@@ -569,7 +561,7 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
       const corte = prox != null && (!p.fim || p.fim.t >= prox) ? prox - TFS[d.tf] : null, ate = corte ?? (p.fim ? p.fim.t : null)
       const visto = t => corte == null || t <= corte, melhor = p.hits.filter(Boolean).length, antes = p.hits.filter(t => t != null && visto(t)).length
       const fd = p.fim && !visto(p.fim.t) ? p.fim : null, n = g.length - (solto && g.includes(solto) ? 1 : 0)
-      const depois = corte == null ? '' : fd ? (({ tp1: ' · saiu no TP1', entrada: ' · saiu na entrada', stop: ' · stop' })[fd.estado] ?? ' · TP3') + quando(fd.exato ?? fd.t, p.time)
+      const depois = corte == null ? '' : fd ? (fd.estado === 'stop' ? ' · stop' : ' · TP2') + quando(fd.exato ?? fd.t, p.time)
         : melhor > antes ? ' · TP' + melhor + quando(p.hits[melhor - 1], p.time) : ''
       const h = dicaAlvo(p, n, casas, estrDe.get(p.tipo)?.nome)
       caixa(p, p.time, ate)
@@ -618,10 +610,10 @@ export function criarGrafico(el, { pedirHistoria = null } = {}) {
     // 24/10 («para essas estratégias também podes meter as boxes»): a caixa de cada entrada, como as dos avisos (verde até
     // ao TP3, vermelha até ao stop), da vela da entrada até ao fim dela; nunca por cima da seguinte. 25/10 («mete o TP, a
     // entrada, o TP2, o TP3»): as linhas do TP1 e do TP2 dentro de cada caixa e, na última entrada, todas com o preço escrito,
-    // com ✓ nos TP a que chegou (TP3: os três; saiu no TP1: o TP1 e o TP2). 25/10 («mete isto à direita, se não fica
+    // com ✓ nos TP a que chegou (31/10: no TP2, o TP1 e o TP2). 25/10 («mete isto à direita, se não fica
     // difícil»): os preços da última entrada vão sempre até à direita do gráfico, mesmo já fechada, como os do último aviso
     // do bot; no meio das velas não se liam
-    const feitos = x => x.fim === 'tp3' ? 3 : x.fim === 'tp1' ? 2 : 0
+    const feitos = x => x.fim === 'tp2' ? 2 : 0
     EL.forEach((x, i) => {
       const prox = EL[i + 1]?.time, ate = x.ate == null ? prox ?? null : prox != null ? Math.min(x.ate, prox) : x.ate, ult = i === EL.length - 1
       caixa(x, x.time, ate)

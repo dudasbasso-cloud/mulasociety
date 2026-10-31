@@ -812,6 +812,14 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
   .abas .aba.on { transition:opacity .2s ease-out }
   @starting-style { .abas .aba.on { opacity:0 } }
 }
+/* 31/10 («continua a melhorar cenas, mete cenas de última geração»): por baixo dos separadores, uma linha só desliza até ao
+   que se abre (app.js, porLinha). Tem 1 px, o que se via da de cada um: a borda dele tinha 2, mas a barra cortava um */
+.abas .separadores { position:relative }
+.abas .separadores.com-linha > .on { border-bottom-color:transparent }
+.abas .separadores > .sep-linha { position:absolute; left:0; bottom:0; width:0; height:1px; padding:0; margin:0; border:0; background:var(--areia); pointer-events:none }
+@media (prefers-reduced-motion: no-preference) {
+  .abas .separadores.pronta > .sep-linha { transition:translate .3s cubic-bezier(.2, .8, .2, 1), width .3s cubic-bezier(.2, .8, .2, 1) }
+}
 
 /* 26/10: os avisos que fecharam nas últimas 24 h, uma linha cada, por baixo dos que estão a decorrer */
 .fe-lista { margin-top:12px }

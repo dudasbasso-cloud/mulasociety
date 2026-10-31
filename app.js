@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=fc8539d86f'
+import { criarGrafico, numerosAviso } from './grafico.js?v=2b4df3a25f'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -175,17 +175,16 @@ const avisosAbertos = () => avisosDo(p => !fimDe(p))
 // 26/10 («eu recebi no tg mas no card não tem»): os que já acabaram nas últimas 24 h, os mais recentes primeiro
 const avisosFechados = () => avisosDo(p => { const f = fimDe(p); return f && Date.now() / 1000 - f.t <= 86400 }).sort((a, b) => fimDe(b).t - fimDe(a).t)
 // cada um numa linha: ✓ ou ✗, o lado e o nome, como e quando acabou, e o resultado pela regra (o € vem em resultadosAbertos,
-// com o lote dele: o TP3 vale 3 vezes o stop, o regresso ao TP1 uma vez, o stop menos uma). Até 4; os outros contam-se
-// 29/10: o que voltou à entrada depois do TP1 sai a zero, com ○ (o ⚪ do Telegram) em vez de ✓ ou ✗
-const COMO_ACABOU = { stop: 'stop', tp1: 'saiu no TP1', entrada: 'saiu na entrada', tp3: 'TP3' }
+// com o lote dele: 31/10, o TP2 vale 2 vezes o stop e o stop menos uma). Até 4; os outros contam-se
+const COMO_ACABOU = { stop: 'stop', tp2: 'TP2' }
 // 26/10: o número do aviso no dia, o mesmo do Telegram e das respostas dos TP e do stop («#7»)
 const numeros = p => p.nums?.length ? numerosAviso(p.nums) + ' ' : ''
 const linhaFechado = (p, c) => {
-  const f = fimDe(p), zero = f.estado === 'entrada', ok = f.estado !== 'stop' && !zero, v = p.lado === 'venda', k = f.estado === 'tp3' ? 3 : ok ? 1 : zero ? 0 : -1
+  const f = fimDe(p), ok = f.estado !== 'stop', v = p.lado === 'venda', k = ok ? 2 : -1
   return '<div class="fe" data-r="' + k * Math.abs(p.entrada - p.sl) + '" title="' + esc(p.nomes.join(' e ') + ', entrada ' + fmt(p.entrada, c) + ' às ' + diaHora(p.t * 1000)) + '">'
-    + '<span class="' + (zero ? 'suave">○' : ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fe-l ' + (v ? 'desce">Venda' : 'sobe">Compra') + '</span>'
+    + '<span class="' + (ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fe-l ' + (v ? 'desce">Venda' : 'sobe">Compra') + '</span>'
     + '<span class="fe-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span><span class="fe-h">' + COMO_ACABOU[f.estado] + ' ' + diaHora(f.t * 1000) + '</span>'
-    + '<b class="fe-r num' + (zero ? '' : ok ? ' sobe' : ' desce') + '"></b></div>'
+    + '<b class="fe-r num' + (ok ? ' sobe' : ' desce') + '"></b></div>'
 }
 // 29/10 («se clicar em ver mais, mostra tipo pop-up»): os outros abrem-se todos numa janela por cima (a dos Lucros, mais estreita)
 const listaFechados = (l, c) => '<div class="fe-lista"><div class="fe-tit">Fecharam nas últimas 24 h</div>' + l.slice(0, 4).map(p => linhaFechado(p, c)).join('')
@@ -209,14 +208,14 @@ const listaAbertos = (l, c) => {
   const hoje = diaDe(Date.now()), ontem = diaDe(Date.now() - 864e5)
   let dia = hoje
   return '<div class="ab-lista">' + l.map(p => {
-    const v = p.lado === 'venda', moveu = p.hits[1] != null ? 'TP1' : p.hits[0] != null ? 'entrada' : null, d = diaDe(p.t * 1000), novoDia = d !== dia
+    const v = p.lado === 'venda', d = diaDe(p.t * 1000), novoDia = d !== dia
     const niv = (x, cl, ok) => '<b class="num ' + cl + '">' + fmt(x, c) + (ok ? '<i>✓</i>' : '') + '</b>'
     dia = d
     return (novoDia ? '<div class="ab-dia">' + (d === ontem ? 'Ontem' : d) + '</div>' : '')
-      + '<div class="ab" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" data-n="' + p.n + '" title="' + esc(p.nomes.join(' e ') + (moveu ? '. O stop já passou para ' + (moveu === 'TP1' ? 'o TP1' : 'a entrada') : '')) + '">'
+      + '<div class="ab" data-k="' + p.t + p.lado + p.entrada + '" data-entrada="' + p.entrada + '" data-lado="' + p.lado + '" data-n="' + p.n + '" title="' + esc(p.nomes.join(' e ')) + '">'
       + '<div class="ab-cab"><span class="' + (v ? 'desce">▼ Venda' : 'sobe">▲ Compra') + '</span><span class="ab-n">' + numeros(p) + esc(p.curto) + (p.n > 1 ? ' ×' + p.n : '') + '</span>'
       + '<span class="ab-h num">' + hhmm(p.t * 1000) + '</span><b class="ab-r num"></b></div>'
-      + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(moveu === 'TP1' ? p.tps[0] : moveu ? p.entrada : p.sl, moveu ? 'st movido' : 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
+      + '<div class="ab-niv">' + niv(p.entrada, 'en') + niv(p.sl, 'st') + p.tps.map((x, k) => niv(x, 'tp', p.hits[k] != null)).join('') + '</div></div>'
   }).join('') + '</div>'
 }
 function decorrer(l, fe, p, r, fechado, diaria) {
@@ -240,9 +239,32 @@ function pintarPlano(html) {
   $('plano').innerHTML = html
   const d = $('plano').querySelector('.ab-desliza')
   roPlano.disconnect()
-  if (d) { d.scrollTop = y; pontas(d); roPlano.observe(d) }
+  if (d) { d.scrollTop = y; pontas(d); roPlano.observe(d); novasEntram('plano', est.simbolo + '/' + ultimoGrafico?.simbolo + '/' + est.tf, d, d, y) }
 }
 $('plano').addEventListener('scroll', e => { if (e.target.classList?.contains('ab-desliza')) pontas(e.target) }, { capture: true, passive: true })
+// 31/10 («continua a melhorar cenas, mete cenas de última geração»): o que chega de novo a uma lista (um aviso, uma notícia)
+// entra devagar: cresce do zero até à altura dele e aparece, e o resto desce com ele em vez de saltar. Cada linha leva um
+// data-k; na primeira pintura, ou com outro símbolo ou outro gráfico, nada entra. Se a lista estava descida, a leitura fica
+// parada: anda o tamanho do que entrou por cima, sem animação. Com o movimento reduzido, entra de uma vez
+const vistas = new Map()
+function novasEntram(nome, fonte, lista, desliza, y) {
+  const els = [...lista.querySelectorAll('[data-k]')], antes = vistas.get(nome)
+  vistas.set(nome, { fonte, k: new Set(els.map(e => e.dataset.k)) })
+  if (antes?.fonte !== fonte) return
+  const novas = els.filter(e => !antes.k.has(e.dataset.k))
+  if (!novas.length) return
+  const topo = desliza.getBoundingClientRect().top, acima = y > 4 ? novas.filter(e => e.getBoundingClientRect().top < topo) : []
+  if (acima.length) desliza.scrollTop = y + acima.reduce((s, e) => s + e.offsetHeight, 0)
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  for (const e of novas.filter(e => !acima.includes(e))) {
+    const cs = getComputedStyle(e), h = e.offsetHeight
+    // (o clip corta sem mudar nada lá dentro; o hidden mudava as margens)
+    e.style.overflow = 'clip'
+    const a = e.animate([{ height: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0 }, { opacity: 0, offset: 0.35 },
+      { height: h + 'px', paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 1 }], { duration: 450, easing: 'cubic-bezier(.2, .8, .2, 1)' })
+    a.onfinish = a.oncancel = () => { e.style.overflow = '' }
+  }
+}
 // quanto vai cada aviso aberto, ao preço de agora (de segundo em segundo no Mac). 25/10 («mete também o valor como se
 // tivesse metido 0,32 lote»): e em €, com o lote dele; 1 $ no ouro com 1 lote são 100 $. Sem o lote (a barra ainda não
 // chegou), só pips
@@ -333,13 +355,14 @@ function analise(r) {
   // 24/10: o «Ver tudo» (a análise inteira, fechada) saiu a pedido dele; fica só o resumo
   ultimaR = r
   $('brief').innerHTML = r.resumo?.length === 1 && r.resumo[0].rotulo === 'Mercado' ? mercadoFechado(r) : r.resumo?.length ? agoraVisual(r.resumo, casasTexto(r.simbolo)) : ''
-  const nome = r.simbolo === 'XAUUSD' ? 'ouro' : r.simbolo
-  $('noticias').innerHTML = r.setas.length ? r.setas.map(x => '<div class="noticia"><div class="q"><span class="num">' + diaHora(x.quando) + '</span><span class="chip ' + (x.dir > 0 ? 'sobe">▲' : 'desce">▼') + x.grau + ' ' + esc(r.simbolo) + '</span></div><div class="tx">' + esc(x.texto) + '</div>' + (x.porque || x.mais ? '<div class="pq">' + esc(x.porque || '') + (x.mais ? (x.porque ? ' · ' : '') + 'mais ' + x.mais + (x.mais > 1 ? ' notícias' : ' notícia') + ' sobre isto' : '') + '</div>' : '') + depoisTxt(x.depois, r.simbolo) + '</div>').join('')
+  const nome = r.simbolo === 'XAUUSD' ? 'ouro' : r.simbolo, yN = $('noticias').parentElement.scrollTop
+  $('noticias').innerHTML = r.setas.length ? r.setas.map(x => '<div class="noticia" data-k="' + esc(x.quando + ' ' + x.texto.slice(0, 30)) + '"><div class="q"><span class="num">' + diaHora(x.quando) + '</span><span class="chip ' + (x.dir > 0 ? 'sobe">▲' : 'desce">▼') + x.grau + ' ' + esc(r.simbolo) + '</span></div><div class="tx">' + esc(x.texto) + '</div>' + (x.porque || x.mais ? '<div class="pq">' + esc(x.porque || '') + (x.mais ? (x.porque ? ' · ' : '') + 'mais ' + x.mais + (x.mais > 1 ? ' notícias' : ' notícia') + ' sobre isto' : '') + '</div>' : '') + depoisTxt(x.depois, r.simbolo) + '</div>').join('')
     // 25/10 («e aqui nada?»): as setas vêm do card Mercado do Orca; com as notícias dele desligadas não chegam novas
     // 25/10: com o botão de pausa aqui em cima e a pausa sozinha do fim de semana (pausaAuto)
     : '<div class="vazio">' + (r.pausa ? (r.pausaAuto ? 'Ao fim de semana, com o mercado fechado, as notícias param sozinhas para não gastarem créditos' : 'As notícias estão em pausa, por isso não chegam setas novas') + (r.ultimaSeta ? ' (a última foi a ' + diaDe(r.ultimaSeta) + ', às ' + hhmm(r.ultimaSeta) + ')' : '')
       + (r.pausaAuto ? '. Voltam meia hora antes de o mercado abrir' + (AMIGO ? '.' : ', ou já, no ▶ aqui em cima.') : AMIGO ? '.' : '. Para voltarem, carrega no ▶ aqui em cima.')
       : 'Sem setas para ' + esc(nome) + ' nos últimos 3 dias.') + '</div>'
+  novasEntram('noticias', r.simbolo, $('noticias'), $('noticias').parentElement, yN)
   // 22/10 («mete tipo assim», com o cartão «Próximos eventos» do Orca): cada evento numa caixa, com a moeda, o nome, o
   // previsto e a hora; os fortes a rosa. A próxima vai também na barra de cima
   const diaH = ms => { const d = diaDe(ms); return (d === diaDe(Date.now()) ? '' : d === diaDe(Date.now() + 864e5) ? 'amanhã ' : d + ' ') + hhmm(ms).replace(':', 'h') }
@@ -678,8 +701,23 @@ function aba(n) {
   est.aba = n; guardar()
   for (const e of document.querySelectorAll('#separadores [data-aba], .abas .aba')) e.classList.toggle('on', e.dataset.aba === n)
   for (const e of document.querySelectorAll('#separadores [data-aba]')) e.setAttribute('aria-pressed', e.dataset.aba === n)
+  porLinha()
   if (n === 'macro') carregarMacro()
 }
+// 31/10 («continua a melhorar cenas, mete cenas de última geração»): por baixo dos separadores há uma linha só, que desliza
+// até ao que se abre (estilo.css, .sep-linha); a primeira vez põe-se no sítio sem deslizar
+const sepLinha = Object.assign(document.createElement('i'), { className: 'sep-linha' })
+sepLinha.setAttribute('aria-hidden', 'true')
+$('separadores').append(sepLinha); $('separadores').classList.add('com-linha')
+function porLinha() {
+  const s = $('separadores'), t = s.querySelector('[data-aba].on')
+  if (!t?.offsetWidth) return
+  // (pelas caixas e não pelo offsetWidth, que arredonda: no telemóvel a linha passava meio píxel do separador)
+  const rs = s.getBoundingClientRect(), rt = t.getBoundingClientRect()
+  sepLinha.style.width = rt.width + 'px'; sepLinha.style.translate = (rt.left - rs.left - s.clientLeft + s.scrollLeft) + 'px 0'
+  if (!s.classList.contains('pronta')) requestAnimationFrame(() => requestAnimationFrame(() => s.classList.add('pronta')))
+}
+new ResizeObserver(porLinha).observe($('separadores'))
 $('separadores').addEventListener('click', e => { const t = e.target.closest('[data-aba]'); if (t) aba(t.dataset.aba) })
 aba(est.aba || 'agora')
 for (const m of est.conversa) mensagem(m.quem, m.texto, false)
@@ -703,22 +741,23 @@ function resultado(r) {
   const b = r.banca, h = r.hoje, quando = t => new Date(t * 1000).toLocaleString('pt-PT', { timeZone: LX, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(', ', ' às ')
   const tit = (nome, sub) => '<div class="tit"><span>' + nome + '</span><span>' + sub + '</span></div>'
   const valor = (nome, txt, cls, nota) => '<div class="l"><span>' + nome + '</span><b class="num' + cls + '">' + txt + '</b>' + (nota ? '<i>' + nota + '</i>' : '') + '</div>'
-  // «4 com lucro · 16 no stop»: cada aviso fechado conta uma vez (29/10: e os que saíram na entrada, se houver)
+  // «4 com lucro · 16 no stop»: cada aviso fechado conta uma vez
   const conta = (n, txt, cls) => '<span' + (n ? ' class="' + cls + '"' : '') + '>' + n + NB + txt + '</span>'
-  const fecharam = (bons, stops, zeros) => conta(bons, 'com lucro', 'sobe') + (zeros ? ' · ' + conta(zeros, 'na entrada', '') : '') + ' · ' + conta(stops, 'no stop', 'desce')
+  const fecharam = (bons, stops) => conta(bons, 'com lucro', 'sobe') + ' · ' + conta(stops, 'no stop', 'desce')
   const parteHoje = h ? tit('Hoje', 'desde as 00:00')
-    + valor('Resultado', sinal(h.eur), cor(h.eur), h.lucro + h.sl + (h.entrada || 0) ? '' : 'ainda nenhum aviso fechou hoje')
-    + (h.lucro + h.sl + (h.entrada || 0) ? valor('Fecharam', fecharam(h.lucro, h.sl, h.entrada), '') : '')
+    + valor('Resultado', sinal(h.eur), cor(h.eur), h.lucro + h.sl ? '' : 'ainda nenhum aviso fechou hoje')
+    + (h.lucro + h.sl ? valor('Fecharam', fecharam(h.lucro, h.sl), '') : '')
     + valor('Tocaram', h.tp.map((n, i) => n + NB + 'TP' + (i + 1)).join(' · '), '', 'o mesmo aviso conta em todos os TP que tocou hoje') : ''
   const parteDesde = tit('Desde ' + dia, r.avisos + ' avisos')
     + valor('Resultado', sinal(r.ganhos - r.perdas), cor(r.ganhos - r.perdas), 'ganhou ' + fmt(r.ganhos, 0) + ' € nos TP e perdeu ' + fmt(r.perdas, 0) + ' € nos stops e no spread')
     + (b ? valor('A banca', fmt(b.inicio, 0) + ' € → ' + fmt(b.agora, 0) + ' €', cor(b.agora - b.inicio), b.tMinimo ? 'o mais baixo foi ' + fmt(b.minimo, 0) + ' €, a ' + quando(b.tMinimo) : '')
-      + valor('Fecharam', fecharam(b.fechados - b.stops - (b.entradas || 0), b.stops, b.entradas), '', r.abertos ? 'e ' + r.abertos + (r.abertos > 1 ? ' ainda abertos, que ainda não contam' : ' ainda aberto, que ainda não conta') : '') : '')
-  // a nossa regra e fechar sempre no mesmo TP, cada uma com a banca a que chegava (como na barra); diz-se qual dá mais
-  const formas = [['A nossa regra', r.ganhos - r.perdas], ...r.porTP.map((v, i) => ['Sempre no TP' + (i + 1), v])], melhor = Math.max(...formas.map(f => f[1]))
+      + valor('Fecharam', fecharam(b.fechados - b.stops, b.stops), '', r.abertos ? 'e ' + r.abertos + (r.abertos > 1 ? ' ainda abertos, que ainda não contam' : ' ainda aberto, que ainda não conta') : '') : '')
+  // fechar sempre no mesmo TP, cada uma com a banca a que chegava (como na barra); diz-se qual dá mais. 31/10: a nossa regra é
+  // tudo no TP2, sem mexer no stop, a mesma conta do «Sempre no TP2» (era uma linha à parte)
+  const formas = r.porTP.map((v, i) => ['Sempre no TP' + (i + 1), v]), melhor = Math.max(...formas.map(f => f[1]))
   const parteTP = tit('Qual TP dá mais', b ? 'a banca, começando com ' + fmt(b.inicio, 0) + ' €' : 'desde ' + dia)
     + formas.map(([nome, v], i) => valor(nome, b ? fmt(b.inicio + v, 0) + ' €' : sinal(v), cor(v),
-      i ? (v === melhor ? 'é a que dá mais' : '') : 'TP no TP3; no TP1 o stop passa para a entrada e no TP2 para o TP1' + (v === melhor ? '. É a que dá mais' : ''))).join('')
+      [i === 1 && 'a nossa regra, sem mexer no stop', v === melhor && 'é a que dá mais'].filter(Boolean).join('. ').replace(/^./, c => i === 1 ? c.toUpperCase() : c))).join('')
   // 26/10 («tens que perceber o melhor jeito de nunca te enganares»): a conferência automática do Telegram contra o Jarvis;
   // se alguma coisa não bate, vem logo no topo
   const erros = r.conferencia?.erros?.length ? r.conferencia.erros.map(e => '<p class="desce">' + esc(e) + '</p>').join('') : ''
@@ -760,9 +799,9 @@ const roFat = new ResizeObserver(es => es.forEach(e => pontas(e.target)))
 const fatSinal = v => (v >= 0.5 ? '+' : v <= -0.5 ? '-' : '') + fmt(Math.abs(v), 0) + NB + '€', fatCor = v => v >= 0.5 ? ' sobe' : v <= -0.5 ? ' desce' : ''
 const diaLxDe = ms => new Date(ms).toLocaleDateString('en-CA', { timeZone: LX })
 const outroMes = (m, k) => { const [a, b] = m.split('-').map(Number); return new Date(Date.UTC(a, b - 1 + k, 1)).toISOString().slice(0, 7) }
-// como acabou cada aviso pela regra (o TP3 vale 3 vezes o stop, o regresso ao TP1 uma vez, a entrada nada, o stop menos uma)
-const FIM_FAT = { tp3: 'chegou ao TP3', tp1: 'voltou ao TP1', entrada: 'voltou à entrada', stop: 'bateu no stop' }
-const R_FAT = { tp3: 3, tp1: 1, entrada: 0, stop: -1 }
+// como acabou cada aviso pela regra (31/10, tudo no TP2: o TP2 vale 2 vezes o stop, o stop menos uma)
+const FIM_FAT = { tp2: 'chegou ao TP2', stop: 'bateu no stop' }
+const R_FAT = { tp2: 2, stop: -1 }
 function faturacao(r) {
   if (!r?.dias || !r.banca) return
   fatR = r
@@ -789,21 +828,21 @@ function desenharFat() {
   const emPausa = dia => { const t = Date.parse(dia + 'T12:00:00Z') / 1000; return (r.pausas || []).some(([p0, p1]) => t >= p0 && t < p1) }
   const nomeDia = (dia, o = { weekday: 'long', day: 'numeric', month: 'long' }) => new Date(dia + 'T12:00:00Z').toLocaleDateString('pt-PT', { timeZone: 'UTC', ...o })
   const ganha = v => v >= 0.5 ? ' ganha' : v <= -0.5 ? ' perde' : ''
-  const contas = x => [x.lucro && x.lucro + ' com lucro', x.entradas && x.entradas + ' na entrada', x.stops && x.stops + ' no stop'].filter(Boolean)
-  // no quadrado, com os sinais da lista do dia (✓ com lucro, ○ na entrada, ✗ no stop), para caber numa linha; por extenso ao passar o rato
-  const sinais = x => [x.lucro && '<span class="sobe">✓' + NB + x.lucro + '</span>', x.entradas && '<span>○' + NB + x.entradas + '</span>', x.stops && '<span class="desce">✗' + NB + x.stops + '</span>'].filter(Boolean).join(' · ')
+  const contas = x => [x.lucro && x.lucro + ' com lucro', x.stops && x.stops + ' no stop'].filter(Boolean)
+  // no quadrado, com os sinais da lista do dia (✓ com lucro, ✗ no stop), para caber numa linha; por extenso ao passar o rato
+  const sinais = x => [x.lucro && '<span class="sobe">✓' + NB + x.lucro + '</span>', x.stops && '<span class="desce">✗' + NB + x.stops + '</span>'].filter(Boolean).join(' · ')
   // o dia escolhido: o que ele carregou, se for deste mês; senão hoje, se já fechou algum aviso, ou o último dia com avisos fechados
   const dia = fatDia?.startsWith(m) ? fatDia : hoje.startsWith(m) && D.has(hoje) ? hoje : doMes.at(-1)?.dia ?? (m === mHoje ? hoje : m + '-01')
 
   // as contas do mês
-  const bons = fMes.filter(f => R_FAT[f.fim] > 0).length, zeros = fMes.filter(f => f.fim === 'entrada').length, stops = fMes.filter(f => f.fim === 'stop').length
+  const bons = fMes.filter(f => R_FAT[f.fim] > 0).length, stops = fMes.filter(f => f.fim === 'stop').length
   const ganhou = fMes.reduce((s, f) => s + Math.max(0, f.eur), 0), perdeu = fMes.reduce((s, f) => s + Math.max(0, -f.eur), 0)
   const verdes = doMes.filter(d => d.eur >= 0.5).length, vermelhos = doMes.filter(d => d.eur <= -0.5).length
   const ord = [...doMes].sort((x, y) => y.eur - x.eur), melhor = ord[0], pior = ord.at(-1)
   const k = (rot, v, cls, sub) => '<div class="fat-k"><div class="lc-rot">' + rot + '</div><b class="num' + cls + '">' + v + '</b><span>' + sub + '</span></div>'
   const resumo = '<div class="fat-resumo">'
     + k('No mês', fatSinal(total), fatCor(total), fMes.length ? 'ganhou ' + fmt(ganhou, 0) + ' € e perdeu ' + fmt(perdeu, 0) + ' €' : 'ainda nenhum aviso fechou')
-    + k('Avisos fechados', fMes.length, '', [bons + ' com lucro', zeros && zeros + ' na entrada', stops + ' no stop'].filter(Boolean).join(' · '))
+    + k('Avisos fechados', fMes.length, '', bons + ' com lucro · ' + stops + ' no stop')
     + k('Acerto', fMes.length ? Math.round(100 * bons / fMes.length) + '%' : '-', '', 'fecharam com lucro')
     + k('Dias verdes', verdes + ' de ' + doMes.length, '', vermelhos + (vermelhos === 1 ? ' vermelho' : ' vermelhos'))
     + k('Melhor dia', melhor ? fatSinal(melhor.eur) : '-', melhor ? fatCor(melhor.eur) : '', melhor ? nomeDia(melhor.dia, { weekday: 'long', day: 'numeric' }) : '')
@@ -822,7 +861,7 @@ function desenharFat() {
       : '<div class="' + cls + ' fora">' + topo + corpo + '</div>'
   }
   const semana = L => {
-    const X = L.map(d => d && D.get(d)).filter(Boolean), v = X.reduce((s, x) => s + x.eur, 0), q = X.reduce((s, x) => s + x.lucro + x.stops + x.entradas, 0)
+    const X = L.map(d => d && D.get(d)).filter(Boolean), v = X.reduce((s, x) => s + x.eur, 0), q = X.reduce((s, x) => s + x.lucro + x.stops, 0)
     return X.length ? '<div class="fat-d fat-sem' + ganha(v) + '"><span class="fat-n">semana</span><b class="fat-v num">' + fatSinal(v) + '</b><span class="fat-s">' + q + (q === 1 ? ' aviso' : ' avisos') + '</span></div>' : '<div class="fat-d vazio fat-sem"></div>'
   }
   const dias = [...Array(vazios).fill(null), ...Array.from({ length: n }, (_, i) => m + '-' + String(i + 1).padStart(2, '0'))]
@@ -836,8 +875,8 @@ function desenharFat() {
   for (const f of L) { corre += f.eur; if (corre < baixo) { baixo = corre; tBaixo = f.tf } }
   // (os das estratégias em pips; os que ainda não fecharam sem o fim)
   const aviso = (f, emPips) => {
-    const aberto = !f.fim, ok = R_FAT[f.fim] > 0, zero = f.fim === 'entrada', tps = (f.hits || []).map((t, i) => t != null && !(f.fim === 'tp3' && i === 2) ? 'TP' + (i + 1) + ' ' + h(t * 1000) : '').filter(Boolean)
-    return '<li class="fat-a"><span class="' + (aberto ? 'suave">·' : zero ? 'suave">○' : ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fat-a-l ' + (f.lado === 'venda' ? 'desce">Venda' : 'sobe">Compra') + '</span>'
+    const aberto = !f.fim, ok = R_FAT[f.fim] > 0, tps = (f.hits || []).map((t, i) => t != null && i < 2 && !(f.fim === 'tp2' && i === 1) ? 'TP' + (i + 1) + ' ' + h(t * 1000) : '').filter(Boolean)
+    return '<li class="fat-a"><span class="' + (aberto ? 'suave">·' : ok ? 'sobe">✓' : 'desce">✗') + '</span><span class="fat-a-l ' + (f.lado === 'venda' ? 'desce">Venda' : 'sobe">Compra') + '</span>'
       + '<span class="fat-a-n">' + (f.n ? '#' + f.n + ' ' : '') + esc(CURTO_AVISO[f.tipo] || nomeE[f.tipo] || f.tipo) + '</span>'
       + (aberto ? '<b class="fat-a-v suave">a decorrer</b>' : emPips ? '<b class="fat-a-v num' + fatCor(f.pips) + '">' + pips(f.pips) + NB + 'pips</b>' : '<b class="fat-a-v num' + fatCor(f.eur) + '">' + fatSinal(f.eur) + '</b>')
       + '<span class="fat-a-s">saiu ' + as(f.t * 1000) + ' · stop de ' + fmt(f.R, 2) + NB + '$' + (tps.length ? ' · ' + tps.join(' · ') : '') + (aberto ? '' : ' · ' + FIM_FAT[f.fim] + ' ' + as(f.tf * 1000)) + '</span></li>'
@@ -861,10 +900,10 @@ function desenharFat() {
   // 31/10 («eu quero que seja daquele dia selecionado»): o dia escolhido (era o mês, que fica nas contas de cima). Depois
   // («não há fora da estratégia, é tudo estratégia»): as do bot e as outras na mesma lista, de igual para igual, em pips, da
   // que deu mais para a que deu menos; os € dos avisos do bot ficam no cartão ao lado
-  // 31/10 («epa não sei, melhora isso»): os fechos com os sinais do calendário (✓ com lucro, ○ na entrada, ✗ no stop) em vez de
+  // 31/10 («epa não sei, melhora isso»): os fechos com os sinais do calendário (✓ com lucro, ✗ no stop) em vez de
   // quatro colunas de números, e ao pé dos pips uma barra fina com o tamanho de cada uma (as perto de zero ficam apagadas)
   const linha = (nome, T, v, maior, parte) => {
-    const x = { lucro: T.filter(f => R_FAT[f.fim] > 0).length, entradas: T.filter(f => f.fim === 'entrada').length, stops: T.filter(f => f.fim === 'stop').length }
+    const x = { lucro: T.filter(f => R_FAT[f.fim] > 0).length, stops: T.filter(f => f.fim === 'stop').length }
     return '<tr' + (parte ? ' class="fat-parte"' : '') + '><td>' + esc(nome) + '</td><td class="fat-t-s num" title="' + esc(contas(x).join(', ')) + '">' + sinais(x) + '</td><td class="fat-t-p"><div><span class="fat-barra" aria-hidden="true"><i class="'
       + (v < 0 ? 'desce' : 'sobe') + '" style="width:' + (100 * Math.abs(v) / maior).toFixed(1) + '%"></i></span><b class="num' + (fatCor(v) || ' suave') + '">' + pips(v) + '</b></div></td></tr>'
   }
@@ -1143,7 +1182,7 @@ function mAtualizar() {
   // 24/10 («sinto que estas podiam estar melhores»): as camadas num menu como o da estratégia, por grupos e com o que é cada uma
   const CAM = [['Linhas e médias', { sv3: 'as três linhas: vermelha, cinzenta e verde', ema: 'EMA 200 e EMA 80', linhas: 'tendência, 4 h grossa e 1 h fina', fibo: 'Fibonacci de 4 h' }],
     ['Zonas', { niveis: 'suportes e resistências', diario: 'zonas do diário', asia: 'a caixa da sessão asiática' }],
-    ['Entradas', { sinais: 'setas dos sinais do robô', velas: 'velas de confirmação', alvos: 'caixas até ao TP3 e ao stop', plano: 'entrada, stop e TP da ordem', posicoes: 'as posições abertas' }],
+    ['Entradas', { sinais: 'setas dos sinais do robô', velas: 'velas de confirmação', alvos: 'caixas até ao TP2 e ao stop', plano: 'entrada, stop e TP da ordem', posicoes: 'as posições abertas' }],
     ['Por baixo', { estoc: 'Estocástico 5,3,3' }]]
   const listaCam = () => CAM.flatMap(([g, d]) => [{ grupo: g }, ...Object.entries(d).map(([c, sub]) => { const b = $('camadas').querySelector('[data-c="' + c + '"]'); return b && { nome: b.textContent, sub, on: !!est.camadas[c], b } }).filter(Boolean)])
   barra.querySelector('.cam').addEventListener('click', () => abrir('Camadas no gráfico', listaCam, x => x.b.click(), true))
@@ -1252,12 +1291,12 @@ const TEMAS = [
   const NOME = NOME_AVISO
   const nomeAviso = e => (NOME[e.tipo] || e.tipo) + (e.tipo === 'teto' || e.tipo === 'pico' ? '' : ', ' + e.lado)
   const tp = (e, n) => e.entrada + (e.lado === 'venda' ? -1 : 1) * n * Math.abs(e.entrada - e.sl)
-  const PORQUE = { outra: 'chegou com outra aberta', perda: 'o dia já tinha parado nos -200 €', metade: 'o dia já tinha parado (metade do melhor)' }
-  // o que fazer agora na entrada aberta: a regra de hoje (no TP1 o stop passa para a entrada e no TP2 para o TP1) ou, na fase
-  // lucro, deixar correr
-  const agora = e => e.k >= 2 ? (e.corre ? 'Chegou ao TP' + e.k + ': passa o stop para o TP' + (e.k - 1) + ' (' + fmt(tp(e, e.k - 1), c) + ') e deixa correr.'
-      : 'Chegou ao TP2: passa o stop para o TP1 (' + fmt(tp(e, 1), c) + ').')
-    : e.k === 1 ? 'Chegou ao TP1: passa o stop para a entrada (' + fmt(e.entrada, c) + ').' : 'Ainda não chegou ao TP1: o stop fica em ' + fmt(e.sl, c) + '.'
+  // 31/10: 'banca', a banca já não pagava o stop do lote mais pequeno (lucros.mjs)
+  const PORQUE = { outra: 'chegou com outra aberta', perda: 'o dia já tinha parado nos -200 €', metade: 'o dia já tinha parado (metade do melhor)', banca: 'a banca já não chegava para o lote mais pequeno' }
+  // o que fazer agora na entrada aberta: a regra de hoje (31/10: o TP no TP2 e o stop não se mexe) ou, na fase lucro, deixar
+  // correr (o stop sobe de TP em TP a partir do TP2)
+  const agora = e => e.corre && e.k >= 2 ? 'Chegou ao TP' + e.k + ': passa o stop para o TP' + (e.k - 1) + ' (' + fmt(tp(e, e.k - 1), c) + ') e deixa correr.'
+    : (e.k ? 'Chegou ao TP1' : 'Ainda não chegou ao TP1') + ': o stop fica em ' + fmt(e.sl, c) + (e.corre ? '. No TP2 passa para o TP1 (' + fmt(tp(e, 1), c) + ').' : ' e o TP fica no TP2 (' + fmt(tp(e, 2), c) + ').')
   function desenhar() {
     if (!r) return
     const h = r.hoje, g = r.regras, dias = r.dias.slice(-7), maior = Math.max(1, ...dias.map(d => Math.abs(d.eur)))
@@ -1273,11 +1312,11 @@ const TEMAS = [
     const abertas = r.abertas.length ? r.abertas.map(e => '<div class="lc-ordem"><div class="lc-o-tit"><b class="' + (e.lado === 'venda' ? 'desce' : 'sobe') + '">' + esc(nomeAviso(e)) + '</b><span>'
         + hora(e.t) + (e.corre ? ' · a deixar correr' : '') + '</span></div>'
       + '<div class="lc-o-niv num">entrada ' + fmt(e.entrada, c) + ' · stop ' + fmt(e.sl, c) + ' · ' + fmt(e.lote, 2) + ' lotes, arrisca ' + fmt(e.risco, 0) + NB + '€</div>'
-      + '<div class="lc-o-tps num">' + Array.from({ length: e.corre ? Math.max(3, e.k + 1) : 3 }, (_, i) => i + 1).map(n => '<span class="' + (e.k >= n ? 'ok' : '') + '">TP' + n + ' ' + fmt(tp(e, n), c) + (e.k >= n ? ' ✓' : '') + '</span>').join('') + '</div>'
+      + '<div class="lc-o-tps num">' + Array.from({ length: e.corre ? Math.max(3, e.k + 1) : 2 }, (_, i) => i + 1).map(n => '<span class="' + (e.k >= n ? 'ok' : '') + '">TP' + n + ' ' + fmt(tp(e, n), c) + (e.k >= n ? ' ✓' : '') + '</span>').join('') + '</div>'
       + '<div class="lc-o-agora">' + esc(agora(e)) + '</div></div>').join('')
       : '<p class="lc-vazio">Nenhuma entrada aberta.' + (h.parou ? ' Hoje já não entra mais nenhuma.' : ' A próxima:') + '</p>' + (h.parou ? '' : '<div class="lc-passos"><span>Arrisca</span><span>'
-        + (h.fase ? 'até ' : '') + fmt(h.proximoRisco, 0) + NB + '€ (o lote ajusta-se ao stop' + (h.fase ? ', no máximo ' + fmt(g.maxLote, 2) : '') + ')</span><span>No TP1</span><span>o stop passa para a entrada</span><span>No TP2</span><span>o stop passa para o TP1</span>'
-        + (h.fase ? '<span>Depois</span><span>o stop sobe de TP em TP, sem TP no fim</span>' : '<span>No TP3</span><span>fecha tudo</span>') + '</div>')
+        + (h.fase ? 'até ' : '') + fmt(h.proximoRisco, 0) + NB + '€ (o lote ajusta-se ao stop' + (h.fase ? ', no máximo ' + fmt(g.maxLote, 2) : '') + ')</span><span>No TP1</span><span>o stop fica onde está</span><span>No TP2</span>'
+        + (h.fase ? '<span>o stop passa para o TP1</span><span>Depois</span><span>o stop sobe de TP em TP, sem TP no fim</span>' : '<span>fecha tudo</span>') + '</div>')
     const osDias = '<div class="lc-card"><div class="tit"><span>Os dias</span><span>o que fechou em cada um</span></div>'
       + (dias.length ? dias.map(d => '<div class="lc-dia"><span>' + esc(diaNome(d.dia)) + '</span><i aria-hidden="true"><b style="width:' + (100 * Math.abs(d.eur) / maior).toFixed(1) + '%"></b></i><b class="num' + cl(d.eur) + '">' + eur(d.eur) + '</b></div>').join('')
         + '<div class="lc-rodape">' + (melhor ? 'Melhor: ' + esc(diaNome(melhor.dia)) + ', <b class="num' + cl(melhor.eur) + '">' + eur(melhor.eur) + '</b>' : '')
@@ -1286,8 +1325,15 @@ const TEMAS = [
     const seguir = h.parou ? 'Hoje já parou' + (h.parou === 'perda' ? ' (chegou aos ' + eur(g.parar) + ')' : ' (desceu a metade do melhor do dia)') + '. Amanhã recomeça na fase normal, com ' + fmt(g.risco, 0) + ' € de risco por entrada.'
       : h.fase ? 'Estás na fase lucro. A próxima entrada pode arriscar até ' + fmt(h.proximoRisco, 0) + ' € (metade do lucro do dia; o lote não passa de ' + fmt(g.maxLote, 2) + ') e deixa correr: o stop sobe de TP em TP e não há TP no fim. Se o dia descer a ' + fmt(h.chao, 0) + ' €, pára.'
       : 'Faltam ' + fmt(h.faltam, 0) + ' € para a fase lucro. Quando o dia fechar ' + eur(g.limiar) + ', a entrada seguinte pode arriscar até metade do lucro do dia e deixar correr; o dia pára se descer a metade do melhor, para nunca acabar abaixo disso.'
+    // 31/10 («esta cena tá diz resultados que não fazem sentido», com quatro dias seguidos a -200 €): com 200 € de risco, um stop
+    // no começo do dia já o pára. Quantos avisos ficaram de fora por isso, e quantos iam ao TP2, explica a distância para o 0,32 fixo
+    const fora = r.entradas.filter(e => e.porque === 'perda'), nDias = new Set(fora.map(e => diaLxDe(e.t * 1000))).size
+    const nTp2 = fora.filter(e => e.daria === 'tp2').length, nStop = fora.filter(e => e.daria === 'stop').length, nSem = fora.length - nTp2 - nStop
+    const porIsso = fora.length ? ' Com ' + fmt(g.risco, 0) + ' € de risco, basta um stop no começo do dia para lá chegar: '
+      + (fora.length === 1 ? 'ficou de fora 1 aviso' : 'ficaram de fora ' + fora.length + ' avisos') + ' de ' + nDias + (nDias === 1 ? ' dia que já tinha parado' : ' dias que já tinham parado')
+      + ' (' + nTp2 + (nTp2 === 1 ? ' ia' : ' iam') + ' ao TP2 e ' + nStop + ' ao stop' + (nSem ? ', ' + nSem + ' ainda sem fim' : '') + ').' : ''
     const aSeguir = '<div class="lc-card"><div class="tit"><span>A seguir</span></div><p class="lc-txt">' + esc(seguir) + '</p>'
-      + '<p class="lc-nota">Nos 58 dias antes (336 avisos refeitos vela a vela), a regra de hoje deu -195 € e a fase lucro +2 346 €. Mas a fase lucro só aconteceu 8 vezes: ainda não está provada.</p></div>'
+      + '<p class="lc-nota">Num teste de 25/10 (58 dias, 336 avisos refeitos vela a vela), a fase lucro deu +2 346 € e a regra desse dia, ainda com o TP3, -195 €. Mas a fase lucro só aconteceu 8 vezes: ainda não está provada.</p></div>'
     const L = [...r.entradas].reverse().slice(0, 12)
     const tabela = '<div class="lc-card lc-largo"><div class="tit"><span>As entradas</span><span>' + r.entradas.filter(e => e.tomada).length + ' de ' + r.entradas.length + ' avisos' + (r.entradas.length > L.length ? ', as últimas ' + L.length : '') + '</span></div>'
       + (L.length ? '<table class="lc-tab"><thead><tr><th>Quando</th><th>Aviso</th><th class="d">Lote</th><th class="d">Risco</th><th>Fase</th><th class="d">Resultado</th></tr></thead><tbody>'
@@ -1295,7 +1341,7 @@ const TEMAS = [
           + (e.tomada ? '<td class="num d">' + fmt(e.lote, 2) + '</td><td class="num d">' + fmt(e.risco, 0) + NB + '€</td><td>' + (e.fase ? 'lucro' : 'normal') + '</td><td class="num d' + (e.fim ? cl(e.fim.eur) : '') + '">' + (e.fim ? eur(e.fim.eur) : 'aberta') + '</td>'
             : '<td colspan="4">não entrou: ' + PORQUE[e.porque] + '</td>') + '</tr>').join('') + '</tbody></table>' : '<p class="lc-vazio">Ainda sem avisos.</p>') + '</div>'
     corpo.innerHTML = '<div class="lc-topo"><div><div class="lc-rot">Banca</div><div class="lc-banca num">' + fmt(g.inicio, 0) + NB + '€ → <b class="' + cl(r.banca.agora - g.inicio).trim() + '">' + fmt(r.banca.agora, 0) + NB + '€</b></div>'
-      + '<div class="lc-sub">Desde ' + quando(r.desde) + ', com as tuas regras: uma entrada de cada vez, ' + fmt(g.risco, 0) + ' € de risco em cada, o dia pára aos ' + eur(g.parar) + '.</div></div>'
+      + '<div class="lc-sub">Desde ' + quando(r.desde) + ', com as tuas regras: uma entrada de cada vez, ' + fmt(g.risco, 0) + ' € de risco em cada, tudo no TP2 sem mexer no stop, o dia pára aos ' + eur(g.parar) + '.' + porIsso + '</div></div>'
       + '<div class="lc-fixo"><span>Com ' + fmt(r.fixo.lote, 2) + ' fixo em todos os avisos do bot (a barra de cima)</span><b class="num' + cl(r.fixo.agora - g.inicio) + '">' + fmt(r.fixo.agora, 0) + NB + '€</b></div></div>'
       + '<div class="lc-grelha">' + hoje + '<div class="lc-card"><div class="tit"><span>Ordem aberta</span><span>o que fazer agora</span></div>' + abertas + '</div>' + osDias + aSeguir + tabela + '</div>'
   }

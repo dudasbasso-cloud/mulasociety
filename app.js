@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=6abdcd9367'
+import { criarGrafico, numerosAviso } from './grafico.js?v=fe7d79f918'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -613,11 +613,13 @@ function mercadoFechado(r) {
     + '<div class="mf-sub">' + esc(semVelas().replace(/^mercado fechado, /, '').replace(/^pausa diária, /, '')) + (h != null && !pausa ? ' · daqui a <b class="num">' + (h ? h + ' h ' : '') + m + ' min</b>' : '') + '</div>'
     + (a ? '<div class="mf-px"><span class="suave">Último preço</span><b class="num">' + fmt(a.px, c) + '</b><span class="num ' + (a.var24h >= 0 ? 'sobe' : 'desce') + '">' + (a.var24h >= 0 ? '+' : '') + fmt(a.var24h, 1) + '%</span></div>' : '') + '</div>'
 }
+// o fim de semana do mercado: de sexta às 17:00 a domingo às 18:00 de Nova Iorque
+const fimDeSemana = ny => ny.dia === 'Sat' || (ny.dia === 'Fri' && ny.h >= 17) || (ny.dia === 'Sun' && ny.h < 18)
 function semVelas() {
   const ny = horaEm('America/New_York'), lx = horaEm('Europe/Lisbon'), dif = ((lx.h - ny.h + 24) % 24)
   const as18 = String((18 + dif) % 24).padStart(2, '0') + ':00'   // as 18:00 de Nova Iorque na hora de Lisboa
   // 25/10: ao domingo «abre hoje», ao sábado «abre amanhã» (no domingo dizia «abre domingo às 22:00»)
-  if (ny.dia === 'Sat' || (ny.dia === 'Fri' && ny.h >= 17) || (ny.dia === 'Sun' && ny.h < 18)) return 'mercado fechado, abre ' + (lx.dia === 'Sun' ? 'hoje' : lx.dia === 'Sat' ? 'amanhã' : 'domingo') + ' às ' + as18
+  if (fimDeSemana(ny)) return 'mercado fechado, abre ' + (lx.dia === 'Sun' ? 'hoje' : lx.dia === 'Sat' ? 'amanhã' : 'domingo') + ' às ' + as18
   if (ny.h === 17) return 'pausa diária, volta às ' + as18
   return 'sem velas novas'
 }
@@ -860,7 +862,8 @@ function desenharFat() {
   const celula = d => {
     const x = D.get(d), eHoje = d === hoje, dentro = d >= desde && d <= hoje, cls = 'fat-d' + (eHoje ? ' hoje' : '') + (x ? ganha(x.eur) : '')
     const topo = '<span class="fat-n">' + +d.slice(8) + (eHoje ? ' · hoje' : '') + '</span>'
-    const corpo = x ? '<b class="fat-v num">' + fatSinal(x.eur) + '</b><span class="fat-s num">' + fmt(ini, 0) + ' → ' + fmt(ini + x.eur, 0) + NB + '€</span><span class="fat-s fat-sinais num">' + sinais(x) + '</span>'
+    // (o € num span: no telemóvel sai, para o número caber no quadrado)
+    const corpo = x ? '<b class="fat-v num">' + fatSinal(x.eur).replace(NB + '€', '<span class="fat-eur">' + NB + '€</span>') + '</b><span class="fat-s num">' + fmt(ini, 0) + ' → ' + fmt(ini + x.eur, 0) + NB + '€</span><span class="fat-s fat-sinais num">' + sinais(x) + '</span>'
         // abaixo de zero pelo caminho (a banca de 500 € não aguentava); só se desceu mais do que o fim, que já está à vista
         + (x.minimo < 0 && x.minimo < ini + x.eur - 0.5 ? '<span class="fat-s desce">pelo caminho: ' + fmt(x.minimo, 0) + NB + '€</span>' : '')
       : dentro && emPausa(d) ? '<span class="fat-s">avisos em pausa</span>' : eHoje ? '<span class="fat-s">ainda nenhum fechou</span>'
@@ -1093,10 +1096,21 @@ if (window.JARVIS_VERSAO) setInterval(seVisivel(() => fetch('versao.txt?t=' + Da
   if (!v || v === window.JARVIS_VERSAO || Date.now() - (+sessionStorage.recarregou || 0) < 5 * 60e3) return
   sessionStorage.recarregou = Date.now(); location.reload()
 }).catch(() => {})), 2 * 60e3)
+// 31/10 («desempenhos melhores no mobile»): na página do amigo o gráfico (uns 125 KB pela rede) vinha de 30 em 30 s, também
+// nas Notícias e com o mercado fechado: 17 MB por hora no telemóvel, parado. No ecrã pequeno só se pede com o Gráfico ou a
+// Ordem à vista (os avisos abertos vêm com ele) e, com o mercado fechado, de 5 em 5 min. Ao voltar a um deles, vem logo
+let graficoAtrasado = false, graficoEm = Date.now()
+const ecraPequeno = matchMedia('(max-width: 1000px), (max-height: 520px)')
+function graficoDeTempo() {
+  if (ecraPequeno.matches && !['grafico', 'ordem'].includes(document.body.dataset.m)) { graficoAtrasado = true; return }
+  const ny = horaEm('America/New_York')
+  if (!graficoAtrasado && (fimDeSemana(ny) || ny.h === 17) && Date.now() - graficoEm < 5 * 60e3) return
+  graficoAtrasado = false; graficoEm = Date.now(); carregarGrafico()
+}
 if (AMIGO) {
   const estado = ok => { ligado = ok; pintarLigacao() }
   estado(true)
-  setInterval(seVisivel(() => { api('analise?s=' + est.simbolo).then(d => { estado(true); if (d.simbolo === est.simbolo) analise(d) }, () => estado(false)); carregarGrafico() }), 30e3)
+  setInterval(seVisivel(() => { api('analise?s=' + est.simbolo).then(d => { estado(true); if (d.simbolo === est.simbolo) analise(d) }, () => estado(false)); graficoDeTempo() }), 30e3)
   // o radar e a força estão escondidos (23/10) e a nuvem já não os faz (28/10)
   setInterval(seVisivel(() => api('observacoes').then(observacoes, () => {})), 120e3)
 }
@@ -1164,8 +1178,28 @@ function mAtualizar() {
     document.body.dataset.m = m
     for (const b of $('mNav').children) { const on = b.dataset.m === m; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false') }
     if (m === 'grafico') dispatchEvent(new Event('resize'))
+    if (graficoAtrasado && (m === 'grafico' || m === 'ordem')) graficoDeTempo()
   }
   $('mNav').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) { mostrar(b.dataset.m); est.mPainel = b.dataset.m; guardar() } })
+  // 31/10: no iPhone o :active só pega com um touchstart na página (o separador e os botões respondem ao dedo)
+  document.addEventListener('touchstart', () => {}, { passive: true })
+
+  // 31/10 («melhora funções no mula forex em termos de mobile»): a barra de cima não aparece no telemóvel, e com ela iam a
+  // faturação e os lucros. Ficam no cimo da Ordem: dois botões que carregam nos de sempre e mostram o mesmo número
+  const mc = document.createElement('div'); mc.className = 'mConta'
+  mc.innerHTML = [['fatBtn', 'Faturação do mês'], ['lucrosBtn', 'Lucros de hoje']].map(([id, nome]) => '<button type="button" data-b="' + id + '" hidden'
+    + (id === 'lucrosBtn' ? ' aria-haspopup="dialog"' : '') + '><span>' + nome + '</span><b class="num"></b>' + SVG('<path d="m9 6 6 6-6 6"/>') + '</button>').join('')
+  $('plano').closest('.card').querySelector('.tit').after(mc)
+  mc.addEventListener('click', e => { const b = e.target.closest('[data-b]'); if (b) $(b.dataset.b).click() })
+  const copiarConta = () => {
+    for (const b of mc.children) {
+      const o = $(b.dataset.b), v = b.dataset.b === 'fatBtn' ? $('fatBtnV') : o.querySelector('b')
+      b.hidden = o.hidden || !v?.textContent
+      if (v) { const d = b.querySelector('b'); d.className = v.className; d.textContent = v.textContent.replace(/\s*hoje$/, '') }
+    }
+  }
+  for (const id of ['fatBtn', 'lucrosBtn']) new MutationObserver(copiarConta).observe($(id), { attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true, subtree: true })
+  copiarConta()
 
   // a barra de cima do gráfico e a legenda
   const barra = document.createElement('div'); barra.className = 'mBarra'; barra.id = 'mBarra'

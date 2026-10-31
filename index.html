@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="jarvis-codigo" content="__CODIGO__">
 <title>MULASOCIETY ORG.</title>
-<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '6abdcd9367'</script>
-<link rel="stylesheet" href="estilo.css?v=6abdcd9367">
+<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = 'fe7d79f918'</script>
+<link rel="preconnect" href="https://nefwmezamnjbgtswjkoy.supabase.co" crossorigin>
+<link rel="stylesheet" href="estilo.css?v=fe7d79f918">
+<!-- 31/10 («desempenhos melhores no mobile»): o grafico.js vem logo com a página, e não só depois de o app.js chegar e o pedir -->
+<link rel="modulepreload" href="grafico.js?v=fe7d79f918">
 <script>try{var g=localStorage.getItem('jarvis-grafico');if(g&&g!=='escuro')document.documentElement.dataset.graf=g}catch(e){}</script>
 <link rel="icon" href="favicon.png">
-<script src="vendor/lightweight-charts.standalone.production.js"></script>
+<script defer src="vendor/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 <div id="app">
@@ -79,7 +82,7 @@
   <!-- 30/10 («esta parte quero que seja uma página mesmo [...] para assim termos mais informação, não quero tipo popform»): o
        calendário de faturação numa página, no lugar das três colunas; a barra de cima fica (app.js) -->
   <main class="pagina" id="pagFat" aria-labelledby="fatTit" hidden>
-    <header class="pag-cab"><button type="button" class="temaBtn" id="fatVoltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Voltar ao gráfico</button><h1 id="fatTit">Calendário de faturação</h1><div class="fat-mes" id="fatMes"></div></header>
+    <header class="pag-cab"><button type="button" class="temaBtn" id="fatVoltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Voltar<span class="pc"> ao gráfico</span></button><h1 id="fatTit">Calendário de faturação</h1><div class="fat-mes" id="fatMes"></div></header>
     <div id="fatCorpo"><p class="fat-nota">A ler os avisos.</p></div>
   </main>
   <!-- 24/10 («no mobile ainda está difícil mexer; faz algo do género do TradingView para mobile»): no telemóvel não há
@@ -103,6 +106,6 @@
     <div id="fechadosCorpo"></div>
   </section>
 </div>
-<script type="module" src="app.js?v=6abdcd9367"></script>
+<script type="module" src="app.js?v=fe7d79f918"></script>
 </body>
 </html>

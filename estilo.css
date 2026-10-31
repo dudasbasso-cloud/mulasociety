@@ -792,6 +792,26 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
   .plano .ab-desliza { flex:1; min-height:0; overflow:hidden auto; overflow-anchor:none; overscroll-behavior:contain; scrollbar-width:none }
   .plano .ab-desliza::-webkit-scrollbar { display:none }
 }
+/* 31/10 («continua a melhorar cenas com cenas de última geração»): a lista das notícias esbate-se na ponta quando há mais,
+   como as abas, mas quem a segue é o próprio navegador, sem JavaScript: duas animações presas ao deslizar da lista
+   (animation-timeline) abrem a ponta de cima nos primeiros 40 px e fecham a de baixo nos últimos 40. Sem nada para deslizar
+   não há ponta; onde o navegador ainda não sabe fazer isto, a lista fica como estava */
+@property --ponta-cima { syntax:'<length>'; inherits:false; initial-value:0px }
+@property --ponta-baixo { syntax:'<length>'; inherits:false; initial-value:0px }
+@keyframes ponta-cima { from { --ponta-cima:0px } to { --ponta-cima:20px } }
+@keyframes ponta-baixo { from { --ponta-baixo:28px } to { --ponta-baixo:0px } }
+@supports (animation-timeline: scroll()) {
+  .noticias .desliza {
+    -webkit-mask-image:linear-gradient(to bottom, transparent, #000 var(--ponta-cima), #000 calc(100% - var(--ponta-baixo)), transparent);
+    mask-image:linear-gradient(to bottom, transparent, #000 var(--ponta-cima), #000 calc(100% - var(--ponta-baixo)), transparent);
+    animation:ponta-cima linear both, ponta-baixo linear both; animation-timeline:scroll(self); animation-range:0 40px, calc(100% - 40px) 100%
+  }
+}
+/* e o separador que se abre aparece devagar, em vez de saltar (só a opacidade: nada muda de sítio) */
+@media (prefers-reduced-motion: no-preference) {
+  .abas .aba.on { transition:opacity .2s ease-out }
+  @starting-style { .abas .aba.on { opacity:0 } }
+}
 
 /* 26/10: os avisos que fecharam nas últimas 24 h, uma linha cada, por baixo dos que estão a decorrer */
 .fe-lista { margin-top:12px }
@@ -832,12 +852,9 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .fat-k b { display:block; margin-top:3px; font-size:20px; font-weight:700; line-height:1.2; color:var(--texto) } .fat-k b.sobe { color:var(--salva) } .fat-k b.desce { color:var(--rosa) }
 .fat-k b + span { display:block; margin-top:3px; font-size:12px; color:var(--suave); text-wrap:pretty }
 .fat-k b + span::first-letter { text-transform:uppercase }
-.fat-corpo { display:grid; grid-template-columns:minmax(0, 1fr) minmax(330px, 380px); gap:18px; align-items:start }
-.fat-lado { display:flex; flex-direction:column; gap:14px }
-/* 30/10, depois: o dia escolhido e o mês por tipo por baixo do calendário, lado a lado; ao lado, as estratégias em pips */
-.fat-baixo { display:grid; grid-template-columns:minmax(0, 1fr) minmax(300px, 380px); gap:14px; align-items:start; margin-top:16px }
-.fat-estr { margin-top:6px } .fat-estr td:first-child { text-wrap:pretty }
-.fat-e-s { display:block; margin-top:1px; font-size:11px; color:var(--suave) }
+/* 30/10, depois: o dia escolhido e a tabela por tipo por baixo do calendário, lado a lado. 31/10 («podes retirar isto
+   daqui»): sem a coluna das estratégias em pips, o calendário e estes dois ficam com a largura toda */
+.fat-baixo { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:14px; align-items:start; margin-top:16px }
 .fat-nota { margin:12px 2px 0; font-size:12px; line-height:1.45; color:var(--suave); text-wrap:pretty } .fat-nota.desce { color:var(--rosa); margin-top:6px }
 .fat-cal { display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); grid-template-rows:auto; grid-auto-rows:minmax(100px, auto); gap:6px }
 .fat-cal .fat-dsem { padding:0 4px 2px; font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); align-self:end }
@@ -862,7 +879,6 @@ button.fat-d { cursor:pointer }
 .fat-s { display:block; margin-top:2px; font-size:11px; line-height:1.35; color:var(--suave); text-wrap:pretty } .fat-s.desce { color:var(--rosa) }
 .fat-sinais { margin-top:4px; font-size:11.5px; white-space:nowrap } .fat-sinais .sobe { color:var(--salva) } .fat-sinais .desce { color:var(--rosa) }
 .fat-cartao { padding:12px 14px 14px; background:#141719; border:1px solid var(--borda); border-radius:10px }
-.fat-cartao h2.lc-rot { font-weight:400 }
 .fat-dia-cab { display:flex; align-items:flex-start; justify-content:space-between; gap:12px }
 .fat-dia-nome { margin-top:3px; font-size:16px; font-weight:600 } .fat-dia-nome::first-letter { text-transform:uppercase }
 .fat-dia-v { font-size:22px; font-weight:700; line-height:1.2; white-space:nowrap } .fat-dia-v.sobe { color:var(--salva) } .fat-dia-v.desce { color:var(--rosa) }
@@ -873,16 +889,27 @@ button.fat-d { cursor:pointer }
 .fat-a-n { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
 .fat-a-v { font-weight:600; text-align:right; white-space:nowrap }
 .fat-a-s { grid-column:2 / -1; font-size:11.5px; line-height:1.4; color:var(--suave); text-wrap:pretty }
-.fat-tipos { width:100%; margin-top:8px; border-collapse:collapse; font-size:12.5px }
-.fat-tipos th { padding:4px 0 6px 8px; font-size:11px; font-weight:500; color:var(--suave); text-align:right; border-bottom:1px solid var(--borda) }
-.fat-tipos td { padding:6px 0 6px 8px; text-align:right; border-bottom:1px solid #1d2125 }
+/* 31/10 («quero que isto seja mais relevante, podes diminuir o que está ao lado e fazer com que se veja bem as cenas»): a
+   tabela do dia com a mesma largura do cartão ao lado (era a coluna estreita), letra maior, mais ar entre as linhas, os
+   títulos numa linha só e o resultado a negrito */
+.fat-tipos { width:100%; margin-top:12px; border-collapse:collapse; font-size:14px }
+.fat-tipos th { padding:4px 0 8px 12px; font-size:12px; font-weight:500; color:var(--suave); text-align:right; white-space:nowrap; border-bottom:1px solid var(--borda) }
+.fat-tipos td { padding:10px 0 10px 12px; text-align:right; border-bottom:1px solid #1d2125 }
+.fat-tipos td:last-child { font-weight:600 }
 .fat-tipos th:first-child, .fat-tipos td:first-child { padding-left:0; text-align:left }
 .fat-tipos td.sobe { color:var(--salva) } .fat-tipos td.desce { color:var(--rosa) }
 /* 30/10 («acho que está a faltar infos, hoje não houve elliot»): as estratégias à parte, em pips, no dia escolhido e na tabela */
 .fat-fora { margin-top:18px }
 .fat-fora h3.lc-rot { font-weight:400 }
-.fat-tipos .fat-grupo th { padding:16px 0 6px; text-align:left; font-size:11px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); border-bottom:1px solid var(--borda) }
-@media (max-width: 1250px) { .fat-resumo { grid-template-columns:repeat(3, minmax(0, 1fr)) } .fat-corpo { grid-template-columns:minmax(0, 1fr) } }
+/* 31/10 («isto aqui tem que ser scroll senão fica super grande»): no Mac o cartão do dia não passa desta altura. O nome do dia,
+   o total e a banca ficam parados; os avisos deslizam por dentro, sem barra, com a ponta esbatida quando há mais (app.js,
+   pontas), como no cartão da ordem. No telemóvel a página corre inteira, como antes */
+@media (min-width: 1001px) and (min-height: 521px) {
+  .fat-desliza { max-height:clamp(300px, 52vh, 520px); overflow:hidden auto; scrollbar-width:none }
+  .fat-desliza::-webkit-scrollbar { display:none }
+}
+.fat-tipos .fat-grupo th { padding:18px 0 8px; text-align:left; white-space:normal; font-size:11px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); border-bottom:1px solid var(--borda) }
+@media (max-width: 1250px) { .fat-resumo { grid-template-columns:repeat(3, minmax(0, 1fr)) } }
 @media (max-width: 760px) { .fat-baixo { grid-template-columns:minmax(0, 1fr) } }
 @media (max-width: 1000px), (max-height: 520px) {
   .pagina { border:0; border-radius:0; padding:max(12px, env(safe-area-inset-top)) 12px 24px }

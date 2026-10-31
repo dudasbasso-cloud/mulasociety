@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=fe7d79f918'
+import { criarGrafico, numerosAviso } from './grafico.js?v=ea9f774249'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -42,14 +42,30 @@ let valorLote = null, pxAbertos = null
 // a janela do Jarvis abre grande (o Chrome deixa mexer no tamanho das janelas de app)
 if (window.outerWidth < 1300) { try { window.resizeTo(Math.min(screen.availWidth, 1680), Math.min(screen.availHeight, 1050)); window.moveTo(screen.availLeft || 0, screen.availTop || 0) } catch {} }
 
+// 31/10 (desempenho): um formatador por fuso, feito uma vez; fazer um novo a cada chamada era o que custava
+const FMT_HORA = new Map()
+const horaEm = (zona, d = new Date()) => {
+  let f = FMT_HORA.get(zona)
+  if (!f) FMT_HORA.set(zona, f = new Intl.DateTimeFormat('en-US', { timeZone: zona, weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }))
+  const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value])); return { dia: p.weekday, h: +p.hour % 24, m: +p.minute }
+}
+// o fim de semana do ouro, pela hora de Nova Iorque: de sexta às 17:00 a domingo às 18:00
+const fimDeSemana = ny => ny.dia === 'Sat' || (ny.dia === 'Fri' && ny.h >= 17) || (ny.dia === 'Sun' && ny.h < 18)
+
 // relógio e sessões, à hora de Lisboa
+// 31/10: cada sessão pela hora da sua cidade (das 9 às 18 em Tóquio, das 8 às 17 em Londres e em Nova Iorque) e o mercado
+// fechado pelo fimDeSemana, como no gráfico. Com as horas fixas de Lisboa, ao domingo o mercado «abria» às 22:00 e não às
+// 23:00, Tóquio ficava uma hora ao lado todo o verão e, nas semanas em que só um dos lados muda a hora, Nova Iorque também.
+// Os formatadores fazem-se uma vez, porque isto corre a cada segundo
+const FMT_RELOGIO = new Intl.DateTimeFormat('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const FMT_GRAF = new Intl.DateTimeFormat('pt-PT', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
 function relogio() {
-  const agora = new Date(), h = +agora.toLocaleString('en-GB', { timeZone: LX, hour: '2-digit', hourCycle: 'h23' }), d = agora.toLocaleDateString('en-GB', { timeZone: LX, weekday: 'short' })
+  const agora = new Date(), ny = horaEm('America/New_York', agora), entre = (h, de, ate) => h >= de && h < ate
   // 22/10 («mete isto mais na minha cara»): as horas grandes, com os segundos, e por baixo a hora do gráfico dele (UTC-3)
-  $('relogio').textContent = agora.toLocaleTimeString('pt-PT', { timeZone: LX, hour: '2-digit', minute: '2-digit', second: '2-digit' })
-  $('relogioGraf').textContent = agora.toLocaleTimeString('pt-PT', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
-  const fechado = d === 'Sat' || (d === 'Sun' && h < 22) || (d === 'Fri' && h >= 22)
-  const abertas = [h >= 0 && h < 9 && 'Tóquio', h >= 8 && h < 17 && 'Londres', h >= 13 && h < 22 && 'Nova Iorque'].filter(Boolean)
+  $('relogio').textContent = FMT_RELOGIO.format(agora)
+  $('relogioGraf').textContent = FMT_GRAF.format(agora)
+  const fechado = fimDeSemana(ny)
+  const abertas = [entre(horaEm('Asia/Tokyo', agora).h, 9, 18) && 'Tóquio', entre(horaEm('Europe/London', agora).h, 8, 17) && 'Londres', entre(ny.h, 8, 17) && 'Nova Iorque'].filter(Boolean)
   $('sessoes').textContent = fechado ? 'mercado fechado' : abertas.length ? abertas.join(' e ') + (abertas.length > 1 ? ' abertas' : ' aberta') : 'entre sessões'
   $('sessoes').classList.toggle('aberta', !fechado && abertas.length > 0)
 }
@@ -566,13 +582,7 @@ $('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (
 // diária do ouro (17:00 às 18:00 lá, 22:00 às 23:00 em Lisboa) ou o fim de semana (de sexta às 17:00 a domingo às 18:00).
 const DURACAO = { '1s': 1, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 }
 let fimVela = null
-// 31/10 (desempenho): um formatador por fuso, feito uma vez; fazer um novo a cada chamada era o que custava
-const FMT_HORA = new Map()
-const horaEm = (zona, d = new Date()) => {
-  let f = FMT_HORA.get(zona)
-  if (!f) FMT_HORA.set(zona, f = new Intl.DateTimeFormat('en-US', { timeZone: zona, weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }))
-  const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value])); return { dia: p.weekday, h: +p.hour % 24, m: +p.minute }
-}
+// (o horaEm e o fimDeSemana estão ao pé do relógio, lá em cima, que já os usa ao abrir)
 // 24/10 («podia estar mais bem conseguido», o «Mercado: Fechado.» do Agora): com o mercado fechado, o Agora diz quando abre
 // e quanto falta, e o último preço com a variação da semana em 24 h
 // 31/10 (desempenho): de hora a hora, porque Nova Iorque só muda de hora em horas certas. De minuto a minuto, ao sábado eram
@@ -614,7 +624,6 @@ function mercadoFechado(r) {
     + (a ? '<div class="mf-px"><span class="suave">Último preço</span><b class="num">' + fmt(a.px, c) + '</b><span class="num ' + (a.var24h >= 0 ? 'sobe' : 'desce') + '">' + (a.var24h >= 0 ? '+' : '') + fmt(a.var24h, 1) + '%</span></div>' : '') + '</div>'
 }
 // o fim de semana do mercado: de sexta às 17:00 a domingo às 18:00 de Nova Iorque
-const fimDeSemana = ny => ny.dia === 'Sat' || (ny.dia === 'Fri' && ny.h >= 17) || (ny.dia === 'Sun' && ny.h < 18)
 function semVelas() {
   const ny = horaEm('America/New_York'), lx = horaEm('Europe/Lisbon'), dif = ((lx.h - ny.h + 24) % 24)
   const as18 = String((18 + dif) % 24).padStart(2, '0') + ':00'   // as 18:00 de Nova Iorque na hora de Lisboa

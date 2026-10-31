@@ -5,13 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="jarvis-codigo" content="__CODIGO__">
 <title>MULASOCIETY ORG.</title>
-<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = 'ea9f774249'</script>
+<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '814d1631b9'</script>
 <link rel="preconnect" href="https://nefwmezamnjbgtswjkoy.supabase.co" crossorigin>
-<link rel="stylesheet" href="estilo.css?v=ea9f774249">
+<link rel="stylesheet" href="estilo.css?v=814d1631b9">
 <!-- 31/10 («desempenhos melhores no mobile»): o grafico.js vem logo com a página, e não só depois de o app.js chegar e o pedir -->
-<link rel="modulepreload" href="grafico.js?v=ea9f774249">
+<link rel="modulepreload" href="grafico.js?v=814d1631b9">
 <script>try{var g=localStorage.getItem('jarvis-grafico');if(g&&g!=='escuro')document.documentElement.dataset.graf=g}catch(e){}</script>
 <link rel="icon" href="favicon.png">
+<!-- 31/10 («põe o MULA FOREX como app no ecrã principal do iPhone»): aberto pelo ícone fica sem as barras do Safari. A barra
+     das horas fica preta por cima da página, e não transparente, para nada ficar escondido debaixo do relógio -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MULA FOREX">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0f1113">
 <script defer src="vendor/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -106,6 +115,6 @@
     <div id="fechadosCorpo"></div>
   </section>
 </div>
-<script type="module" src="app.js?v=ea9f774249"></script>
+<script type="module" src="app.js?v=814d1631b9"></script>
 </body>
 </html>

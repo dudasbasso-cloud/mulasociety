@@ -288,8 +288,8 @@ body { background:var(--textura), linear-gradient(180deg, #121720 0%, #0e121a 10
 .estrTP .placar tbody tr + tr td { border-top:1px solid var(--borda) }
 .estrTP .placar .ouro { background:linear-gradient(100deg, #b8925a 0%, #b8925a 40%, #f3dfb0 50%, #b8925a 60%, #b8925a 100%); background-size:250% 100%;
   background-position:100% 0; -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:.04em }
-@media (prefers-reduced-motion: no-preference) { .estrTP .placar .ouro { animation:ouro 3.5s ease-in-out infinite } }
-@keyframes ouro { 0%, 30% { background-position:100% 0 } 70%, 100% { background-position:0 0 } }
+/* 31/10: a luz que passa já não é uma animação sem fim daqui (o ecrã refazia os estilos 60 vezes por segundo, mesmo parado);
+   vem do app.js, igual, só com o placar à vista */
 .estrTP .placar .sobe { color:var(--salva) } .estrTP .placar .desce { color:var(--rosa) }
 /* 24/10: o calendário num card só, por cima das notícias; com muitos eventos desliza em vez de empurrar as notícias */
 #calendario { max-height:220px; overflow-y:auto }

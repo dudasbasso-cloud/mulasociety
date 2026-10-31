@@ -1,6 +1,6 @@
 // O ecrã do Jarvis: lê a API do servidor, ouve o canal de eventos e desenha os painéis (radar, gráfico, máquina do tempo,
 // observações, agora, conta, notícias, calendário, conversa e opções). Lembra o símbolo, o tempo e as camadas.
-import { criarGrafico, numerosAviso } from './grafico.js?v=2b4df3a25f'
+import { criarGrafico, numerosAviso } from './grafico.js?v=6abdcd9367'
 
 const CODIGO = document.querySelector('meta[name="jarvis-codigo"]').content
 const $ = id => document.getElementById(id)
@@ -566,11 +566,19 @@ $('camadas').addEventListener('click', e => { const c = e.target.dataset.c; if (
 // diária do ouro (17:00 às 18:00 lá, 22:00 às 23:00 em Lisboa) ou o fim de semana (de sexta às 17:00 a domingo às 18:00).
 const DURACAO = { '1s': 1, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 }
 let fimVela = null
-const horaEm = (zona, d = new Date()) => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zona, weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(d).map(x => [x.type, x.value])); return { dia: p.weekday, h: +p.hour % 24, m: +p.minute } }
+// 31/10 (desempenho): um formatador por fuso, feito uma vez; fazer um novo a cada chamada era o que custava
+const FMT_HORA = new Map()
+const horaEm = (zona, d = new Date()) => {
+  let f = FMT_HORA.get(zona)
+  if (!f) FMT_HORA.set(zona, f = new Intl.DateTimeFormat('en-US', { timeZone: zona, weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }))
+  const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value])); return { dia: p.weekday, h: +p.hour % 24, m: +p.minute }
+}
 // 24/10 («podia estar mais bem conseguido», o «Mercado: Fechado.» do Agora): com o mercado fechado, o Agora diz quando abre
 // e quanto falta, e o último preço com a variação da semana em 24 h
+// 31/10 (desempenho): de hora a hora, porque Nova Iorque só muda de hora em horas certas. De minuto a minuto, ao sábado eram
+// umas 2 000 voltas, 80 ms com o ecrã preso, duas vezes a cada 30 s (o Agora e a Ordem); dá a mesma hora em 1 360 casos medidos
 function reabreEm() {
-  for (let t = Math.ceil(Date.now() / 60e3) * 60e3, fim = t + 4 * 864e5; t < fim; t += 60e3) { const ny = horaEm('America/New_York', new Date(t)); if (ny.dia === 'Sun' && ny.h === 18 && ny.m === 0) return t }
+  for (let t = Math.ceil(Date.now() / 3600e3) * 3600e3, fim = t + 4 * 864e5; t < fim; t += 3600e3) { const ny = horaEm('America/New_York', new Date(t)); if (ny.dia === 'Sun' && ny.h === 18 && ny.m === 0) return t }
   return null
 }
 setInterval(() => { if (ultimaR && $('brief').querySelector('.mf')) $('brief').innerHTML = mercadoFechado(ultimaR) }, 30e3)
@@ -1009,6 +1017,18 @@ $('estrTP').addEventListener('click', e => {
   b.setAttribute('aria-expanded', est.botAberto); b.querySelector('.seta').outerHTML = setaGrupo(est.botAberto)
   for (const r of $('estrTP').querySelectorAll('tr[data-de="bot"]')) r.hidden = !est.botAberto
 })
+// 31/10 (desempenho): a luz do BOT e do ZIMBA FX (24/10, «mete tipo a ouro a brilhar») era uma animação de CSS sem fim e o
+// ecrã refazia os estilos 60 vezes por segundo, também com a luz parada fora das letras: 70% do trabalho do ecrã parado.
+// Agora passa daqui, igual (1,4 s a cada 3,5 s), só com o placar à vista e a janela aberta
+{
+  let aVista = false
+  new IntersectionObserver(l => { aVista = l.at(-1).isIntersecting }).observe($('estrTP'))
+  const calma = matchMedia('(prefers-reduced-motion: reduce)')
+  setInterval(() => {
+    if (!aVista || document.hidden || calma.matches) return
+    for (const s of $('estrTP').querySelectorAll('.placar .ouro')) if (s.offsetParent) s.animate([{ backgroundPosition: '100% 0' }, { backgroundPosition: '0 0' }], { duration: 1400, easing: 'ease-in-out' })
+  }, 3500)
+}
 function estrategiasTP(E) {
   const el = $('estrTP')
   if (!el || !E?.lista?.length) return

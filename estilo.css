@@ -898,7 +898,16 @@ button.fat-d { cursor:pointer }
 .fat-tipos td:last-child { font-weight:600 }
 .fat-tipos th:first-child, .fat-tipos td:first-child { padding-left:0; text-align:left }
 .fat-tipos td.sobe { color:var(--salva) } .fat-tipos td.desce { color:var(--rosa) }
-/* 30/10 («acho que está a faltar infos, hoje não houve elliot»): as estratégias à parte, em pips, no dia escolhido e na tabela */
+/* 31/10 («epa não sei, melhora isso»): os fechos com os sinais do calendário e, ao pé dos pips, uma barra fina (4 px, como as
+   outras da app) com o tamanho de cada uma, verde salva a ganhar e rosa a perder */
+.fat-tipos th:nth-child(2), .fat-tipos td.fat-t-s { text-align:left; white-space:nowrap }
+.fat-tipos td.fat-t-s { color:var(--suave) }
+.fat-tipos td.fat-t-p { width:45% }
+.fat-t-p > div { display:flex; align-items:center; gap:12px }
+.fat-barra { flex:1; height:4px; border-radius:2px; background:#24282d; overflow:hidden }
+.fat-barra i { display:block; height:100%; border-radius:2px; background:currentColor }
+.fat-t-p b { min-width:56px; text-align:right }
+/* 30/10 («acho que está a faltar infos, hoje não houve elliot»): as outras estratégias, em pips, no cartão do dia */
 .fat-fora { margin-top:18px }
 .fat-fora h3.lc-rot { font-weight:400 }
 /* 31/10 («isto aqui tem que ser scroll senão fica super grande»): no Mac o cartão do dia não passa desta altura. O nome do dia,
@@ -908,7 +917,6 @@ button.fat-d { cursor:pointer }
   .fat-desliza { max-height:clamp(300px, 52vh, 520px); overflow:hidden auto; scrollbar-width:none }
   .fat-desliza::-webkit-scrollbar { display:none }
 }
-.fat-tipos .fat-grupo th { padding:18px 0 8px; text-align:left; white-space:normal; font-size:11px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); border-bottom:1px solid var(--borda) }
 @media (max-width: 1250px) { .fat-resumo { grid-template-columns:repeat(3, minmax(0, 1fr)) } }
 @media (max-width: 760px) { .fat-baixo { grid-template-columns:minmax(0, 1fr) } }
 @media (max-width: 1000px), (max-height: 520px) {

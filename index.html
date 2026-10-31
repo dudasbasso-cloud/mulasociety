@@ -1,120 +1,15 @@
 <!doctype html>
-<html lang="pt-PT" class="amigo">
+<!-- 31/10: o MULA FOREX mudou para https://mulasociety.github.io/ e este endereço só reencaminha para lá -->
+<html lang="pt-PT">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="jarvis-codigo" content="__CODIGO__">
-<title>MULASOCIETY ORG.</title>
-<script>window.JARVIS_API = 'https://nefwmezamnjbgtswjkoy.supabase.co/functions/v1/jarvis-amigo'; window.JARVIS_VERSAO = '814d1631b9'</script>
-<link rel="preconnect" href="https://nefwmezamnjbgtswjkoy.supabase.co" crossorigin>
-<link rel="stylesheet" href="estilo.css?v=814d1631b9">
-<!-- 31/10 («desempenhos melhores no mobile»): o grafico.js vem logo com a página, e não só depois de o app.js chegar e o pedir -->
-<link rel="modulepreload" href="grafico.js?v=814d1631b9">
-<script>try{var g=localStorage.getItem('jarvis-grafico');if(g&&g!=='escuro')document.documentElement.dataset.graf=g}catch(e){}</script>
-<link rel="icon" href="favicon.png">
-<!-- 31/10 («põe o MULA FOREX como app no ecrã principal do iPhone»): aberto pelo ícone fica sem as barras do Safari. A barra
-     das horas fica preta por cima da página, e não transparente, para nada ficar escondido debaixo do relógio -->
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icone-180.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="MULA FOREX">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="theme-color" content="#0f1113">
-<script defer src="vendor/lightweight-charts.standalone.production.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MULA FOREX</title>
+<meta http-equiv="refresh" content="0; url=https://mulasociety.github.io/">
+<link rel="canonical" href="https://mulasociety.github.io/">
+<script>location.replace('https://mulasociety.github.io/' + location.hash)</script>
 </head>
-<body>
-<div id="app">
-  <header class="topo">
-    <div class="marca">MULASOCIETY ORG.</div>
-    <div class="relogio"><b class="num" id="relogio">--:--:--</b><span>Lisboa · <span class="num" id="relogioGraf">--:--</span> no teu gráfico</span></div>
-    <div class="it" id="sessoes"></div>
-    <div class="it" id="resultado"><button type="button" class="temaBtn fatBtn" id="fatBtn" aria-pressed="false" hidden><span class="fat-longo">Calendário de faturação</span><span class="fat-curto">Faturação</span> <b class="num" id="fatBtnV"></b></button><span id="resultadoTxt"></span></div>
-    <div class="dir">
-      <div class="it" id="topoRobo" hidden></div>
-      <button type="button" class="temaBtn" id="lucrosBtn" aria-haspopup="dialog" hidden>Lucros</button>
-      <button type="button" class="temaBtn" id="temaBtn" aria-haspopup="dialog">Gráfico</button>
-      <button type="button" class="temaBtn" id="grelhaBtn" aria-haspopup="dialog">Grelha</button>
-      <div class="it" id="topoConta"></div>
-      <div class="it" id="ligacao"><span class="ponto"></span>a ligar</div>
-    </div>
-  </header>
-  <main class="grelha">
-    <section class="col esq">
-      <!-- 23/10 («em vez de radar, depois vamos meter isso no teu lado, mas arquiva para já; mete as notícias aí do lado
-           esquerdo»): as notícias e o calendário passaram para o lugar do radar; o radar fica escondido até ir para o lado da conversa -->
-      <!-- 24/10 («quero que seja um card específico no topo das notícias sozinho»): o calendário num card só, por cima -->
-      <div class="card cresce noticias"><div class="tit"><span>Notícias</span><span>setas com grau<button type="button" id="pausaNot" class="pausaNot" hidden></button></span></div><div class="desliza"><div id="noticias"></div></div></div>
-      <!-- 29/10 («o calendário mete tipo em baixo das notícias, em pequeno mesmo»): por baixo das notícias, só com a altura dos eventos -->
-      <div class="card calendario"><div class="tit"><span>Calendário</span><span>médias e fortes</span></div><div id="calendario"></div></div>
-      <div class="card cresce" hidden><div class="tit"><span>Radar</span><span id="radarInfo">a ler os pares</span></div><div class="desliza" id="radar"></div></div>
-      <!-- 23/10 («também podes arquivar a força das divisas»): escondida como o radar -->
-      <div class="card" hidden><div class="tit"><span>Força das divisas</span><span>24 h · 5 dias</span></div><div class="forca" id="forca"><div class="vazio">A medir pelos 28 pares.</div></div></div>
-    </section>
-    <section class="col centro">
-      <div class="card cresce cardGraf">
-        <div class="cab">
-          <span class="sim" id="gNome">Ouro</span><span class="px num" id="gPx"></span><span class="num" id="gVar"></span>
-          <div class="seg" id="tfs"><button type="button" data-tf="1s">1 s</button><button type="button" data-tf="15m">15 min</button><button type="button" data-tf="1h">1 h</button><button type="button" data-tf="4h">4 h</button><button type="button" data-tf="1d">dia</button></div>
-          <button type="button" class="estrBtn camBtn" id="camBtn" aria-haspopup="dialog"><span class="r">Camadas</span><b id="camBtnV">0</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
-          <button type="button" class="estrBtn" id="estrBtn" aria-haspopup="dialog"><span class="r">Estratégia</span><b id="estrBtnV">nenhuma</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><label class="estrSel" hidden><span class="sr">Estratégia no gráfico</span><select id="estrSel"><option value="">Estratégia: nenhuma</option></select></label>
-          <span class="timer num" id="gTimer" title="tempo até a vela deste tempo fechar"></span>
-          <div class="camadas" id="camadas"><button type="button" data-c="sv3">SV3</button><button type="button" data-c="ema">EMA</button><button type="button" data-c="niveis">Níveis</button><button type="button" data-c="diario">Diário</button><button type="button" data-c="asia">Ásia</button><button type="button" data-c="fibo">Fibo</button><button type="button" data-c="linhas">Linhas</button><button type="button" data-c="velas">Velas</button><button type="button" data-c="sinais">Sinais</button><button type="button" data-c="alvos">Alvos</button><button type="button" data-c="plano">Plano</button><button type="button" data-c="posicoes">Posições</button><button type="button" data-c="estoc">Estoc.</button></div>
-        </div>
-        <div id="grafico"><div id="dica"></div></div>
-        <div class="legenda"><span data-c="sv3"><i style="background:var(--rosa)"></i>vermelha do SV3</span><span data-c="sv3"><i style="background:#8b9096"></i>cinzenta</span><span data-c="sv3"><i style="background:var(--salva)"></i>verde</span><span data-c="ema"><i style="background:var(--areia)"></i><span id="legEma">EMA 200 de 15 min</span></span><span data-c="ema"><i class="trac"></i>EMA 80</span><span data-c="fibo"><i class="pont"></i>Fibonacci de 4 h</span><span data-c="diario"><i class="caixa"></i>zonas do diário</span><span data-c="linhas"><i style="background:var(--salva)"></i>linhas de tendência (4 h grossa, 1 h fina)</span><span data-c="velas">● velas de confirmação</span><span data-c="sinais">▼▲ sinais do robô</span><span class="suave">passa o rato por cima para ver o que é</span><span data-c="alvos"><i style="background:var(--salva);opacity:.55"></i>caixa verde até ao TP3, vermelha até ao stop</span></div>
-        <!-- 22/10: a máquina do tempo saiu do ecrã («retira isto»); o robô na nuvem continua a usá-la antes de entrar -->
-        <div class="maq" id="maquina" hidden></div>
-      </div>
-      <!-- 24/10 («também quero um card sozinho disto»): a tabela das estratégias num card próprio, por baixo do gráfico (app.js) -->
-      <div class="card estrTP" id="estrTP" hidden></div>
-    </section>
-    <section class="col dir">
-      <div class="card"><div class="tit"><span>Ordem</span><span class="num" id="planoVela"></span></div><div class="plano" id="plano"><div class="vazio">A ler.</div></div></div>
-      <!-- 22/10 («muitos cartões à direita», «a ordem das coisas»): por baixo do plano, um só cartão com separadores; abre no
-           «Agora», o resumo de quatro linhas, e o resto fica a um toque -->
-      <div class="card abas">
-        <div class="separadores" id="separadores"><button type="button" data-aba="macro">Dólar</button><button type="button" data-aba="agora">Agora</button><button type="button" data-aba="tendencia">Tendência</button><button type="button" data-aba="estrategias">Estratégias</button><button type="button" data-aba="observacoes">Notas</button><button type="button" data-aba="conversa">Conversa</button></div>
-        <div class="aba desliza" data-aba="agora"><div class="tit"><span>Agora</span><span class="num" id="vela"></span></div><div class="brief" id="brief"></div><div class="brief" id="conta"></div></div>
-        <div class="aba desliza" data-aba="tendencia"><div class="tit"><span>Tendência</span><span>direção pela EMA 200</span></div><div id="tendencia"><div class="vazio">A ler o dia, o 4 h, o 1 h e o 15 min.</div></div></div>
-        <div class="aba desliza" data-aba="estrategias"><div class="tit"><span>Estratégias que mandaste</span><span>aplicadas sempre</span></div><div id="estrategias"><div class="vazio">A ler.</div></div></div>
-        <!-- 24/10: o dólar e o petróleo, que confirmam (ou não) a entrada e a saída no ouro (app.js, macro) -->
-        <div class="aba desliza" data-aba="macro"><div class="tit"><span>Dólar e petróleo</span><span>confirmam o ouro?</span></div><div id="macro"><div class="vazio">A ler.</div></div></div>
-        <div class="aba desliza" data-aba="observacoes"><div class="tit"><span>Notas</span><span id="obsInfo">o que vai acontecendo</span></div><div class="obs" id="obs"></div></div>
-        <div class="aba conversa" data-aba="conversa"><div class="tit"><span>Conversa</span><span>o Claude do teu Mac</span></div><div class="conv desliza" id="conversa"></div>
-          <form class="entrada" id="pergunta"><input id="texto" placeholder="Escreve a tua pergunta…" autocomplete="off"><button type="submit">enviar</button></form></div>
-      </div>
-  <!-- 24/10 («mantém como está mas melhor só a disposição»): as opções passam para o fundo da direita; à esquerda o calendário e as notícias até ao fundo -->
-      <div class="card opcoes"><div class="tit"><span>Opções</span></div><div class="opc" id="opcoes"></div></div>
-    </section>
-  </main>
-  <!-- 30/10 («esta parte quero que seja uma página mesmo [...] para assim termos mais informação, não quero tipo popform»): o
-       calendário de faturação numa página, no lugar das três colunas; a barra de cima fica (app.js) -->
-  <main class="pagina" id="pagFat" aria-labelledby="fatTit" hidden>
-    <header class="pag-cab"><button type="button" class="temaBtn" id="fatVoltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Voltar<span class="pc"> ao gráfico</span></button><h1 id="fatTit">Calendário de faturação</h1><div class="fat-mes" id="fatMes"></div></header>
-    <div id="fatCorpo"><p class="fat-nota">A ler os avisos.</p></div>
-  </main>
-  <!-- 24/10 («no mobile ainda está difícil mexer; faz algo do género do TradingView para mobile»): no telemóvel não há
-       página a correr; um painel de cada vez, a ecrã inteiro, e os separadores em baixo -->
-  <nav class="mNav" id="mNav" aria-label="Painéis"><button type="button" data-m="grafico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v18M17 3v18"/><rect x="5" y="7" width="4" height="8" rx="1"/><rect x="15" y="9" width="4" height="7" rx="1"/></svg>Gráfico</button><button type="button" data-m="estrategias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Estratégias</button><button type="button" data-m="ordem"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Ordem</button><button type="button" data-m="analise"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Análise</button><button type="button" data-m="noticias"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Notícias</button></nav>
-</div>
-<div class="dicaTopo" id="resultadoDica" hidden></div>
-<!-- 25/10: o separador «Lucros» (app.js), por cima do ecrã -->
-<div class="lucros" id="lucros" hidden>
-  <div class="lucrosFundo" data-fecha></div>
-  <section class="lucrosCaixa" role="dialog" aria-modal="true" aria-labelledby="lucrosTit">
-    <header class="lucrosCab"><h2 id="lucrosTit">Lucros</h2><button type="button" class="lucrosFechar" id="lucrosFechar" data-fecha aria-label="Fechar">×</button></header>
-    <div id="lucrosCorpo"></div>
-  </section>
-</div>
-<!-- 29/10: o «Ver mais» dos avisos que fecharam (app.js), na mesma janela dos Lucros -->
-<div class="lucros" id="fechados" hidden>
-  <div class="lucrosFundo" data-fecha></div>
-  <section class="lucrosCaixa fechadosCaixa" role="dialog" aria-modal="true" aria-labelledby="fechadosTit">
-    <header class="lucrosCab"><h2 id="fechadosTit">Fecharam nas últimas 24 h</h2><button type="button" class="lucrosFechar" id="fechadosFechar" data-fecha aria-label="Fechar">×</button></header>
-    <div id="fechadosCorpo"></div>
-  </section>
-</div>
-<script type="module" src="app.js?v=814d1631b9"></script>
+<body style="margin:0;padding:24px;background:#0f1113;color:#c9cdd2;font:16px/1.5 -apple-system,system-ui,sans-serif">
+<p>O MULA FOREX mudou para <a href="https://mulasociety.github.io/" style="color:#d2ab68">mulasociety.github.io</a></p>
 </body>
 </html>

@@ -756,7 +756,7 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 .ab-cap .ab-total { float:right; font-size:12.5px; font-weight:600 }
 /* 29/10 («tens que arranjar forma disto ficar no mesmo retângulo»): a coluna da lista tem a largura do cartão (antes crescia
    até ao cabeçalho mais comprido e as linhas passavam a borda); no cabeçalho só o nome encolhe, com o nome todo ao passar o rato */
-.ab-lista { margin-top:10px; display:grid; grid-template-columns:minmax(0, 1fr) }
+.ab-lista { display:grid; grid-template-columns:minmax(0, 1fr) }
 .ab-dia { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--fraco); padding:10px 0 2px }
 .ab-cab > :not(.ab-n) { flex-shrink:0 }
 .ab-cab .ab-r .ab-pips { font-size:11.5px; font-weight:400 }
@@ -777,6 +777,21 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 /* o cartão dos separadores nunca desaparece: com muitos avisos abertos, a coluna corre */
 .col.dir .abas { min-height:200px }
 .ab-sv3 { margin-top:9px; font-size:12px; line-height:1.4; color:var(--suave) }
+/* 31/10 («isto às vezes tem muitas ordens, o que vais fazer é que as ordens fiquem num card que não se mexa mas que dentro
+   dele seja scroll»): no Mac o cartão da ordem tem sempre a mesma altura, com um aviso ou com vinte, e o dos separadores fica
+   com o resto. O título, o total e os nomes dos preços ficam parados (os nomes saíram da lista e levaram a margem dela); os
+   avisos a decorrer e os que fecharam deslizam por dentro, sem barra, com a ponta esbatida quando há mais (app.js,
+   pintarPlano). No telemóvel o painel da ordem já ocupa o ecrã e corre inteiro, como antes */
+.ab-tit { margin-top:10px }
+@media (min-width: 1001px) and (min-height: 521px) {
+  .plano { height:clamp(340px, 38vh, 440px); display:flex; flex-direction:column }
+  .plano > .ordemParada { flex:none }
+  .plano > .ordemParada:only-child { flex:1 }
+  /* (sem a âncora do navegador: os € entram depois de a lista voltar ao sítio e cada linha cresce um pouco; com ela, no
+     Chrome a lista descia uns 6 px de cada vez que o cartão se refazia) */
+  .plano .ab-desliza { flex:1; min-height:0; overflow:hidden auto; overflow-anchor:none; overscroll-behavior:contain; scrollbar-width:none }
+  .plano .ab-desliza::-webkit-scrollbar { display:none }
+}
 
 /* 26/10: os avisos que fecharam nas últimas 24 h, uma linha cada, por baixo dos que estão a decorrer */
 .fe-lista { margin-top:12px }
@@ -793,33 +808,90 @@ html[data-graf] .cardGraf .timer b { color:var(--texto) }
 @media (hover: hover) { .fe-mais:hover { color:var(--texto) } }
 .fechadosCaixa { width:min(560px, 100%) }
 .fechadosCaixa .fe-lista { margin-top:0 }
-/* 30/10: o calendário de faturação (app.js), na janela dos Lucros, no lugar da banca e dos TP da barra. Um quadrado por dia:
-   verde salva se o dia fechou a ganhar, rosa velho se fechou a perder, sem cor se nada fechou */
+/* 30/10: o calendário de faturação (app.js), no lugar da banca e dos TP da barra. Um quadrado por dia: verde salva se o dia
+   fechou a ganhar, rosa velho se fechou a perder, sem cor se nada fechou */
 .topo .it .fatBtn { margin-right:12px; font-size:12.5px; vertical-align:1px }
+.topo .it .fatBtn[aria-pressed="true"] { background:#1b1f23; border-color:#3a4047; color:var(--texto) }
 /* a 1440 px (o ecrã dele) só cabe o botão: o nome curto, e o «Hoje» fica na dica e no quadrado de hoje (antes também não cabia) */
 .fat-curto { display:none }
 @media (max-width: 1719px) { .fat-longo, .topo .hojeTP { display:none } .fat-curto { display:inline } }
-.fatCaixa { width:min(1040px, 100%) }
-.fat-topo { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:2px 2px 8px }
+/* 30/10, depois («quero que seja uma página mesmo [...] não quero tipo popform»): uma página no lugar das três colunas, com a
+   barra de cima à vista. Por cima as contas do mês; à esquerda o calendário, à direita o dia escolhido e o mês por tipo */
+.pagina { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; background:var(--painel); border:1px solid var(--borda); border-radius:10px; padding:12px 18px 20px }
+.pag-cab { display:flex; align-items:center; gap:16px; padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid var(--borda) }
+.pag-cab h1 { font-size:16px; font-weight:600; letter-spacing:.02em; white-space:nowrap }
+.pag-cab .fat-mes { margin-left:auto }
 .fat-mes { display:flex; align-items:center; gap:8px }
-.fat-mes b { display:inline-block; font-size:18px; font-weight:600 } .fat-mes b::first-letter { text-transform:uppercase }
+.fat-mes b { display:inline-block; min-width:128px; text-align:center; font-size:15px; font-weight:600 } .fat-mes b::first-letter { text-transform:uppercase }
 .fat-seta { width:28px; height:28px; display:grid; place-items:center; border:1px solid var(--borda); border-radius:7px; background:transparent; color:var(--suave); cursor:pointer }
 .fat-seta svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round }
 .fat-seta:disabled { color:#3a3f45; cursor:default }
 @media (hover: hover) { .fat-seta:not(:disabled):hover { color:var(--texto); background:#1b1f23 } }
-.fat-total { display:flex; align-items:baseline; gap:14px; font-size:12.5px; color:var(--suave) }
-.fat-total b { margin-left:6px; font-size:18px; font-weight:700; color:var(--texto) } .fat-total b.sobe { color:var(--salva) } .fat-total b.desce { color:var(--rosa) }
-.fat-nota { margin:0 2px 8px; font-size:12px; line-height:1.45; color:var(--suave); text-wrap:pretty } .fat-nota.desce { color:var(--rosa) }
-.fat-tab { width:calc(100% + 12px); margin:4px -6px 0; border-collapse:separate; border-spacing:6px; table-layout:fixed }
-.fat-tab th { padding:0 9px; font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); text-align:left }
-.fat-d { height:98px; padding:8px 10px; vertical-align:top; background:#141719; border:1px solid var(--borda); border-radius:9px }
+.fat-resumo { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:10px; margin-bottom:16px }
+.fat-k { min-width:0; padding:10px 14px 11px; background:#141719; border:1px solid var(--borda); border-radius:10px }
+.fat-k b { display:block; margin-top:3px; font-size:20px; font-weight:700; line-height:1.2; color:var(--texto) } .fat-k b.sobe { color:var(--salva) } .fat-k b.desce { color:var(--rosa) }
+.fat-k b + span { display:block; margin-top:3px; font-size:12px; color:var(--suave); text-wrap:pretty }
+.fat-k b + span::first-letter { text-transform:uppercase }
+.fat-corpo { display:grid; grid-template-columns:minmax(0, 1fr) minmax(330px, 380px); gap:18px; align-items:start }
+.fat-lado { display:flex; flex-direction:column; gap:14px }
+/* 30/10, depois: o dia escolhido e o mês por tipo por baixo do calendário, lado a lado; ao lado, as estratégias em pips */
+.fat-baixo { display:grid; grid-template-columns:minmax(0, 1fr) minmax(300px, 380px); gap:14px; align-items:start; margin-top:16px }
+.fat-estr { margin-top:6px } .fat-estr td:first-child { text-wrap:pretty }
+.fat-e-s { display:block; margin-top:1px; font-size:11px; color:var(--suave) }
+.fat-nota { margin:12px 2px 0; font-size:12px; line-height:1.45; color:var(--suave); text-wrap:pretty } .fat-nota.desce { color:var(--rosa); margin-top:6px }
+.fat-cal { display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); grid-template-rows:auto; grid-auto-rows:minmax(100px, auto); gap:6px }
+.fat-cal .fat-dsem { padding:0 4px 2px; font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); align-self:end }
+.fat-d { display:flex; flex-direction:column; align-items:flex-start; min-width:0; padding:8px 10px; text-align:left; background:#141719; border:1px solid var(--borda); border-radius:9px }
+button.fat-d { cursor:pointer }
+@media (hover: hover) { button.fat-d:hover { border-color:#3a4047 } button.fat-d.ganha:hover { border-color:rgba(156,184,148,.55) } button.fat-d.perde:hover { border-color:rgba(204,147,144,.55) } }
 .fat-d.vazio { background:transparent; border-color:transparent }
-.fat-d.fora { background:transparent } .fat-d.fora .fat-n { color:var(--fraco) }
+.fat-d.fora { background:transparent; border-color:#1d2125 } .fat-d.fora .fat-n { color:var(--fraco) }
 .fat-d.ganha { background:rgba(156,184,148,.13); border-color:rgba(156,184,148,.3) }
 .fat-d.perde { background:rgba(204,147,144,.13); border-color:rgba(204,147,144,.3) }
 .fat-d.hoje { box-shadow:inset 0 0 0 1px var(--areia) }
+/* o dia escolhido: o contorno com a cor dele, mais forte, e o fundo um pouco mais claro */
+.fat-d.sel { border-color:#8f959c; background-color:#1b1f23 }
+.fat-d.ganha.sel { border-color:var(--salva); background-color:rgba(156,184,148,.2) }
+.fat-d.perde.sel { border-color:var(--rosa); background-color:rgba(204,147,144,.2) }
+/* a semana: sem fundo de cor, só o total com ela */
+.fat-d.fat-sem { background:transparent; border-style:dashed }
+.fat-d.fat-sem.ganha .fat-v { color:var(--salva) } .fat-d.fat-sem.perde .fat-v { color:var(--rosa) }
 .fat-n { display:block; font-size:11.5px; color:var(--suave) } .fat-d.hoje .fat-n { color:var(--areia) }
 .fat-v { display:block; margin-top:3px; font-size:17px; font-weight:700; line-height:1.2; color:var(--texto) }
 .fat-d.ganha .fat-v { color:var(--salva) } .fat-d.perde .fat-v { color:var(--rosa) }
 .fat-s { display:block; margin-top:2px; font-size:11px; line-height:1.35; color:var(--suave); text-wrap:pretty } .fat-s.desce { color:var(--rosa) }
-@media (max-width: 700px) { .fat-tab { width:calc(100% + 6px); margin:4px -3px 0; border-spacing:3px } .fat-d { height:58px; padding:5px } .fat-v { font-size:12px } .fat-s { display:none } }
+.fat-sinais { margin-top:4px; font-size:11.5px; white-space:nowrap } .fat-sinais .sobe { color:var(--salva) } .fat-sinais .desce { color:var(--rosa) }
+.fat-cartao { padding:12px 14px 14px; background:#141719; border:1px solid var(--borda); border-radius:10px }
+.fat-cartao h2.lc-rot { font-weight:400 }
+.fat-dia-cab { display:flex; align-items:flex-start; justify-content:space-between; gap:12px }
+.fat-dia-nome { margin-top:3px; font-size:16px; font-weight:600 } .fat-dia-nome::first-letter { text-transform:uppercase }
+.fat-dia-v { font-size:22px; font-weight:700; line-height:1.2; white-space:nowrap } .fat-dia-v.sobe { color:var(--salva) } .fat-dia-v.desce { color:var(--rosa) }
+.fat-dia-txt { margin-top:6px; font-size:12.5px; line-height:1.45; color:var(--suave); text-wrap:pretty }
+.fat-avisos { list-style:none; margin-top:10px }
+.fat-a { display:grid; grid-template-columns:14px auto minmax(0, 1fr) auto; gap:2px 7px; align-items:baseline; padding:8px 0; border-top:1px solid var(--borda); font-size:13px }
+.fat-a-l { font-weight:600 }
+.fat-a-n { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.fat-a-v { font-weight:600; text-align:right; white-space:nowrap }
+.fat-a-s { grid-column:2 / -1; font-size:11.5px; line-height:1.4; color:var(--suave); text-wrap:pretty }
+.fat-tipos { width:100%; margin-top:8px; border-collapse:collapse; font-size:12.5px }
+.fat-tipos th { padding:4px 0 6px 8px; font-size:11px; font-weight:500; color:var(--suave); text-align:right; border-bottom:1px solid var(--borda) }
+.fat-tipos td { padding:6px 0 6px 8px; text-align:right; border-bottom:1px solid #1d2125 }
+.fat-tipos th:first-child, .fat-tipos td:first-child { padding-left:0; text-align:left }
+.fat-tipos td.sobe { color:var(--salva) } .fat-tipos td.desce { color:var(--rosa) }
+/* 30/10 («acho que está a faltar infos, hoje não houve elliot»): as estratégias à parte, em pips, no dia escolhido e na tabela */
+.fat-fora { margin-top:18px }
+.fat-fora h3.lc-rot { font-weight:400 }
+.fat-tipos .fat-grupo th { padding:16px 0 6px; text-align:left; font-size:11px; font-weight:400; letter-spacing:.08em; text-transform:uppercase; color:var(--suave); border-bottom:1px solid var(--borda) }
+@media (max-width: 1250px) { .fat-resumo { grid-template-columns:repeat(3, minmax(0, 1fr)) } .fat-corpo { grid-template-columns:minmax(0, 1fr) } }
+@media (max-width: 760px) { .fat-baixo { grid-template-columns:minmax(0, 1fr) } }
+@media (max-width: 1000px), (max-height: 520px) {
+  .pagina { border:0; border-radius:0; padding:max(12px, env(safe-area-inset-top)) 12px 24px }
+  body.naPagina .mNav { display:none }
+}
+@media (max-width: 700px) {
+  .pag-cab { flex-wrap:wrap } .pag-cab h1 { order:3; width:100% }
+  .fat-resumo { grid-template-columns:repeat(2, minmax(0, 1fr)) }
+  .fat-cal { grid-template-columns:repeat(7, minmax(0, 1fr)); grid-auto-rows:minmax(58px, auto); gap:3px }
+  .fat-cal .fat-dsem:nth-child(8), .fat-d.fat-sem { display:none }
+  .fat-d { padding:5px } .fat-v { font-size:12px } .fat-s { display:none }
+}
